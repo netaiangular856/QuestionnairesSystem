@@ -1,0 +1,67 @@
+<div class="page-workspace">
+<div class="page-head-row">
+  <section class="page-head">
+    <h1>{{ 'notifications.title' | t }}</h1>
+    <p class="page-head__sub">{{ 'notifications.subtitle' | t }}</p>
+  </section>
+</div>
+
+<div class="toolbar card card--interactive">
+  <input
+    class="toolbar__search"
+    type="search"
+    [(ngModel)]="search"
+    (keyup.enter)="page = 1; load()"
+    [placeholder]="'notifications.search' | t"
+  />
+  <div class="notif-read-filter" role="group">
+    <button type="button" [class.active]="filterRead === 'all'" (click)="setFilter('all')">{{ 'notifications.filter.all' | t }}</button>
+    <button type="button" [class.active]="filterRead === 'unread'" (click)="setFilter('unread')">
+      {{ 'notifications.filter.unread' | t }}
+    </button>
+    <button type="button" [class.active]="filterRead === 'read'" (click)="setFilter('read')">{{ 'notifications.filter.read' | t }}</button>
+  </div>
+  <button type="button" class="btn-primary" (click)="page = 1; load()">{{ 'common.search' | t }}</button>
+</div>
+
+@if (failed()) {
+  <div class="card card--muted">{{ 'notifications.error.list' | t }}</div>
+} @else if (result()) {
+  @if (!result()!.items.length) {
+    <div class="card card--muted">{{ 'notifications.empty' | t }}</div>
+  } @else {
+    <div class="list">
+      @for (row of result()!.items; track row.id) {
+        <article class="card notif" [class.notif--unread]="!row.isRead">
+          <header class="notif__head">
+            <h3>{{ row.title }}</h3>
+            <span class="badge" [class.badge--muted]="row.isRead">
+              {{ row.isRead ? ('notifications.read' | t) : ('notifications.unread' | t) }}
+            </span>
+          </header>
+          <p class="notif__msg">{{ row.message }}</p>
+          <footer class="notif__foot">
+            <span class="muted">{{ row.createdOnUtc | date: 'medium' }}</span>
+            @if (canManage) {
+              <div class="notif__actions">
+                @if (!row.isRead) {
+                  <button type="button" class="btn-mini" (click)="mark(row, true)">{{ 'notifications.markRead' | t }}</button>
+                } @else {
+                  <button type="button" class="btn-mini" (click)="mark(row, false)">{{ 'notifications.markUnread' | t }}</button>
+                }
+              </div>
+            }
+          </footer>
+        </article>
+      }
+    </div>
+    <div class="pager card">
+      <button type="button" (click)="prevPage()" [disabled]="!result()!.hasPreviousPage">{{ 'common.previous' | t }}</button>
+      <span>{{ result()!.page }} / {{ result()!.totalPages || 1 }}</span>
+      <button type="button" (click)="nextPage()" [disabled]="!result()!.hasNextPage">{{ 'common.next' | t }}</button>
+    </div>
+  }
+} @else if (busy()) {
+  <div class="skeleton table-skel"></div>
+}
+</div>

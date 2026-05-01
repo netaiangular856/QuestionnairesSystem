@@ -1,0 +1,73 @@
+<div class="page-workspace">
+  <a [routerLink]="['/surveys', surveyId, 'participants']" class="back-link"
+    >← {{ 'q.subpages.participantBackList' | t }}</a
+  >
+  <h1 class="page-title">{{ 'q.subpages.participantDetailTitle' | t }}</h1>
+
+  @if (busy()) {
+    <div class="card card--muted">{{ 'common.loading' | t }}</div>
+  } @else if (failed() || !detail()) {
+    <div class="card card--muted">{{ 'q.detail.error' | t }}</div>
+  } @else {
+    @if (detail(); as d) {
+      <div class="card participant-head">
+        <h2 class="participant-head__name">{{ d.participant.userDisplayName || d.participant.email || '—' }}</h2>
+        <p class="muted participant-head__email">{{ d.participant.email || '—' }}</p>
+        <div class="participant-head__pills">
+          <span class="q-pill q-pill--neutral">{{ pStatusKey(d.participant.status) | t }}</span>
+        </div>
+        <dl class="participant-head__meta">
+          <div>
+            <dt>{{ 'q.detail.table.started' | t }}</dt>
+            <dd>{{ d.participant.invitedAtUtc ? (d.participant.invitedAtUtc | date: 'short') : '—' }}</dd>
+          </div>
+          <div>
+            <dt>{{ 'q.detail.table.submitted' | t }}</dt>
+            <dd>{{ d.participant.completedAtUtc ? (d.participant.completedAtUtc | date: 'short') : '—' }}</dd>
+          </div>
+        </dl>
+      </div>
+
+      @if (d.response; as resp) {
+        <section class="card response-block">
+          <h3 class="response-block__title">{{ 'q.subpages.responseSection' | t }}</h3>
+          <p class="response-block__status">
+            <span class="q-pill q-pill--neutral">{{ rStatusKey(resp.status) | t }}</span>
+          </p>
+          <dl class="response-block__meta">
+            <div>
+              <dt>{{ 'q.detail.table.started' | t }}</dt>
+              <dd>{{ resp.startedAtUtc ? (resp.startedAtUtc | date: 'short') : '—' }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'q.detail.table.submitted' | t }}</dt>
+              <dd>{{ resp.submittedAtUtc ? (resp.submittedAtUtc | date: 'short') : '—' }}</dd>
+            </div>
+          </dl>
+          @if (resp.answers.length) {
+            <table class="data-table answers-table">
+              <thead>
+                <tr>
+                  <th>{{ 'q.subpages.answersTable.questionId' | t }}</th>
+                  <th>{{ 'q.subpages.answersTable.value' | t }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (a of resp.answers; track a.questionId) {
+                  <tr>
+                    <td class="answers-table__qid">{{ a.questionId }}</td>
+                    <td>
+                      <pre class="answers-table__pre">{{ formatAnswerValue(a.valueJson) }}</pre>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </section>
+      } @else {
+        <div class="card card--muted">{{ 'q.subpages.participantNoResponse' | t }}</div>
+      }
+    }
+  }
+</div>

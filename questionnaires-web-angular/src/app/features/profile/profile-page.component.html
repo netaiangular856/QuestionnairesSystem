@@ -1,0 +1,145 @@
+<div class="page-workspace profile-page">
+  @if (session(); as s) {
+    <article class="card profile-sheet">
+      <header class="profile-sheet__top">
+        <div class="profile-sheet__identity">
+          <div class="profile-sheet__avatar-col">
+            <input
+              #avatarFile
+              type="file"
+              class="profile-sheet__file-hidden"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              (change)="onAvatarSelected($event)"
+            />
+            @if (avatarSrc(); as src) {
+              <button
+                type="button"
+                class="profile-sheet__avatar-btn profile-sheet__avatar-btn--photo"
+                [disabled]="busy()"
+                (click)="avatarFile.click()"
+                [attr.aria-label]="'profile.pickPhoto' | t"
+                [attr.title]="'profile.avatarHelp' | t"
+              >
+                <img [src]="src" alt="" width="48" height="48" />
+                <span class="profile-sheet__avatar-overlay" aria-hidden="true">
+                  <svg class="profile-sheet__camera-icon" viewBox="0 0 24 24" focusable="false" fill="currentColor">
+                    <path
+                      d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 5c2.76 0 5 2.24 5 5s-2.24 5-5 5-5-2.24-5-5 2.24-5 5-5zm0 2c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                    />
+                  </svg>
+                </span>
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="profile-sheet__avatar-btn profile-sheet__avatar-btn--initial"
+                [disabled]="busy()"
+                (click)="avatarFile.click()"
+                [attr.aria-label]="'profile.pickPhoto' | t"
+                [attr.title]="'profile.avatarHelp' | t"
+              >
+                <span class="profile-sheet__avatar-initial" aria-hidden="true">{{ avatarFallbackLetter() }}</span>
+                <span class="profile-sheet__avatar-overlay" aria-hidden="true">
+                  <svg class="profile-sheet__camera-icon" viewBox="0 0 24 24" focusable="false" fill="currentColor">
+                    <path
+                      d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 5c2.76 0 5 2.24 5 5s-2.24 5-5 5-5-2.24-5-5 2.24-5 5-5zm0 2c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                    />
+                  </svg>
+                </span>
+              </button>
+            }
+            @if (hasAvatar()) {
+              <button
+                type="button"
+                class="profile-sheet__remove-link"
+                [disabled]="busy()"
+                (click)="removeAvatar()"
+              >
+                {{ 'profile.removePhoto' | t }}
+              </button>
+            }
+          </div>
+          <div class="profile-sheet__who">
+            <h1 class="profile-sheet__name">{{ headline() }}</h1>
+            <p class="profile-sheet__email">{{ profile()?.email ?? s.email ?? '—' }}</p>
+          </div>
+        </div>
+        <div class="profile-sheet__actions">
+          <span class="profile-sheet__status">{{ 'profile.statusActive' | t }}</span>
+          <button type="button" class="btn-primary profile-sheet__edit-open" (click)="openEditModal()">
+            {{ 'profile.editDetails' | t }}
+          </button>
+          <a routerLink="/change-password" class="btn-primary">{{ 'profile.openChangePassword' | t }}</a>
+        </div>
+      </header>
+
+      <section class="profile-sheet__section" aria-labelledby="profile-perms-heading">
+        <div class="profile-sheet__section-head">
+          <h2 id="profile-perms-heading" class="profile-sheet__h2">{{ 'profile.permissions' | t }}</h2>
+          @if (s.permissions.length) {
+            <span class="profile-sheet__badge">{{ s.permissions.length }}</span>
+          }
+        </div>
+
+        @if (s.permissions.length) {
+          <ul class="profile-sheet__chips" role="list">
+            @for (code of sortedPermissions(s); track code) {
+              <li>
+                <span class="profile-sheet__chip" [attr.title]="code">{{ permissionLabel(code) }}</span>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="profile-sheet__empty">{{ 'profile.noPermissions' | t }}</p>
+        }
+      </section>
+    </article>
+  }
+
+  @if (editModalOpen()) {
+    <div class="modal-backdrop" (click)="closeEditModal()"></div>
+    <section
+      class="modal card profile-edit-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="profile-edit-modal-title"
+    >
+      <header class="profile-edit-modal__head">
+        <h2 id="profile-edit-modal-title">{{ 'profile.editDetails' | t }}</h2>
+        <button
+          type="button"
+          class="profile-edit-modal__close"
+          (click)="closeEditModal()"
+          [attr.aria-label]="'common.close' | t"
+        >
+          ×
+        </button>
+      </header>
+      <form class="stack-form profile-edit-modal__form" [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+        <label>
+          <span>{{ 'profile.userName' | t }}</span>
+          <input type="text" [value]="profile()?.userName ?? session()?.userName ?? ''" disabled />
+        </label>
+        <p class="profile-sheet__field-hint">{{ 'profile.userNameHint' | t }}</p>
+        <label>
+          <span>{{ 'profile.nameAr' | t }}</span>
+          <input type="text" formControlName="nameAr" autocomplete="name" />
+        </label>
+        <label>
+          <span>{{ 'profile.nameEn' | t }}</span>
+          <input type="text" formControlName="nameEn" autocomplete="nickname" />
+        </label>
+        <label>
+          <span>{{ 'profile.email' | t }}</span>
+          <input type="email" formControlName="email" autocomplete="email" />
+        </label>
+        <div class="modal-actions">
+          <button type="button" (click)="closeEditModal()" [disabled]="busy()">{{ 'users.actions.cancel' | t }}</button>
+          <button type="submit" class="btn-primary" [disabled]="busy() || profileForm.invalid">
+            {{ 'profile.saveDetails' | t }}
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+</div>

@@ -1,0 +1,212 @@
+<div class="landing">
+  <header class="landing__header">
+    <div class="landing__contain landing__header-row">
+      <a routerLink="/home" class="landing__brand">{{ 'landing.brand' | t }}</a>
+      <nav class="landing__nav" aria-label="Main">
+        <a class="landing__nav-link" routerLink="/home" fragment="about" (click)="jumpToSection('about', $event)">{{ 'landing.nav.about' | t }}</a>
+        <a class="landing__nav-link" routerLink="/home" fragment="features" (click)="jumpToSection('features', $event)">{{ 'landing.nav.features' | t }}</a>
+        <a class="landing__nav-link" routerLink="/home" fragment="workflow" (click)="jumpToSection('workflow', $event)">{{ 'landing.nav.workflow' | t }}</a>
+        <a class="landing__nav-link" routerLink="/home" fragment="security" (click)="jumpToSection('security', $event)">{{ 'landing.nav.security' | t }}</a>
+      </nav>
+      <div class="landing__header-actions">
+        <button type="button" class="landing__lang" (click)="toggleLang()">{{ 'landing.lang' | t }}</button>
+        @if (isLoggedIn()) {
+          <a routerLink="/dashboard" class="landing__btn landing__btn--primary">{{ 'landing.header.dashboard' | t }}</a>
+        } @else {
+          <a routerLink="/login" class="landing__btn landing__btn--ghost">{{ 'landing.header.login' | t }}</a>
+          <a routerLink="/register" class="landing__btn landing__btn--primary">{{ 'landing.header.register' | t }}</a>
+        }
+      </div>
+    </div>
+  </header>
+
+  <main class="landing__main">
+    <div class="landing__hero-wrap">
+      <div class="landing__contain landing__hero-layout">
+        <div class="landing__hero-copy">
+          <p class="landing__hero-kicker">{{ 'landing.hero.kicker' | t }}</p>
+          <h1 class="landing__hero-title">{{ 'landing.hero.title' | t }}</h1>
+          <p class="landing__hero-lead">{{ 'landing.hero.lead' | t }}</p>
+          <div class="landing__hero-cta">
+            @if (isLoggedIn()) {
+              <a routerLink="/dashboard" class="landing__btn landing__btn--primary landing__btn--lg">{{ 'landing.hero.ctaDashboard' | t }}</a>
+            } @else {
+              <a routerLink="/register" class="landing__btn landing__btn--primary landing__btn--lg">{{ 'landing.hero.ctaPrimary' | t }}</a>
+              <a routerLink="/login" class="landing__btn landing__btn--secondary landing__btn--lg">{{ 'landing.hero.ctaSecondary' | t }}</a>
+            }
+          </div>
+        </div>
+        <div class="landing__hero-panel" aria-hidden="true">
+          <div class="landing__hero-panel-inner">
+            <span class="landing__hero-panel-line"></span>
+            <span class="landing__hero-panel-line"></span>
+            <span class="landing__hero-panel-line"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section id="about" class="landing__band landing__section--anchor" tabindex="-1">
+      <div class="landing__contain">
+        <header class="landing__block-head">
+          <span class="landing__eyebrow">{{ 'landing.nav.about' | t }}</span>
+          <h2 class="landing__block-title">{{ 'landing.about.title' | t }}</h2>
+        </header>
+        <div class="landing__about-split">
+          <p class="landing__lead-card">{{ 'landing.about.p1' | t }}</p>
+          <p class="landing__lead-card">{{ 'landing.about.p2' | t }}</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="landing__band landing__band--muted landing__section--anchor" tabindex="-1">
+      <div class="landing__contain">
+        <header class="landing__block-head">
+          <span class="landing__eyebrow">{{ 'landing.nav.features' | t }}</span>
+          <h2 class="landing__block-title">{{ 'landing.features.title' | t }}</h2>
+          <p class="landing__block-sub">{{ 'landing.features.intro' | t }}</p>
+        </header>
+        <div class="landing__feature-grid">
+          <article class="landing__feature">
+            <h3>{{ 'landing.features.surveys.title' | t }}</h3>
+            <p>{{ 'landing.features.surveys.body' | t }}</p>
+          </article>
+          <article class="landing__feature">
+            <h3>{{ 'landing.features.templates.title' | t }}</h3>
+            <p>{{ 'landing.features.templates.body' | t }}</p>
+          </article>
+          <article class="landing__feature">
+            <h3>{{ 'landing.features.participants.title' | t }}</h3>
+            <p>{{ 'landing.features.participants.body' | t }}</p>
+          </article>
+          <article class="landing__feature">
+            <h3>{{ 'landing.features.responses.title' | t }}</h3>
+            <p>{{ 'landing.features.responses.body' | t }}</p>
+          </article>
+          <article class="landing__feature">
+            <h3>{{ 'landing.features.analytics.title' | t }}</h3>
+            <p>{{ 'landing.features.analytics.body' | t }}</p>
+          </article>
+          <article class="landing__feature">
+            <h3>{{ 'landing.features.recommendations.title' | t }}</h3>
+            <p>{{ 'landing.features.recommendations.body' | t }}</p>
+          </article>
+          <article class="landing__feature">
+            <h3>{{ 'landing.features.actionPlans.title' | t }}</h3>
+            <p>{{ 'landing.features.actionPlans.body' | t }}</p>
+          </article>
+          <article class="landing__feature">
+            <h3>{{ 'landing.features.reports.title' | t }}</h3>
+            <p>{{ 'landing.features.reports.body' | t }}</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="workflow" class="landing__band landing__section--anchor" tabindex="-1">
+      <div class="landing__contain">
+        <header class="landing__block-head">
+          <span class="landing__eyebrow">{{ 'landing.nav.workflow' | t }}</span>
+          <h2 class="landing__block-title">{{ 'landing.workflow.title' | t }}</h2>
+          <p class="landing__block-sub">{{ 'landing.workflow.intro' | t }}</p>
+        </header>
+        <ol class="landing__workflow-grid">
+          <li class="landing__workflow-card">
+            <span class="landing__workflow-num">01</span>
+            <h3>{{ 'landing.workflow.s1.title' | t }}</h3>
+            <p>{{ 'landing.workflow.s1.body' | t }}</p>
+          </li>
+          <li class="landing__workflow-card">
+            <span class="landing__workflow-num">02</span>
+            <h3>{{ 'landing.workflow.s2.title' | t }}</h3>
+            <p>{{ 'landing.workflow.s2.body' | t }}</p>
+          </li>
+          <li class="landing__workflow-card">
+            <span class="landing__workflow-num">03</span>
+            <h3>{{ 'landing.workflow.s3.title' | t }}</h3>
+            <p>{{ 'landing.workflow.s3.body' | t }}</p>
+          </li>
+          <li class="landing__workflow-card">
+            <span class="landing__workflow-num">04</span>
+            <h3>{{ 'landing.workflow.s4.title' | t }}</h3>
+            <p>{{ 'landing.workflow.s4.body' | t }}</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="security" class="landing__band landing__band--muted landing__section--anchor" tabindex="-1">
+      <div class="landing__contain landing__security-layout">
+        <div class="landing__security-text">
+          <header class="landing__block-head landing__block-head--tight">
+            <span class="landing__eyebrow">{{ 'landing.nav.security' | t }}</span>
+            <h2 class="landing__block-title">{{ 'landing.security.title' | t }}</h2>
+          </header>
+          <p class="landing__prose">{{ 'landing.security.p1' | t }}</p>
+          <p class="landing__prose">{{ 'landing.security.p2' | t }}</p>
+        </div>
+        <div class="landing__security-aside">
+          <p class="landing__checklist-label">{{ 'landing.security.listLabel' | t }}</p>
+          <ul class="landing__checklist">
+            <li>{{ 'landing.security.b1' | t }}</li>
+            <li>{{ 'landing.security.b2' | t }}</li>
+            <li>{{ 'landing.security.b3' | t }}</li>
+            <li>{{ 'landing.security.b4' | t }}</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing__cta-wrap">
+      <div class="landing__contain landing__cta">
+        <h2 class="landing__cta-title">{{ 'landing.cta.title' | t }}</h2>
+        <p class="landing__cta-lead">{{ 'landing.cta.lead' | t }}</p>
+        @if (!isLoggedIn()) {
+          <div class="landing__hero-cta landing__hero-cta--center">
+            <a routerLink="/register" class="landing__btn landing__btn--invert landing__btn--lg">{{ 'landing.cta.signup' | t }}</a>
+            <a routerLink="/login" class="landing__btn landing__btn--outline-light landing__btn--lg">{{ 'landing.cta.login' | t }}</a>
+          </div>
+        } @else {
+          <a routerLink="/dashboard" class="landing__btn landing__btn--invert landing__btn--lg">{{ 'landing.cta.dashboard' | t }}</a>
+        }
+      </div>
+    </section>
+  </main>
+
+  <footer class="landing__footer">
+    <div class="landing__footer-fill">
+      <div class="landing__contain landing__footer-grid">
+        <div class="landing__footer-col landing__footer-col--brand">
+          <span class="landing__footer-logo">{{ 'landing.brand' | t }}</span>
+          <p class="landing__footer-tag">{{ 'landing.footer.tagline' | t }}</p>
+        </div>
+        <div class="landing__footer-col">
+          <h3 class="landing__footer-heading">{{ 'landing.footer.colExplore' | t }}</h3>
+          <nav class="landing__footer-list" aria-label="Footer sections">
+            <a routerLink="/home" fragment="about" (click)="jumpToSection('about', $event)">{{ 'landing.nav.about' | t }}</a>
+            <a routerLink="/home" fragment="features" (click)="jumpToSection('features', $event)">{{ 'landing.nav.features' | t }}</a>
+            <a routerLink="/home" fragment="workflow" (click)="jumpToSection('workflow', $event)">{{ 'landing.nav.workflow' | t }}</a>
+            <a routerLink="/home" fragment="security" (click)="jumpToSection('security', $event)">{{ 'landing.nav.security' | t }}</a>
+          </nav>
+        </div>
+        <div class="landing__footer-col">
+          <h3 class="landing__footer-heading">{{ 'landing.footer.colAccount' | t }}</h3>
+          <nav class="landing__footer-list" aria-label="Footer account">
+            <a routerLink="/home">{{ 'landing.footer.home' | t }}</a>
+            @if (!isLoggedIn()) {
+              <a routerLink="/login">{{ 'landing.footer.login' | t }}</a>
+              <a routerLink="/register">{{ 'landing.footer.register' | t }}</a>
+            } @else {
+              <a routerLink="/dashboard">{{ 'landing.footer.dashboard' | t }}</a>
+            }
+          </nav>
+        </div>
+      </div>
+      <div class="landing__footer-bottom">
+        <div class="landing__contain landing__footer-bottom-inner">
+          <p class="landing__footer-copy">{{ 'landing.footer.copy' | t }}</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>

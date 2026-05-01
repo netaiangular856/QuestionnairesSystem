@@ -1,0 +1,94 @@
+<div class="page-workspace">
+  <a [routerLink]="['/surveys', surveyId]" class="back-link">← {{ 'q.subpages.back' | t }}</a>
+  <h1 class="page-title">{{ 'q.subpages.responsesTitle' | t }}</h1>
+
+  <div class="toolbar toolbar--split card card--interactive">
+    <div class="toolbar__spacer"></div>
+    <div class="view-toggle" role="group" [attr.aria-label]="'q.surveys.view.label' | t">
+      <button
+        type="button"
+        class="view-toggle__btn"
+        [class.view-toggle__btn--active]="viewMode() === 'table'"
+        (click)="setViewMode('table')"
+      >
+        {{ 'q.surveys.view.table' | t }}
+      </button>
+      <button
+        type="button"
+        class="view-toggle__btn"
+        [class.view-toggle__btn--active]="viewMode() === 'cards'"
+        (click)="setViewMode('cards')"
+      >
+        {{ 'q.surveys.view.cards' | t }}
+      </button>
+    </div>
+  </div>
+
+  @if (busy()) {
+    <div class="card card--muted">{{ 'common.loading' | t }}</div>
+  } @else if (failed()) {
+    <div class="card card--muted">{{ 'q.detail.error' | t }}</div>
+  } @else {
+    @if (result(); as res) {
+      @if (viewMode() === 'table') {
+        <div class="card table-card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>{{ 'q.detail.table.respondent' | t }}</th>
+                <th>{{ 'common.status' | t }}</th>
+                <th>{{ 'q.detail.table.started' | t }}</th>
+                <th>{{ 'q.detail.table.submitted' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of res.items; track r.id) {
+                <tr>
+                  <td>{{ r.respondentDisplayName || '—' }}</td>
+                  <td>{{ rStatus(r) | t }}</td>
+                  <td>{{ r.startedAtUtc ? (r.startedAtUtc | date: 'short') : '—' }}</td>
+                  <td>{{ r.submittedAtUtc ? (r.submittedAtUtc | date: 'short') : '—' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4" class="muted">—</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <div class="pager">
+            <button type="button" (click)="prevPage()" [disabled]="!res.hasPreviousPage">{{ 'common.previous' | t }}</button>
+            <span>{{ res.page }} / {{ res.totalPages || 1 }}</span>
+            <button type="button" (click)="nextPage()" [disabled]="!res.hasNextPage">{{ 'common.next' | t }}</button>
+          </div>
+        </div>
+      } @else {
+        <div class="subpage-card-grid">
+          @for (r of res.items; track r.id) {
+            <article class="card subpage-card">
+              <h2 class="subpage-card__title">{{ r.respondentDisplayName || '—' }}</h2>
+              <span class="q-pill q-pill--neutral">{{ rStatus(r) | t }}</span>
+              <p class="subpage-card__foot muted">
+                {{ 'q.detail.table.started' | t }}:
+                {{ r.startedAtUtc ? (r.startedAtUtc | date: 'short') : '—' }}
+              </p>
+              <p class="subpage-card__foot muted">
+                {{ 'q.detail.table.submitted' | t }}:
+                {{ r.submittedAtUtc ? (r.submittedAtUtc | date: 'short') : '—' }}
+              </p>
+            </article>
+          } @empty {
+            <p class="muted subpage-card-grid__empty">—</p>
+          }
+        </div>
+        <div class="card pager-card">
+          <div class="pager">
+            <button type="button" (click)="prevPage()" [disabled]="!res.hasPreviousPage">{{ 'common.previous' | t }}</button>
+            <span>{{ res.page }} / {{ res.totalPages || 1 }}</span>
+            <button type="button" (click)="nextPage()" [disabled]="!res.hasNextPage">{{ 'common.next' | t }}</button>
+          </div>
+        </div>
+      }
+    }
+  }
+</div>

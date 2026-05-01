@@ -1,0 +1,31 @@
+<div class="page-workspace">
+  <div class="page-head-row">
+    <section class="page-head">
+      <h1>{{ 'q.templates.title' | t }}</h1>
+      <p class="page-head__sub">{{ 'q.templates.subtitle' | t }}</p>
+    </section>
+  </div>
+
+  @if (busy()) {
+    <div class="card card--muted">{{ 'common.loading' | t }}</div>
+  } @else if (failed()) {
+    <div class="card card--muted">{{ 'q.templates.error' | t }}</div>
+  } @else {
+    <div class="tpl-grid">
+      @for (t of items(); track t.id; let idx = $index) {
+        <article class="tpl-card card" [ngClass]="cardVariant(idx)">
+          <div class="tpl-card__accent" aria-hidden="true"></div>
+          <header class="tpl-card__head">
+            <h3>{{ titleOf(t) }}</h3>
+            @if (t.isArchived) {
+              <span class="tpl-badge">{{ 'q.templates.archived' | t }}</span>
+            }
+          </header>
+          <p class="tpl-card__stat">
+            {{ 'q.templates.usage' | t }}: <strong>{{ t.usageCount }}</strong>
+          </p>
+        </article>
+      }
+    </div>
+  }
+</div>

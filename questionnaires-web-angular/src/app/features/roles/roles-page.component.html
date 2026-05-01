@@ -1,0 +1,287 @@
+<div class="page-workspace">
+<div class="page-head-row">
+  <section class="page-head">
+    <h1>{{ 'roles.title' | t }}</h1>
+    <p class="page-head__sub">{{ 'roles.subtitle' | t }}</p>
+  </section>
+  <div class="page-actions">
+    <button type="button" class="btn-primary btn-primary--icon" (click)="openCreate()">
+      <span class="btn-ico" aria-hidden="true">＋</span>
+      {{ 'roles.create' | t }}
+    </button>
+  </div>
+</div>
+
+<div class="toolbar card card--interactive">
+  <input
+    class="toolbar__search"
+    type="search"
+    [(ngModel)]="search"
+    (keyup.enter)="page = 1; load()"
+    [placeholder]="'roles.search.placeholder' | t"
+  />
+  <button type="button" class="btn-primary" (click)="page = 1; load()">{{ 'common.search' | t }}</button>
+  <div class="view-mode">
+    <button
+      type="button"
+      class="mode-btn"
+      [class.mode-btn--active]="viewMode() === 'table'"
+      (click)="setViewMode('table')"
+    >
+      {{ 'roles.view.table' | t }}
+    </button>
+    <button
+      type="button"
+      class="mode-btn"
+      [class.mode-btn--active]="viewMode() === 'cards'"
+      (click)="setViewMode('cards')"
+    >
+      {{ 'roles.view.cards' | t }}
+    </button>
+  </div>
+</div>
+
+@if (failed()) {
+  <div class="card card--muted">{{ 'roles.error.loadList' | t }}</div>
+} @else if (result()) {
+  @if (viewMode() === 'table') {
+    <div class="card table-card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{{ 'roles.table.name' | t }}</th>
+            <th>{{ 'roles.table.description' | t }}</th>
+            <th>{{ 'roles.table.type' | t }}</th>
+            <th class="actions-col-head">{{ 'common.actions' | t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of result()!.items; track row.id) {
+            <tr>
+              <td>{{ roleDisplayName(row) }}</td>
+              <td>{{ roleDisplayDescription(row) || '-' }}</td>
+              <td>
+                <span class="status-chip" [class.status-chip--inactive]="!row.isSystemRole">
+                  {{ row.isSystemRole ? ('roles.type.system' | t) : ('roles.type.custom' | t) }}
+                </span>
+              </td>
+              <td class="cell-actions">
+                <div class="cell-actions__wrap">
+                  <button type="button" class="action-btn action-btn--info" (click)="openDetails(row.id)">
+                    {{ 'roles.actions.details' | t }}
+                  </button>
+                  <button type="button" class="action-btn action-btn--edit" (click)="openEdit(row.id)">
+                    {{ 'roles.actions.edit' | t }}
+                  </button>
+                  <button type="button" class="action-btn action-btn--roles" (click)="openPermissions(row.id)">
+                    {{ 'roles.actions.permissions' | t }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <div class="pager">
+        <button type="button" (click)="prevPage()" [disabled]="!result()!.hasPreviousPage">{{ 'common.previous' | t }}</button>
+        <span>{{ result()!.page }} / {{ result()!.totalPages || 1 }}</span>
+        <button type="button" (click)="nextPage()" [disabled]="!result()!.hasNextPage">{{ 'common.next' | t }}</button>
+      </div>
+    </div>
+  } @else {
+    <div class="cards-grid">
+      @for (row of result()!.items; track row.id) {
+        <article class="card role-card">
+          <header class="role-card__head">
+            <h3>{{ roleDisplayName(row) }}</h3>
+            <span class="status-chip" [class.status-chip--inactive]="!row.isSystemRole">
+              {{ row.isSystemRole ? ('roles.type.system' | t) : ('roles.type.custom' | t) }}
+            </span>
+          </header>
+          <p class="role-card__line">{{ roleDisplayDescription(row) || '-' }}</p>
+          <div class="card-actions">
+            <button type="button" class="action-btn action-btn--info" (click)="openDetails(row.id)">{{ 'roles.actions.details' | t }}</button>
+            <button type="button" class="action-btn action-btn--edit" (click)="openEdit(row.id)">{{ 'roles.actions.edit' | t }}</button>
+            <button type="button" class="action-btn action-btn--roles" (click)="openPermissions(row.id)">{{ 'roles.actions.permissions' | t }}</button>
+          </div>
+        </article>
+      }
+    </div>
+    <div class="pager card">
+      <button type="button" (click)="prevPage()" [disabled]="!result()!.hasPreviousPage">{{ 'common.previous' | t }}</button>
+      <span>{{ result()!.page }} / {{ result()!.totalPages || 1 }}</span>
+      <button type="button" (click)="nextPage()" [disabled]="!result()!.hasNextPage">{{ 'common.next' | t }}</button>
+    </div>
+  }
+} @else if (busy()) {
+  <div class="skeleton table-skel"></div>
+}
+</div>
+
+@if (createOpen()) {
+  <div class="modal-backdrop" (click)="closeCreate()"></div>
+  <section class="modal card" role="dialog" aria-modal="true">
+    <h2>{{ 'roles.create' | t }}</h2>
+    <div class="form-grid">
+      <label>
+        <span>{{ 'roles.form.nameAr' | t }} <span class="required">*</span></span>
+        <input type="text" [(ngModel)]="createModel.nameAr" />
+      </label>
+      <label>
+        <span>{{ 'roles.form.nameEn' | t }} <span class="required">*</span></span>
+        <input type="text" [(ngModel)]="createModel.nameEn" />
+      </label>
+      <label>
+        <span>{{ 'roles.form.descriptionAr' | t }}</span>
+        <input type="text" [(ngModel)]="createModel.descriptionAr" />
+      </label>
+      <label>
+        <span>{{ 'roles.form.descriptionEn' | t }}</span>
+        <input type="text" [(ngModel)]="createModel.descriptionEn" />
+      </label>
+      <label class="full checkbox-row">
+        <input type="checkbox" [(ngModel)]="createModel.isSystemRole" />
+        <span>{{ 'roles.form.isSystemRole' | t }}</span>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" (click)="closeCreate()" [disabled]="createBusy()">{{ 'users.actions.cancel' | t }}</button>
+      <button type="button" class="btn-primary" (click)="saveCreate()" [disabled]="createBusy()">{{ 'users.actions.save' | t }}</button>
+    </div>
+  </section>
+}
+
+@if (detailsOpen()) {
+  <div class="modal-backdrop" (click)="closeDetails()"></div>
+  <section class="modal card modal--wide modal--details" role="dialog" aria-modal="true">
+    @if (detailsBusy() && !detailsRole()) {
+      <div class="card--muted">{{ 'common.loading' | t }}</div>
+    } @else if (detailsRole()) {
+      <h2>{{ 'roles.details.title' | t }}</h2>
+      <div class="details-grid">
+        <div class="detail-item">
+          <span>{{ 'roles.form.name' | t }}</span>
+          <strong>{{ roleDisplayName(detailsRole()!) }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>{{ 'roles.form.description' | t }}</span>
+          <strong>{{ roleDisplayDescription(detailsRole()!) || '-' }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>{{ 'roles.table.type' | t }}</span>
+          <strong>{{ detailsRole()!.isSystemRole ? ('roles.type.system' | t) : ('roles.type.custom' | t) }}</strong>
+        </div>
+        <div class="detail-item full">
+          <span>{{ 'roles.permissions.title' | t }}</span>
+          @if (detailsPermissionGroups().length) {
+            <div class="permission-groups">
+              @for (group of detailsPermissionGroups(); track group.key) {
+                <section class="permission-group">
+                  <button
+                    type="button"
+                    class="permission-group__toggle"
+                    [attr.aria-expanded]="isDetailsGroupExpanded(group.key)"
+                    (click)="toggleDetailsGroup(group.key)"
+                  >
+                    <span class="permission-group__title">{{ group.label }}</span>
+                    <span class="permission-group__count">{{ group.permissions.length }}</span>
+                  </button>
+                  @if (isDetailsGroupExpanded(group.key)) {
+                    <div class="permission-list">
+                      @for (permission of group.permissions; track permission.id) {
+                        <span class="permission-tag">{{ permissionDisplayName(permission) }}</span>
+                      }
+                    </div>
+                  }
+                </section>
+              }
+            </div>
+          } @else {
+            <strong>-</strong>
+          }
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="action-btn action-btn--ghost" (click)="closeDetails()" [disabled]="detailsBusy()">
+          {{ 'users.actions.close' | t }}
+        </button>
+        <button type="button" class="action-btn action-btn--edit" (click)="openEdit(detailsRole()!.id)">{{ 'roles.actions.edit' | t }}</button>
+        <button type="button" class="action-btn action-btn--roles" (click)="openPermissions(detailsRole()!.id)">
+          {{ 'roles.actions.permissions' | t }}
+        </button>
+      </div>
+    }
+  </section>
+}
+
+@if (editOpen()) {
+  <div class="modal-backdrop" (click)="closeEdit()"></div>
+  <section class="modal card" role="dialog" aria-modal="true">
+    <h2>{{ 'roles.edit.title' | t }}</h2>
+    <div class="form-grid">
+      <label>
+        <span>{{ 'roles.form.nameAr' | t }} <span class="required">*</span></span>
+        <input type="text" [(ngModel)]="editModel.nameAr" />
+      </label>
+      <label>
+        <span>{{ 'roles.form.nameEn' | t }} <span class="required">*</span></span>
+        <input type="text" [(ngModel)]="editModel.nameEn" />
+      </label>
+      <label>
+        <span>{{ 'roles.form.descriptionAr' | t }}</span>
+        <input type="text" [(ngModel)]="editModel.descriptionAr" />
+      </label>
+      <label>
+        <span>{{ 'roles.form.descriptionEn' | t }}</span>
+        <input type="text" [(ngModel)]="editModel.descriptionEn" />
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" (click)="closeEdit()" [disabled]="editBusy()">{{ 'users.actions.cancel' | t }}</button>
+      <button type="button" class="btn-primary" (click)="saveEdit()" [disabled]="editBusy()">{{ 'users.actions.saveEdit' | t }}</button>
+    </div>
+  </section>
+}
+
+@if (permissionsOpen()) {
+  <div class="modal-backdrop" (click)="closePermissions()"></div>
+  <section class="modal card modal--wide" role="dialog" aria-modal="true">
+    <h2>{{ 'roles.permissions.title' | t }}</h2>
+    <input
+      class="select-search"
+      type="search"
+      [ngModel]="permissionSearch()"
+      (ngModelChange)="permissionSearch.set($event)"
+      [placeholder]="'roles.permissions.search' | t"
+    />
+    @if (groupedFilteredPermissions().length) {
+      <div class="permission-groups permission-groups--editor">
+        @for (group of groupedFilteredPermissions(); track group.key) {
+          <section class="permission-group">
+            <h4 class="permission-group__title">{{ group.label }}</h4>
+            <div class="permissions-grid">
+              @for (permission of group.permissions; track permission.id) {
+                <button
+                  type="button"
+                  class="permission-pill"
+                  [class.permission-pill--selected]="permissionSelected(permission.id)"
+                  (click)="toggleAssignedPermission(permission.id)"
+                >
+                  <span class="permission-pill__name">{{ permissionDisplayName(permission) }}</span>
+                </button>
+              }
+            </div>
+          </section>
+        }
+      </div>
+    } @else {
+      <div class="card card--muted">{{ 'roles.permissions.empty' | t }}</div>
+    }
+    <div class="modal-actions">
+      <button type="button" (click)="closePermissions()" [disabled]="permissionsBusy()">{{ 'users.actions.cancel' | t }}</button>
+      <button type="button" class="btn-primary" (click)="savePermissions()" [disabled]="permissionsBusy()">
+        {{ 'roles.actions.savePermissions' | t }}
+      </button>
+    </div>
+  </section>
+}

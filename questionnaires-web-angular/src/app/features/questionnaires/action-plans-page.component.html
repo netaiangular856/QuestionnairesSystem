@@ -1,0 +1,35 @@
+<div class="page-workspace">
+  <div class="page-head-row">
+    <section class="page-head">
+      <h1>{{ 'q.plans.title' | t }}</h1>
+      <p class="page-head__sub">{{ 'q.plans.subtitle' | t }}</p>
+    </section>
+  </div>
+
+  @if (busy()) {
+    <div class="card card--muted">{{ 'common.loading' | t }}</div>
+  } @else if (failed()) {
+    <div class="card card--muted">{{ 'q.plans.error' | t }}</div>
+  } @else {
+    <div class="plan-grid">
+      @for (p of items(); track p.id; let idx = $index) {
+        <article class="plan-card card" [ngClass]="planVariant(idx)">
+          <div class="plan-card__stripe" aria-hidden="true"></div>
+          <header>
+            <h3>{{ titleOf(p) }}</h3>
+            <span class="plan-status">{{ statusKey(p) | t }}</span>
+          </header>
+          @if (p.ownerDisplayName) {
+            <p class="plan-owner"><strong>{{ 'q.plans.owner' | t }}:</strong> {{ p.ownerDisplayName }}</p>
+          }
+          <p class="plan-dates">
+            {{ 'q.plans.period' | t }}:
+            {{ p.startDateUtc ? (p.startDateUtc | date: 'mediumDate') : '—' }}
+            —
+            {{ p.endDateUtc ? (p.endDateUtc | date: 'mediumDate') : '—' }}
+          </p>
+        </article>
+      }
+    </div>
+  }
+</div>

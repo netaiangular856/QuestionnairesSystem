@@ -1,0 +1,309 @@
+<div class="page-workspace">
+<div class="page-head-row">
+  <section class="page-head">
+    <h1>{{ 'users.title' | t }}</h1>
+    <p class="page-head__sub">{{ 'users.subtitle' | t }}</p>
+  </section>
+  <div class="page-actions">
+    <button type="button" class="btn-primary btn-primary--icon" (click)="openCreate()">
+      <span class="btn-ico" aria-hidden="true">＋</span>
+      {{ 'users.create' | t }}
+    </button>
+  </div>
+</div>
+
+<div class="toolbar card card--interactive">
+  <input
+    class="toolbar__search"
+    type="search"
+    [(ngModel)]="search"
+    (keyup.enter)="page = 1; load()"
+    [placeholder]="'users.search.placeholder' | t"
+  />
+  <button type="button" class="btn-primary" (click)="page = 1; load()">{{ 'common.search' | t }}</button>
+  <div class="view-mode">
+    <button
+      type="button"
+      class="mode-btn"
+      [class.mode-btn--active]="viewMode() === 'table'"
+      (click)="setViewMode('table')"
+    >
+      {{ 'users.view.table' | t }}
+    </button>
+    <button
+      type="button"
+      class="mode-btn"
+      [class.mode-btn--active]="viewMode() === 'cards'"
+      (click)="setViewMode('cards')"
+    >
+      {{ 'users.view.cards' | t }}
+    </button>
+  </div>
+</div>
+
+@if (failed()) {
+  <div class="card card--muted">{{ 'users.error.loadList' | t }}</div>
+} @else if (result()) {
+  @if (viewMode() === 'table') {
+    <div class="card table-card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{{ 'users.table.displayName' | t }}</th>
+            <th>{{ 'users.table.userName' | t }}</th>
+            <th>{{ 'users.table.email' | t }}</th>
+            <th>{{ 'common.status' | t }}</th>
+            <th>{{ 'users.table.lastLogin' | t }}</th>
+            <th class="actions-col-head">{{ 'common.actions' | t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of result()!.items; track row.id) {
+            <tr>
+              <td>{{ userDisplayName(row) }}</td>
+              <td>{{ row.userName }}</td>
+              <td>{{ row.email }}</td>
+              <td>
+                <span class="status-chip" [class.status-chip--inactive]="!row.isActive">
+                  {{ row.isActive ? ('users.status.active' | t) : ('users.status.inactive' | t) }}
+                </span>
+              </td>
+              <td>{{ row.lastLoginUtc ? (row.lastLoginUtc | date: 'short') : '-' }}</td>
+              <td class="cell-actions">
+                <div class="cell-actions__wrap">
+                  <button type="button" class="action-btn action-btn--info" (click)="openDetails(row.id)">{{ 'users.actions.details' | t }}</button>
+                  <button type="button" class="action-btn action-btn--edit" (click)="openEdit(row.id)">{{ 'users.actions.edit' | t }}</button>
+                  <button type="button" class="action-btn action-btn--roles" (click)="openRoles(row.id)">{{ 'users.actions.changeRoles' | t }}</button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <div class="pager">
+        <button type="button" (click)="prevPage()" [disabled]="!result()!.hasPreviousPage">{{ 'common.previous' | t }}</button>
+        <span>{{ result()!.page }} / {{ result()!.totalPages || 1 }}</span>
+        <button type="button" (click)="nextPage()" [disabled]="!result()!.hasNextPage">{{ 'common.next' | t }}</button>
+      </div>
+    </div>
+  } @else {
+    <div class="cards-grid">
+      @for (row of result()!.items; track row.id) {
+        <article class="card user-card">
+          <header class="user-card__head">
+            <h3>{{ userDisplayName(row) }}</h3>
+            <span class="status-chip" [class.status-chip--inactive]="!row.isActive">
+              {{ row.isActive ? ('users.status.active' | t) : ('users.status.inactive' | t) }}
+            </span>
+          </header>
+          <p class="user-card__line user-card__line--secondary">{{ 'users.table.userName' | t }}: {{ row.userName }}</p>
+          <p class="user-card__line">{{ row.email }}</p>
+          <p class="user-card__line">{{ 'users.table.lastLogin' | t }}: {{ row.lastLoginUtc ? (row.lastLoginUtc | date: 'short') : '-' }}</p>
+          <div class="card-actions">
+            <button type="button" class="action-btn action-btn--info" (click)="openDetails(row.id)">{{ 'users.actions.details' | t }}</button>
+            <button type="button" class="action-btn action-btn--edit" (click)="openEdit(row.id)">{{ 'users.actions.edit' | t }}</button>
+            <button type="button" class="action-btn action-btn--roles" (click)="openRoles(row.id)">{{ 'users.actions.changeRoles' | t }}</button>
+          </div>
+        </article>
+      }
+    </div>
+    <div class="pager card">
+      <button type="button" (click)="prevPage()" [disabled]="!result()!.hasPreviousPage">{{ 'common.previous' | t }}</button>
+      <span>{{ result()!.page }} / {{ result()!.totalPages || 1 }}</span>
+      <button type="button" (click)="nextPage()" [disabled]="!result()!.hasNextPage">{{ 'common.next' | t }}</button>
+    </div>
+  }
+} @else if (busy()) {
+  <div class="skeleton table-skel"></div>
+}
+</div>
+
+@if (createOpen()) {
+  <div class="modal-backdrop" (click)="closeCreate()"></div>
+  <section class="modal card" role="dialog" aria-modal="true">
+    <h2>{{ 'users.create' | t }}</h2>
+    <div class="form-grid">
+      <label>
+        <span>{{ 'users.form.userName' | t }} <span class="required">*</span></span>
+        <input type="text" [(ngModel)]="createModel.userName" />
+      </label>
+      <label>
+        <span>{{ 'users.form.nameAr' | t }}</span>
+        <input type="text" [(ngModel)]="createModel.nameAr" [placeholder]="'users.form.nameArPlaceholder' | t" />
+      </label>
+      <label>
+        <span>{{ 'users.form.nameEn' | t }}</span>
+        <input type="text" [(ngModel)]="createModel.nameEn" [placeholder]="'users.form.nameEnPlaceholder' | t" />
+      </label>
+      <label>
+        <span>{{ 'users.form.email' | t }} <span class="required">*</span></span>
+        <input type="email" [(ngModel)]="createModel.email" />
+      </label>
+      <label>
+        <span>{{ 'users.form.password' | t }} <span class="required">*</span></span>
+        <div class="password-field">
+          <input [type]="showCreatePassword() ? 'text' : 'password'" [(ngModel)]="createModel.password" />
+          <button type="button" class="password-toggle" (click)="toggleCreatePasswordVisibility()">
+            @if (showCreatePassword()) {
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M2 12s3.5-6 10-6s10 6 10 6s-3.5 6-10 6s-10-6-10-6Zm10 3.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7Z"
+                />
+              </svg>
+            } @else {
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 7a5 5 0 0 1 5 5c0 .65-.13 1.26-.36 1.82l2.92 2.92A11.73 11.73 0 0 0 22 12s-3.5-6-10-6c-1.86 0-3.48.49-4.9 1.26l2.16 2.16A4.96 4.96 0 0 1 12 7Zm-9.8-4.8L1 3.4l2.05 2.05A11.8 11.8 0 0 0 2 12s3.5 6 10 6c2.02 0 3.76-.58 5.27-1.45L20.6 20l1.2-1.2L2.2 2.2ZM7.53 9.73l1.55 1.55A2.99 2.99 0 0 0 9 12a3 3 0 0 0 3 3c.25 0 .49-.03.72-.08l1.55 1.55A4.96 4.96 0 0 1 12 17a5 5 0 0 1-5-5c0-.8.19-1.55.53-2.27Z"
+                />
+              </svg>
+            }
+          </button>
+        </div>
+      </label>
+      <label class="full">
+        <span>{{ 'users.form.roles' | t }} <span class="required">*</span></span>
+        <app-lookup-picker
+          [items]="roles()"
+          [selectedIds]="createRoleIds()"
+          (selectedIdsChange)="createRoleIds.set($event)"
+          [searchPlaceholder]="'users.roles.search' | t"
+        ></app-lookup-picker>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" (click)="closeCreate()" [disabled]="createBusy()">{{ 'users.actions.cancel' | t }}</button>
+      <button type="button" class="btn-primary" (click)="saveCreate()" [disabled]="createBusy()">{{ 'users.actions.save' | t }}</button>
+    </div>
+  </section>
+}
+
+@if (detailsOpen()) {
+  <div class="modal-backdrop" (click)="closeDetails()"></div>
+  <section class="modal card modal--wide modal--details" role="dialog" aria-modal="true">
+    @if (detailsBusy() && !detailsUser()) {
+      <div class="card--muted">{{ 'common.loading' | t }}</div>
+    } @else if (detailsUser()) {
+      <h2>{{ 'users.details.title' | t }}</h2>
+      <div class="details-grid">
+        <div class="detail-item">
+          <span>{{ 'users.table.displayName' | t }}</span>
+          <strong>{{ userDisplayName(detailsUser()!) }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>{{ 'users.form.userName' | t }}</span>
+          <strong>{{ detailsUser()!.userName }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>{{ 'users.form.nameAr' | t }}</span>
+          <strong>{{ detailsUser()!.nameAr?.trim() || '-' }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>{{ 'users.form.nameEn' | t }}</span>
+          <strong>{{ detailsUser()!.nameEn?.trim() || '-' }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>{{ 'users.form.email' | t }}</span>
+          <strong>{{ detailsUser()!.email }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>{{ 'common.status' | t }}</span>
+          <strong>{{ detailsUser()!.isActive ? ('users.status.active' | t) : ('users.status.inactive' | t) }}</strong>
+        </div>
+        <div class="detail-item">
+          <span>{{ 'users.table.lastLogin' | t }}</span>
+          <strong>{{ detailsUser()!.lastLoginUtc ? (detailsUser()!.lastLoginUtc | date: 'short') : '-' }}</strong>
+        </div>
+        <div class="detail-item full">
+          <span>{{ 'users.form.roles' | t }}</span>
+          <strong>{{ detailsUser()!.roleNames.length ? detailsUser()!.roleNames.join('، ') : '-' }}</strong>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="action-btn action-btn--ghost" (click)="closeDetails()" [disabled]="detailsBusy()">
+          {{ 'users.actions.close' | t }}
+        </button>
+        <button type="button" class="action-btn action-btn--edit" (click)="openEdit(detailsUser()!.id)">{{ 'users.actions.edit' | t }}</button>
+        <button type="button" class="action-btn action-btn--roles" (click)="openRoles(detailsUser()!.id)">
+          {{ 'users.actions.changeRoles' | t }}
+        </button>
+        <button type="button" class="action-btn action-btn--danger" (click)="deactivateSelected()" [disabled]="detailsBusy()">
+          {{ 'users.actions.deactivate' | t }}
+        </button>
+        <button type="button" class="action-btn action-btn--success" (click)="activateSelected()" [disabled]="detailsBusy()">
+          {{ 'users.actions.activate' | t }}
+        </button>
+      </div>
+    }
+  </section>
+}
+
+@if (editOpen()) {
+  <div class="modal-backdrop" (click)="closeEdit()"></div>
+  <section class="modal card" role="dialog" aria-modal="true">
+    <h2>{{ 'users.edit.title' | t }}</h2>
+    <div class="form-grid">
+      <label>
+        <span>{{ 'users.form.userName' | t }} <span class="required">*</span></span>
+        <input type="text" [(ngModel)]="editModel.userName" />
+      </label>
+      <label>
+        <span>{{ 'users.form.nameAr' | t }}</span>
+        <input type="text" [(ngModel)]="editModel.nameAr" [placeholder]="'users.form.nameArPlaceholder' | t" />
+      </label>
+      <label>
+        <span>{{ 'users.form.nameEn' | t }}</span>
+        <input type="text" [(ngModel)]="editModel.nameEn" [placeholder]="'users.form.nameEnPlaceholder' | t" />
+      </label>
+      <label>
+        <span>{{ 'users.form.email' | t }} <span class="required">*</span></span>
+        <input type="email" [(ngModel)]="editModel.email" />
+      </label>
+      <label>
+        <span>{{ 'users.form.newPassword' | t }}</span>
+        <div class="password-field">
+          <input
+            [type]="showEditPassword() ? 'text' : 'password'"
+            [(ngModel)]="editModel.newPassword"
+            [placeholder]="'users.form.passwordHint' | t"
+          />
+          <button type="button" class="password-toggle" (click)="toggleEditPasswordVisibility()">
+            @if (showEditPassword()) {
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M2 12s3.5-6 10-6s10 6 10 6s-3.5 6-10 6s-10-6-10-6Zm10 3.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7Z"
+                />
+              </svg>
+            } @else {
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 7a5 5 0 0 1 5 5c0 .65-.13 1.26-.36 1.82l2.92 2.92A11.73 11.73 0 0 0 22 12s-3.5-6-10-6c-1.86 0-3.48.49-4.9 1.26l2.16 2.16A4.96 4.96 0 0 1 12 7Zm-9.8-4.8L1 3.4l2.05 2.05A11.8 11.8 0 0 0 2 12s3.5 6 10 6c2.02 0 3.76-.58 5.27-1.45L20.6 20l1.2-1.2L2.2 2.2ZM7.53 9.73l1.55 1.55A2.99 2.99 0 0 0 9 12a3 3 0 0 0 3 3c.25 0 .49-.03.72-.08l1.55 1.55A4.96 4.96 0 0 1 12 17a5 5 0 0 1-5-5c0-.8.19-1.55.53-2.27Z"
+                />
+              </svg>
+            }
+          </button>
+        </div>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button type="button" (click)="closeEdit()" [disabled]="editBusy()">{{ 'users.actions.cancel' | t }}</button>
+      <button type="button" class="btn-primary" (click)="saveEdit()" [disabled]="editBusy()">{{ 'users.actions.saveEdit' | t }}</button>
+    </div>
+  </section>
+}
+
+@if (rolesOpen()) {
+  <div class="modal-backdrop" (click)="closeRoles()"></div>
+  <section class="modal card" role="dialog" aria-modal="true">
+    <h2>{{ 'users.roles.title' | t }}</h2>
+    <app-lookup-picker
+      [items]="roles()"
+      [selectedIds]="assignedRoleIds()"
+      (selectedIdsChange)="assignedRoleIds.set($event)"
+      [searchPlaceholder]="'users.roles.search' | t"
+    ></app-lookup-picker>
+    <div class="modal-actions">
+      <button type="button" (click)="closeRoles()" [disabled]="roleAssignBusy()">{{ 'users.actions.cancel' | t }}</button>
+      <button type="button" class="btn-primary" (click)="saveRoles()" [disabled]="roleAssignBusy()">{{ 'users.roles.save' | t }}</button>
+    </div>
+  </section>
+}

@@ -1,0 +1,474 @@
+<div class="page-workspace">
+  <div class="page-head-row">
+    <section class="page-head">
+      <h1>{{ 'q.surveys.title' | t }}</h1>
+      <p class="page-head__sub">{{ 'q.surveys.subtitle' | t }}</p>
+    </section>
+    @if (canManage) {
+      <div class="page-actions">
+        <button type="button" class="btn-primary btn-primary--icon" (click)="openCreate()">
+          <span class="btn-ico" aria-hidden="true">＋</span>
+          {{ 'q.surveys.create' | t }}
+        </button>
+      </div>
+    }
+  </div>
+
+  <div class="toolbar toolbar--split card card--interactive">
+    <div class="toolbar__left">
+      <input
+        class="toolbar__search"
+        type="search"
+        [(ngModel)]="search"
+        (keyup.enter)="page = 1; load()"
+        [placeholder]="'q.surveys.search' | t"
+      />
+      <button type="button" class="btn-primary" (click)="page = 1; load()">{{ 'common.search' | t }}</button>
+    </div>
+    <div class="view-toggle" role="group" [attr.aria-label]="'q.surveys.view.label' | t">
+      <button
+        type="button"
+        class="view-toggle__btn"
+        [class.view-toggle__btn--active]="viewMode() === 'table'"
+        (click)="setViewMode('table')"
+      >
+        {{ 'q.surveys.view.table' | t }}
+      </button>
+      <button
+        type="button"
+        class="view-toggle__btn"
+        [class.view-toggle__btn--active]="viewMode() === 'cards'"
+        (click)="setViewMode('cards')"
+      >
+        {{ 'q.surveys.view.cards' | t }}
+      </button>
+    </div>
+  </div>
+
+  @if (busy()) {
+    <div class="card card--muted">{{ 'common.loading' | t }}</div>
+  } @else if (failed()) {
+    <div class="card card--muted">{{ 'q.surveys.error.list' | t }}</div>
+  } @else {
+    @if (result(); as res) {
+      @if (viewMode() === 'table') {
+        <div class="card table-card">
+          <table class="data-table data-table--surveys">
+            <thead>
+              <tr>
+                <th>{{ 'q.surveys.table.title' | t }}</th>
+                <th>{{ 'q.surveys.table.owner' | t }}</th>
+                <th>{{ 'q.surveys.table.status' | t }}</th>
+                <th>{{ 'q.surveys.table.version' | t }}</th>
+                <th>{{ 'q.surveys.table.questions' | t }}</th>
+                <th>{{ 'q.surveys.table.responses' | t }}</th>
+                <th>{{ 'q.surveys.table.published' | t }}</th>
+                <th class="actions-col-head">{{ 'common.actions' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of res.items; track row.id) {
+                <tr>
+                  <td><strong>{{ titleOf(row) }}</strong></td>
+                  <td>{{ row.ownerDisplayName || '—' }}</td>
+                  <td><span class="q-pill q-pill--neutral">{{ statusKey(row) | t }}</span></td>
+                  <td>{{ row.version }}</td>
+                  <td>{{ row.questionCount }}</td>
+                  <td>{{ row.responseCount }}</td>
+                  <td>{{ row.publishedAtUtc ? (row.publishedAtUtc | date: 'short') : '—' }}</td>
+                  <td class="cell-actions">
+                    <div class="survey-row-actions">
+                      <a class="action-btn action-btn--info" [routerLink]="['/surveys', row.id]">{{ 'q.surveys.open' | t }}</a>
+                      @if (canManage) {
+                        <button
+                          type="button"
+                          class="action-btn action-btn--edit"
+                          [disabled]="mutationBusy() || editBusy()"
+                          (click)="openEditRow(row, $event)"
+                        >
+                          {{ 'q.detail.actions.edit' | t }}
+                        </button>
+                        <button
+                          type="button"
+                          class="action-btn action-btn--ghost"
+                          [disabled]="mutationBusy()"
+                          (click)="duplicateRow(row, $event)"
+                        >
+                          {{ 'q.detail.actions.duplicate' | t }}
+                        </button>
+                        <button
+                          type="button"
+                          class="action-btn action-btn--danger"
+                          [disabled]="mutationBusy()"
+                          (click)="openDeleteRow(row, $event)"
+                        >
+                          {{ 'q.detail.actions.delete' | t }}
+                        </button>
+                        <button
+                          type="button"
+                          class="action-btn action-btn--ghost"
+                          [disabled]="mutationBusy()"
+                          (click)="openPatchRow(row, $event)"
+                        >
+                          {{ 'q.detail.actions.patchStatus' | t }}
+                        </button>
+                        @if (showSubmit(row)) {
+                          <button
+                            type="button"
+                            class="action-btn action-btn--primary"
+                            [disabled]="mutationBusy()"
+                            (click)="submitForApprovalRow(row, $event)"
+                          >
+                            {{ 'q.detail.actions.submitApproval' | t }}
+                          </button>
+                        }
+                        @if (showApproveReject(row)) {
+                          <button
+                            type="button"
+                            class="action-btn action-btn--primary"
+                            [disabled]="mutationBusy()"
+                            (click)="approveRow(row, $event)"
+                          >
+                            {{ 'q.detail.actions.approve' | t }}
+                          </button>
+                          <button
+                            type="button"
+                            class="action-btn action-btn--warn"
+                            [disabled]="mutationBusy()"
+                            (click)="openRejectRow(row, $event)"
+                          >
+                            {{ 'q.detail.actions.reject' | t }}
+                          </button>
+                        }
+                        @if (showPublish(row)) {
+                          <button
+                            type="button"
+                            class="action-btn action-btn--primary"
+                            [disabled]="mutationBusy()"
+                            (click)="publishRow(row, $event)"
+                          >
+                            {{ 'q.detail.actions.publish' | t }}
+                          </button>
+                        }
+                        @if (showClose(row)) {
+                          <button
+                            type="button"
+                            class="action-btn action-btn--edit"
+                            [disabled]="mutationBusy()"
+                            (click)="closeRow(row, $event)"
+                          >
+                            {{ 'q.detail.actions.close' | t }}
+                          </button>
+                        }
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <div class="pager">
+            <button type="button" (click)="prevPage()" [disabled]="!res.hasPreviousPage">{{ 'common.previous' | t }}</button>
+            <span>{{ res.page }} / {{ res.totalPages || 1 }}</span>
+            <button type="button" (click)="nextPage()" [disabled]="!res.hasNextPage">{{ 'common.next' | t }}</button>
+          </div>
+        </div>
+      } @else {
+        <div class="surveys-card-grid">
+          @for (row of res.items; track row.id) {
+            <article class="card survey-card card--interactive" [routerLink]="['/surveys', row.id]">
+              <h2 class="survey-card__title">{{ titleOf(row) }}</h2>
+              <div class="survey-card__pills">
+                <span class="q-pill q-pill--neutral">{{ statusKey(row) | t }}</span>
+                <span class="q-pill">v{{ row.version }}</span>
+              </div>
+              <p class="survey-card__owner muted">{{ row.ownerDisplayName || '—' }}</p>
+              <dl class="survey-card__stats">
+                <div>
+                  <dt>{{ 'q.surveys.table.questions' | t }}</dt>
+                  <dd>{{ row.questionCount }}</dd>
+                </div>
+                <div>
+                  <dt>{{ 'q.surveys.table.responses' | t }}</dt>
+                  <dd>{{ row.responseCount }}</dd>
+                </div>
+                <div>
+                  <dt>{{ 'q.surveys.table.published' | t }}</dt>
+                  <dd>{{ row.publishedAtUtc ? (row.publishedAtUtc | date: 'short') : '—' }}</dd>
+                </div>
+              </dl>
+              @if (canManage) {
+                <footer class="survey-card__actions" (click)="$event.preventDefault(); $event.stopPropagation()">
+                  <div class="survey-row-actions">
+                    <a class="action-btn action-btn--info" [routerLink]="['/surveys', row.id]">{{ 'q.surveys.open' | t }}</a>
+                    <button
+                      type="button"
+                      class="action-btn action-btn--edit"
+                      [disabled]="mutationBusy() || editBusy()"
+                      (click)="openEditRow(row, $event)"
+                    >
+                      {{ 'q.detail.actions.edit' | t }}
+                    </button>
+                    <button
+                      type="button"
+                      class="action-btn action-btn--ghost"
+                      [disabled]="mutationBusy()"
+                      (click)="duplicateRow(row, $event)"
+                    >
+                      {{ 'q.detail.actions.duplicate' | t }}
+                    </button>
+                    <button
+                      type="button"
+                      class="action-btn action-btn--danger"
+                      [disabled]="mutationBusy()"
+                      (click)="openDeleteRow(row, $event)"
+                    >
+                      {{ 'q.detail.actions.delete' | t }}
+                    </button>
+                    <button
+                      type="button"
+                      class="action-btn action-btn--ghost"
+                      [disabled]="mutationBusy()"
+                      (click)="openPatchRow(row, $event)"
+                    >
+                      {{ 'q.detail.actions.patchStatus' | t }}
+                    </button>
+                    @if (showSubmit(row)) {
+                      <button
+                        type="button"
+                        class="action-btn action-btn--primary"
+                        [disabled]="mutationBusy()"
+                        (click)="submitForApprovalRow(row, $event)"
+                      >
+                        {{ 'q.detail.actions.submitApproval' | t }}
+                      </button>
+                    }
+                    @if (showApproveReject(row)) {
+                      <button
+                        type="button"
+                        class="action-btn action-btn--primary"
+                        [disabled]="mutationBusy()"
+                        (click)="approveRow(row, $event)"
+                      >
+                        {{ 'q.detail.actions.approve' | t }}
+                      </button>
+                      <button
+                        type="button"
+                        class="action-btn action-btn--warn"
+                        [disabled]="mutationBusy()"
+                        (click)="openRejectRow(row, $event)"
+                      >
+                        {{ 'q.detail.actions.reject' | t }}
+                      </button>
+                    }
+                    @if (showPublish(row)) {
+                      <button
+                        type="button"
+                        class="action-btn action-btn--primary"
+                        [disabled]="mutationBusy()"
+                        (click)="publishRow(row, $event)"
+                      >
+                        {{ 'q.detail.actions.publish' | t }}
+                      </button>
+                    }
+                    @if (showClose(row)) {
+                      <button
+                        type="button"
+                        class="action-btn action-btn--edit"
+                        [disabled]="mutationBusy()"
+                        (click)="closeRow(row, $event)"
+                      >
+                        {{ 'q.detail.actions.close' | t }}
+                      </button>
+                    }
+                  </div>
+                </footer>
+              }
+            </article>
+          }
+        </div>
+        <div class="card pager-card">
+          <div class="pager">
+            <button type="button" (click)="prevPage()" [disabled]="!res.hasPreviousPage">{{ 'common.previous' | t }}</button>
+            <span>{{ res.page }} / {{ res.totalPages || 1 }}</span>
+            <button type="button" (click)="nextPage()" [disabled]="!res.hasNextPage">{{ 'common.next' | t }}</button>
+          </div>
+        </div>
+      }
+    }
+  }
+
+  @if (createOpen()) {
+    <div class="modal-backdrop" (click)="createOpen.set(false)"></div>
+    <div class="modal-panel modal-panel--wide card" role="dialog" aria-modal="true">
+      <header class="modal-panel__head">
+        <h2>{{ 'q.surveys.modal.createTitle' | t }}</h2>
+        <button type="button" class="modal-close" (click)="createOpen.set(false)">{{ 'common.close' | t }}</button>
+      </header>
+      <div class="modal-panel__body">
+        <label class="field">
+          <span>{{ 'q.surveys.form.titleAr' | t }}</span>
+          <input [(ngModel)]="createModel.titleAr" />
+        </label>
+        <label class="field">
+          <span>{{ 'q.surveys.form.titleEn' | t }}</span>
+          <input [(ngModel)]="createModel.titleEn" />
+        </label>
+        <label class="field">
+          <span>{{ 'q.detail.descAr' | t }}</span>
+          <textarea rows="2" [(ngModel)]="createModel.descriptionAr"></textarea>
+        </label>
+        <label class="field">
+          <span>{{ 'q.detail.descEn' | t }}</span>
+          <textarea rows="2" [(ngModel)]="createModel.descriptionEn"></textarea>
+        </label>
+        <label class="field">
+          <span>{{ 'q.detail.code' | t }}</span>
+          <input [(ngModel)]="createModel.code" [placeholder]="'q.surveys.form.codeHint' | t" />
+        </label>
+        <label class="field">
+          <span>{{ 'q.surveys.form.audience' | t }}</span>
+          <select [(ngModel)]="createModel.audienceScope">
+            <option [ngValue]="SurveyAudienceScope.Everyone">{{ 'q.audience.everyone' | t }}</option>
+            <option [ngValue]="SurveyAudienceScope.Guest">{{ 'q.audience.guest' | t }}</option>
+            <option [ngValue]="SurveyAudienceScope.SpecificUsers">{{ 'q.audience.specific' | t }}</option>
+            <option [ngValue]="SurveyAudienceScope.AllOrganizationMembers">{{ 'q.audience.org' | t }}</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>{{ 'q.surveys.form.template' | t }}</span>
+          <select [(ngModel)]="createModel.templateId">
+            <option [ngValue]="null">{{ 'q.surveys.form.templateNone' | t }}</option>
+            @for (t of templates(); track t.id) {
+              <option [ngValue]="t.id">{{ templateTitle(t) }}</option>
+            }
+          </select>
+        </label>
+      </div>
+      <footer class="modal-panel__foot">
+        <button type="button" class="btn-ghost" (click)="createOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
+        <button type="button" class="btn-primary" [disabled]="createBusy()" (click)="submitCreate()">
+          {{ 'users.actions.save' | t }}
+        </button>
+      </footer>
+    </div>
+  }
+
+  @if (editOpen()) {
+    <div class="modal-backdrop" (click)="editOpen.set(false)"></div>
+    <div class="modal-panel modal-panel--wide card" role="dialog" aria-modal="true">
+      <header class="modal-panel__head">
+        <h2>{{ 'q.detail.edit.title' | t }}</h2>
+        <button type="button" class="modal-close" (click)="editOpen.set(false)">{{ 'common.close' | t }}</button>
+      </header>
+      <div class="modal-panel__body">
+        <label class="field">
+          <span>{{ 'q.surveys.form.titleAr' | t }}</span>
+          <input [(ngModel)]="editModel.titleAr" />
+        </label>
+        <label class="field">
+          <span>{{ 'q.surveys.form.titleEn' | t }}</span>
+          <input [(ngModel)]="editModel.titleEn" />
+        </label>
+        <label class="field">
+          <span>{{ 'q.detail.code' | t }}</span>
+          <input [(ngModel)]="editModel.code" />
+        </label>
+        <label class="field">
+          <span>{{ 'q.detail.descAr' | t }}</span>
+          <textarea rows="2" [(ngModel)]="editModel.descriptionAr"></textarea>
+        </label>
+        <label class="field">
+          <span>{{ 'q.detail.descEn' | t }}</span>
+          <textarea rows="2" [(ngModel)]="editModel.descriptionEn"></textarea>
+        </label>
+        <label class="field">
+          <span>{{ 'q.surveys.form.audience' | t }}</span>
+          <select [(ngModel)]="editModel.audienceScope">
+            <option [ngValue]="SurveyAudienceScope.Everyone">{{ 'q.audience.everyone' | t }}</option>
+            <option [ngValue]="SurveyAudienceScope.Guest">{{ 'q.audience.guest' | t }}</option>
+            <option [ngValue]="SurveyAudienceScope.SpecificUsers">{{ 'q.audience.specific' | t }}</option>
+            <option [ngValue]="SurveyAudienceScope.AllOrganizationMembers">{{ 'q.audience.org' | t }}</option>
+          </select>
+        </label>
+      </div>
+      <footer class="modal-panel__foot">
+        <button type="button" class="btn-ghost" (click)="editOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
+        <button type="button" class="btn-primary" [disabled]="mutationBusy()" (click)="saveEdit()">
+          {{ 'users.actions.save' | t }}
+        </button>
+      </footer>
+    </div>
+  }
+
+  @if (deleteOpen()) {
+    <div class="modal-backdrop" (click)="deleteOpen.set(false)"></div>
+    <div class="modal-panel card" role="dialog" aria-modal="true">
+      <header class="modal-panel__head">
+        <h2>{{ 'q.detail.delete.title' | t }}</h2>
+        <button type="button" class="modal-close" (click)="deleteOpen.set(false)">{{ 'common.close' | t }}</button>
+      </header>
+      <div class="modal-panel__body">
+        <p>{{ 'q.detail.delete.confirm' | t }}</p>
+      </div>
+      <footer class="modal-panel__foot">
+        <button type="button" class="btn-ghost" (click)="deleteOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
+        <button type="button" class="btn-danger" [disabled]="mutationBusy()" (click)="confirmDelete()">
+          {{ 'q.detail.actions.delete' | t }}
+        </button>
+      </footer>
+    </div>
+  }
+
+  @if (rejectOpen()) {
+    <div class="modal-backdrop" (click)="rejectOpen.set(false)"></div>
+    <div class="modal-panel card" role="dialog" aria-modal="true">
+      <header class="modal-panel__head">
+        <h2>{{ 'q.detail.reject.title' | t }}</h2>
+        <button type="button" class="modal-close" (click)="rejectOpen.set(false)">{{ 'common.close' | t }}</button>
+      </header>
+      <div class="modal-panel__body">
+        <label class="field">
+          <span>{{ 'q.detail.reject.reason' | t }}</span>
+          <textarea rows="3" [(ngModel)]="rejectReason"></textarea>
+        </label>
+      </div>
+      <footer class="modal-panel__foot">
+        <button type="button" class="btn-ghost" (click)="rejectOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
+        <button type="button" class="btn-warn" [disabled]="mutationBusy()" (click)="submitReject()">
+          {{ 'q.detail.actions.reject' | t }}
+        </button>
+      </footer>
+    </div>
+  }
+
+  @if (patchOpen()) {
+    <div class="modal-backdrop" (click)="patchOpen.set(false)"></div>
+    <div class="modal-panel card" role="dialog" aria-modal="true">
+      <header class="modal-panel__head">
+        <h2>{{ 'q.detail.actions.patchStatus' | t }}</h2>
+        <button type="button" class="modal-close" (click)="patchOpen.set(false)">{{ 'common.close' | t }}</button>
+      </header>
+      <div class="modal-panel__body">
+        <label class="field">
+          <span>{{ 'q.surveys.table.status' | t }}</span>
+          <select [(ngModel)]="patchStatus">
+            <option [ngValue]="SurveyStatus.Draft">{{ 'q.surveyStatus.draft' | t }}</option>
+            <option [ngValue]="SurveyStatus.PendingApproval">{{ 'q.surveyStatus.pending' | t }}</option>
+            <option [ngValue]="SurveyStatus.Approved">{{ 'q.surveyStatus.approved' | t }}</option>
+            <option [ngValue]="SurveyStatus.Published">{{ 'q.surveyStatus.published' | t }}</option>
+            <option [ngValue]="SurveyStatus.Closed">{{ 'q.surveyStatus.closed' | t }}</option>
+            <option [ngValue]="SurveyStatus.Rejected">{{ 'q.surveyStatus.rejected' | t }}</option>
+          </select>
+        </label>
+        <p class="field-hint muted">{{ 'q.detail.patchHint' | t }}</p>
+      </div>
+      <footer class="modal-panel__foot">
+        <button type="button" class="btn-ghost" (click)="patchOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
+        <button type="button" class="btn-primary" [disabled]="mutationBusy()" (click)="applyPatch()">
+          {{ 'q.detail.actions.applyPatch' | t }}
+        </button>
+      </footer>
+    </div>
+  }
+</div>

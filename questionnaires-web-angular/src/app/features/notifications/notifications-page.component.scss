@@ -1,0 +1,140 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+}
+
+.toolbar__search {
+  flex: 1;
+  min-width: 200px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  padding: 0.55rem 0.85rem;
+  background: #fff;
+  color: var(--color-text);
+}
+
+/* Dedicated class — avoids .page-workspace .seg global black border */
+.notif-read-filter {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+
+.notif-read-filter button {
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+.notif-read-filter button:hover:not(.active) {
+  background: var(--color-bg);
+}
+
+.notif-read-filter button.active {
+  border-color: var(--color-accent-strong);
+  color: var(--color-accent-strong);
+  background: rgba(79, 70, 229, 0.08);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.notif {
+  padding: 1rem;
+}
+
+.notif--unread {
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.12);
+}
+
+.notif__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.notif__head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.18);
+  color: #0f766e;
+}
+
+.badge--muted {
+  background: rgba(100, 116, 139, 0.15);
+  color: #64748b;
+}
+
+.notif__msg {
+  margin: 0.5rem 0 0;
+  color: var(--color-muted);
+  line-height: 1.45;
+}
+
+.notif__foot {
+  margin-top: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.muted {
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+
+.notif__actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.btn-mini {
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+}
+
+.table-skel {
+  height: 200px;
+  border-radius: 16px;
+}

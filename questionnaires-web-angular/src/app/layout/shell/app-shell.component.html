@@ -1,0 +1,30 @@
+<div class="shell" [class.shell--mobile-sidebar-open]="layout.mobileSidebarOpen()">
+  <app-sidebar />
+  @if (layout.mobileSidebarOpen()) {
+    <button type="button" class="shell__mobile-overlay" (click)="layout.closeMobileSidebar()" aria-label="Close menu"></button>
+  }
+  <div class="shell__main">
+    <app-topbar />
+    @if (toast.toast(); as t) {
+      <div
+        class="shell__toast"
+        [class.shell__toast--success]="t.tone === 'success'"
+        [class.shell__toast--error]="t.tone === 'error'"
+        role="status"
+      >
+        <span>{{ t.message }}</span>
+        <button type="button" class="shell__toast-dismiss" (click)="dismissToast()">×</button>
+      </div>
+    }
+    <main class="shell__content">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+@if (loading.isLoading()) {
+  <div class="shell__overlay" aria-busy="true" aria-live="polite">
+    <div class="shell__spinner-card">
+      <div class="shell__spinner" aria-hidden="true"></div>
+    </div>
+  </div>
+}

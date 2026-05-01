@@ -1,0 +1,43 @@
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { catchError, throwError } from 'rxjs';
+import { ApiResponse } from '../../shared/models/api.types';
+import { AuthService } from '../auth/auth.service';
+import { ErrorDisplayService } from '../services/error-display.service';
+
+function isApiResponseBody(value: unknown): value is ApiResponse<unknown> {
+  return typeof value === 'object' && value !== null && 'succeeded' in value;
+}
+
+export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  const errors = inject(ErrorDisplayService);
+
+  return next(req).pipe(
+    catchError((err: unknown) => {
+      if (!(err instanceof HttpErrorResponse)) {
+        return throwError(() => err);
+      }
+
+      const loginCall = req.url.includes('/api/auth/login');
+      if (err.status === 401 && !loginCall) {
+        auth.logout(false);
+        void router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
+      } else if (
+        !loginCall &&
+        isApiResponseBody(err.error) &&
+        err.error.errors?.length
+      ) {
+        errors.show(err.error.errors.join(' · '));
+      } else if (typeof err.error === 'string' && err.error.length > 0) {
+        errors.show(err.error);
+      } else if (err.message) {
+        errors.show(err.message);
+      }
+
+      return throwError(() => err);
+    }),
+  );
+};

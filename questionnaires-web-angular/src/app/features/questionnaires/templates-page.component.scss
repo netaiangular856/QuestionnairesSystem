@@ -1,0 +1,94 @@
+.tpl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.tpl-card {
+  position: relative;
+  overflow: hidden;
+  padding: 1rem 1.1rem 1.1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.tpl-card__accent {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  background: var(--color-text);
+}
+
+.tpl-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.tpl-card__head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  padding-inline-end: 0.5rem;
+}
+
+.tpl-badge {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #991b1b;
+}
+
+.tpl-card__stat {
+  margin: 0;
+  color: #57534e;
+  font-size: 0.9rem;
+}
+
+/* Variant A — thick side bar + offset shadow */
+.tpl-card--ribbon {
+  box-shadow: var(--shadow-sm);
+  background: var(--color-card);
+}
+
+.tpl-card--ribbon .tpl-card__accent {
+  width: 10px;
+  background: linear-gradient(180deg, #6366f1, #0ea5e9);
+}
+
+/* Variant B — inset “paper” */
+.tpl-card--inset {
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  background: var(--color-bg-soft);
+  border-radius: var(--radius-md);
+}
+
+.tpl-card--inset .tpl-card__accent {
+  display: none;
+}
+
+/* Variant C — stamp / rotated micro tag */
+.tpl-card--stamp {
+  background: #ecfdf5;
+  border-style: dashed;
+  transform: rotate(-0.2deg);
+}
+
+.tpl-card--stamp .tpl-card__accent {
+  width: 48px;
+  height: 48px;
+  inset-inline-end: 8px;
+  top: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #34d399, #059669);
+  opacity: 0.9;
+}

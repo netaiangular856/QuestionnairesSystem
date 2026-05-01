@@ -1,0 +1,49 @@
+<aside class="sidebar" [class.sidebar--collapsed]="sidebarCollapsed()">
+  <div class="sidebar__profile">
+    @if (me.avatarImgSrc(); as avatarSrc) {
+      <div class="sidebar__avatar sidebar__avatar--photo">
+        <img [src]="avatarSrc" alt="" width="40" height="40" />
+      </div>
+    } @else {
+      <div class="sidebar__avatar">{{ me.displayLabel().charAt(0).toUpperCase() }}</div>
+    }
+    <div class="sidebar__who">
+      <strong>{{ me.displayLabel() }}</strong>
+      <small>{{ 'sidebar.role' | t }}</small>
+    </div>
+    <button type="button" class="sidebar__collapse" (click)="toggleSidebarCollapse()">
+      {{ sidebarCollapsed() ? '›' : '‹' }}
+    </button>
+  </div>
+
+  <nav class="sidebar__nav">
+    @for (group of visibleGroups(); track group.id) {
+      <section class="nav-group">
+        <button type="button" class="nav-group__toggle" [class.hide-when-collapsed]="sidebarCollapsed()" (click)="toggleGroup(group.id)">
+          <h3 class="nav-group__title">{{ group.titleKey | t }}</h3>
+          <span class="nav-group__arrow" [class.nav-group__arrow--collapsed]="isGroupCollapsed(group.id)">▾</span>
+        </button>
+
+        <ul class="nav-group__list" [class.is-collapsed]="isGroupCollapsed(group.id) && !sidebarCollapsed()">
+          @for (item of group.items; track item.path) {
+            <li>
+              <a
+                [routerLink]="item.path"
+                routerLinkActive="is-active"
+                [routerLinkActiveOptions]="{ exact: item.path === '/dashboard' }"
+                [attr.aria-label]="item.labelKey | t"
+                [attr.data-tooltip]="item.labelKey | t"
+                (click)="layout.closeMobileSidebar()"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path [attr.d]="iconPath(item.icon)"></path>
+                </svg>
+                <span class="nav-item__label">{{ item.labelKey | t }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </nav>
+</aside>

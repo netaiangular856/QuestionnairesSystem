@@ -1,0 +1,91 @@
+<div class="page-workspace">
+<div class="page-head-row">
+  <section class="page-head">
+    <h1>{{ 'audit.title' | t }}</h1>
+    <p class="page-head__sub">{{ 'audit.subtitle' | t }}</p>
+  </section>
+</div>
+
+<div class="toolbar card card--interactive">
+  <input
+    class="toolbar__search"
+    type="search"
+    [(ngModel)]="search"
+    (keyup.enter)="applySearch()"
+    [placeholder]="'audit.search' | t"
+  />
+  <input class="filter-input" type="text" [(ngModel)]="actionFilter" [placeholder]="'audit.filter.action' | t" />
+  <input class="filter-input" type="text" [(ngModel)]="entityFilter" [placeholder]="'audit.filter.entity' | t" />
+  <input class="filter-input" type="datetime-local" [(ngModel)]="fromUtc" [placeholder]="'audit.filter.from' | t" />
+  <input class="filter-input" type="datetime-local" [(ngModel)]="toUtc" [placeholder]="'audit.filter.to' | t" />
+  <button type="button" class="btn-primary" (click)="page = 1; load()">{{ 'common.search' | t }}</button>
+</div>
+
+@if (failed()) {
+  <div class="card card--muted">{{ 'audit.error.list' | t }}</div>
+} @else if (result()) {
+  <div class="card table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>{{ 'audit.table.when' | t }}</th>
+          <th>{{ 'audit.table.action' | t }}</th>
+          <th>{{ 'audit.table.path' | t }}</th>
+          <th>{{ 'audit.table.user' | t }}</th>
+          <th>{{ 'audit.table.ip' | t }}</th>
+          <th>{{ 'common.actions' | t }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of result()!.items; track row.id) {
+          <tr>
+            <td>{{ row.occurredAtUtc | date: 'medium' }}</td>
+            <td>{{ displayAction(row.action) }}</td>
+            <td class="path-cell">{{ displayEntity(row.entityType) }}</td>
+            <td>{{ displayUser(row) }}</td>
+            <td>{{ row.ipAddress || '—' }}</td>
+            <td>
+              <button type="button" class="linkish" (click)="openDetail(row.id)">{{ 'common.view' | t }}</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <div class="pager">
+      <button type="button" (click)="prevPage()" [disabled]="!result()!.hasPreviousPage">{{ 'common.previous' | t }}</button>
+      <span>{{ result()!.page }} / {{ result()!.totalPages || 1 }}</span>
+      <button type="button" (click)="nextPage()" [disabled]="!result()!.hasNextPage">{{ 'common.next' | t }}</button>
+    </div>
+  </div>
+} @else if (busy()) {
+  <div class="skeleton table-skel"></div>
+}
+</div>
+
+@if (detailOpen()) {
+  <div class="modal-backdrop" (click)="closeDetail()"></div>
+  <section class="modal card modal--wide" role="dialog" aria-modal="true">
+    @if (detailBusy() && !detailLog()) {
+      <p>{{ 'common.loading' | t }}</p>
+    } @else if (detailLog()) {
+      <h2>{{ 'audit.detail.title' | t }}</h2>
+      <dl class="detail-dl">
+        <dt>{{ 'audit.table.when' | t }}</dt>
+        <dd>{{ detailLog()!.occurredAtUtc | date: 'full' }}</dd>
+        <dt>{{ 'audit.table.action' | t }}</dt>
+        <dd>{{ displayAction(detailLog()!.action) }}</dd>
+        <dt>{{ 'audit.table.path' | t }}</dt>
+        <dd>{{ displayEntity(detailLog()!.entityType) }}</dd>
+        <dt>Trace / ref</dt>
+        <dd><code>{{ detailLog()!.entityId }}</code></dd>
+        <dt>{{ 'audit.table.user' | t }}</dt>
+        <dd>{{ displayUser(detailLog()!) }}</dd>
+        <dt>{{ 'audit.detail.json' | t }}</dt>
+        <dd><pre class="json-block">{{ detailLog()!.newValuesJson || '—' }}</pre></dd>
+      </dl>
+      <div class="modal-actions">
+        <button type="button" (click)="closeDetail()">{{ 'common.close' | t }}</button>
+      </div>
+    }
+  </section>
+}

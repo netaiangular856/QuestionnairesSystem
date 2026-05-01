@@ -1,0 +1,131 @@
+.back-link {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.page-title {
+  margin: 0 0 1rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.muted {
+  color: #78716c;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+
+.toolbar--split {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+}
+
+.toolbar__spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.view-toggle {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 3px;
+  background: rgba(28, 25, 23, 0.06);
+  border: 1px solid rgba(28, 25, 23, 0.12);
+}
+
+.view-toggle__btn {
+  border: none;
+  background: transparent;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  color: #57534e;
+}
+
+.view-toggle__btn--active {
+  background: #fff;
+  color: var(--color-text);
+  box-shadow: 0 2px 8px rgba(28, 25, 23, 0.12);
+}
+
+.q-pill {
+  display: inline-flex;
+  padding: 0.12rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+}
+
+.q-pill--neutral {
+  background: #f5f5f4;
+}
+
+.subpage-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.subpage-card-grid__empty {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.subpage-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem 1.1rem;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.subpage-card__title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.subpage-card__muted {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #57534e;
+}
+
+.subpage-card__foot {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+}
+
+.pager-card {
+  padding: 0;
+}
+
+.pager-card .pager {
+  border-top: none;
+}
+
+.actions-col-head,
+.cell-actions {
+  white-space: nowrap;
+}

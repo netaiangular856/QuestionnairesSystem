@@ -1,0 +1,304 @@
+<div class="page-workspace">
+  <a routerLink="/surveys" class="back-link">← {{ 'q.detail.back' | t }}</a>
+
+  @if (busy()) {
+    <div class="card card--muted">{{ 'common.loading' | t }}</div>
+  } @else if (failed() || !survey()) {
+    <div class="card card--muted">{{ 'q.detail.error' | t }}</div>
+  } @else {
+    @let s = survey()!;
+
+    <header class="detail-hero card feature-hero">
+      <div class="feature-hero__row">
+        <div class="feature-hero__text">
+          <h1>{{ titleOf(s) }}</h1>
+          <p class="feature-hero__meta">
+            <span class="detail-chip detail-chip--status">{{ statusKey(s) | t }}</span>
+            <span class="detail-chip detail-chip--audience">{{ audienceKey(s) | t }}</span>
+            <span class="detail-chip detail-chip--muted">v{{ s.version }}</span>
+          </p>
+          @if (s.ownerDisplayName) {
+            <p class="owner-line">
+              <strong>{{ 'q.detail.owner' | t }}:</strong> {{ s.ownerDisplayName }}
+            </p>
+          }
+          @if (s.code) {
+            <p class="owner-line"><strong>{{ 'q.detail.code' | t }}:</strong> {{ s.code }}</p>
+          }
+          @if (s.rejectionReason) {
+            <p class="owner-line reject-note">
+              <strong>{{ 'q.detail.rejection' | t }}:</strong> {{ s.rejectionReason }}
+            </p>
+          }
+        </div>
+        @if (canManage) {
+          <div class="detail-actions">
+            <button type="button" class="action-btn action-btn--edit" [disabled]="actionBusy()" (click)="openEdit()">
+              {{ 'q.detail.actions.edit' | t }}
+            </button>
+            <button type="button" class="action-btn action-btn--info" [disabled]="actionBusy()" (click)="duplicate()">
+              {{ 'q.detail.actions.duplicate' | t }}
+            </button>
+            <button type="button" class="action-btn action-btn--danger" [disabled]="actionBusy()" (click)="openDelete()">
+              {{ 'q.detail.actions.delete' | t }}
+            </button>
+            <button type="button" class="action-btn action-btn--ghost" [disabled]="actionBusy()" (click)="openPatch()">
+              {{ 'q.detail.actions.patchStatus' | t }}
+            </button>
+          </div>
+        }
+      </div>
+
+      @if (canManage) {
+        <div class="workflow-bar">
+          @if (showSubmit(s)) {
+            <button type="button" class="action-btn action-btn--primary" [disabled]="actionBusy()" (click)="submitForApproval()">
+              {{ 'q.detail.actions.submitApproval' | t }}
+            </button>
+          }
+          @if (showApproveReject(s)) {
+            <button type="button" class="action-btn action-btn--primary" [disabled]="actionBusy()" (click)="approve()">
+              {{ 'q.detail.actions.approve' | t }}
+            </button>
+            <button type="button" class="action-btn action-btn--warn" [disabled]="actionBusy()" (click)="openReject()">
+              {{ 'q.detail.actions.reject' | t }}
+            </button>
+          }
+          @if (showPublish(s)) {
+            <button type="button" class="action-btn action-btn--primary" [disabled]="actionBusy()" (click)="publish()">
+              {{ 'q.detail.actions.publish' | t }}
+            </button>
+          }
+          @if (showClose(s)) {
+            <button type="button" class="action-btn action-btn--edit" [disabled]="actionBusy()" (click)="closeSurvey()">
+              {{ 'q.detail.actions.close' | t }}
+            </button>
+          }
+        </div>
+      }
+    </header>
+
+    @if (canReport) {
+      <section class="section-block">
+        <h2>{{ 'q.detail.analytics.title' | t }}</h2>
+        @if (analyticsBusy()) {
+          <div class="card card--muted">{{ 'q.detail.analytics.loading' | t }}</div>
+        } @else {
+          @if (analytics(); as an) {
+            <div class="analytics-chart-row">
+              <div class="card analytics-chart-card">
+                <h3 class="analytics-chart-card__title">{{ 'q.detail.analytics.totals' | t }}</h3>
+                @if (an.totalResponses > 0) {
+                  <div class="analytics-pie-block">
+                    <div class="chart-pie-ring" role="img" [attr.aria-label]="'q.detail.analytics.totals' | t">
+                      <div class="chart-pie" [style.background]="pieGradient(an)"></div>
+                      <div class="chart-pie__hole"></div>
+                    </div>
+                    <ul class="chart-cat-labels">
+                      <li>
+                        <span class="chart-cat-labels__swatch chart-cat-labels__swatch--submitted"></span>
+                        {{ 'q.detail.analytics.submitted' | t }}
+                      </li>
+                      <li>
+                        <span class="chart-cat-labels__swatch chart-cat-labels__swatch--progress"></span>
+                        {{ 'q.detail.analytics.inProgress' | t }}
+                      </li>
+                      <li>
+                        <span class="chart-cat-labels__swatch chart-cat-labels__swatch--other"></span>
+                        {{ 'q.detail.analytics.otherResponses' | t }}
+                      </li>
+                    </ul>
+                  </div>
+                  <div class="chart-col-strip" aria-hidden="true">
+                    <div class="chart-col-strip__item">
+                      <div class="chart-col-strip__track">
+                        <div
+                          class="chart-col-strip__fill chart-col-strip__fill--submitted"
+                          [style.height.%]="mixSubmittedPct(an)"
+                        ></div>
+                      </div>
+                    </div>
+                    <div class="chart-col-strip__item">
+                      <div class="chart-col-strip__track">
+                        <div
+                          class="chart-col-strip__fill chart-col-strip__fill--progress"
+                          [style.height.%]="mixInProgressPct(an)"
+                        ></div>
+                      </div>
+                    </div>
+                    <div class="chart-col-strip__item">
+                      <div class="chart-col-strip__track">
+                        <div
+                          class="chart-col-strip__fill chart-col-strip__fill--other"
+                          [style.height.%]="mixOtherPct(an)"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                } @else {
+                  <p class="analytics-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+                }
+              </div>
+              @if (analyticsSummary(); as sm) {
+                <div class="card analytics-chart-card analytics-chart-card--summary">
+                  <h3 class="analytics-chart-card__title">{{ 'q.detail.analytics.summaryTitle' | t }}</h3>
+                  <div
+                    class="chart-rate chart-rate--plain"
+                    role="img"
+                    [attr.aria-label]="'q.detail.analytics.summaryTitle' | t"
+                  >
+                    <div class="chart-rate__track">
+                      <div class="chart-rate__fill" [style.width.%]="sm.completionRate"></div>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <div class="analytics-nav-grid">
+              @if (canResponses) {
+                <a class="card card--interactive analytics-nav-card" [routerLink]="['/surveys', s.id, 'responses']">
+                  <span class="analytics-nav-card__title">{{ 'q.detail.analytics.navResponses' | t }}</span>
+                  <span class="analytics-nav-card__hint muted">{{ 'q.detail.analytics.navResponsesHint' | t }}</span>
+                  <span class="analytics-nav-card__go" aria-hidden="true">→</span>
+                </a>
+              }
+              @if (canParticipants) {
+                <a class="card card--interactive analytics-nav-card" [routerLink]="['/surveys', s.id, 'participants']">
+                  <span class="analytics-nav-card__title">{{ 'q.detail.analytics.navParticipants' | t }}</span>
+                  <span class="analytics-nav-card__hint muted">{{ 'q.detail.analytics.navParticipantsHint' | t }}</span>
+                  <span class="analytics-nav-card__go" aria-hidden="true">→</span>
+                </a>
+              }
+              <a class="card card--interactive analytics-nav-card" [routerLink]="['/surveys', s.id, 'question-analytics']">
+                <span class="analytics-nav-card__title">{{ 'q.detail.analytics.navQuestions' | t }}</span>
+                <span class="analytics-nav-card__hint muted">{{ 'q.detail.analytics.navQuestionsHint' | t }}</span>
+                <span class="analytics-nav-card__go" aria-hidden="true">→</span>
+              </a>
+            </div>
+          } @else {
+            <div class="card card--muted">{{ 'q.detail.analytics.error' | t }}</div>
+          }
+        }
+      </section>
+    }
+  }
+
+  @if (editOpen()) {
+    <div class="modal-backdrop" (click)="editOpen.set(false)"></div>
+    <div class="modal-panel card" role="dialog" aria-modal="true">
+      <header class="modal-panel__head">
+        <h2>{{ 'q.detail.edit.title' | t }}</h2>
+        <button type="button" class="modal-close" (click)="editOpen.set(false)">{{ 'common.close' | t }}</button>
+      </header>
+      <div class="modal-panel__body">
+        <label class="field">
+          <span>{{ 'q.surveys.form.titleAr' | t }}</span>
+          <input [(ngModel)]="editModel.titleAr" />
+        </label>
+        <label class="field">
+          <span>{{ 'q.surveys.form.titleEn' | t }}</span>
+          <input [(ngModel)]="editModel.titleEn" />
+        </label>
+        <label class="field">
+          <span>{{ 'q.detail.code' | t }}</span>
+          <input [(ngModel)]="editModel.code" />
+        </label>
+        <label class="field">
+          <span>{{ 'q.detail.descAr' | t }}</span>
+          <textarea rows="2" [(ngModel)]="editModel.descriptionAr"></textarea>
+        </label>
+        <label class="field">
+          <span>{{ 'q.detail.descEn' | t }}</span>
+          <textarea rows="2" [(ngModel)]="editModel.descriptionEn"></textarea>
+        </label>
+        <label class="field">
+          <span>{{ 'q.surveys.form.audience' | t }}</span>
+          <select [(ngModel)]="editModel.audienceScope">
+            <option [ngValue]="SurveyAudienceScope.Everyone">{{ 'q.audience.everyone' | t }}</option>
+            <option [ngValue]="SurveyAudienceScope.Guest">{{ 'q.audience.guest' | t }}</option>
+            <option [ngValue]="SurveyAudienceScope.SpecificUsers">{{ 'q.audience.specific' | t }}</option>
+            <option [ngValue]="SurveyAudienceScope.AllOrganizationMembers">{{ 'q.audience.org' | t }}</option>
+          </select>
+        </label>
+      </div>
+      <footer class="modal-panel__foot">
+        <button type="button" class="btn-ghost" (click)="editOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
+        <button type="button" class="btn-primary" [disabled]="actionBusy()" (click)="saveEdit()">
+          {{ 'users.actions.save' | t }}
+        </button>
+      </footer>
+    </div>
+  }
+
+  @if (deleteOpen()) {
+    <div class="modal-backdrop" (click)="deleteOpen.set(false)"></div>
+    <div class="modal-panel card" role="dialog" aria-modal="true">
+      <header class="modal-panel__head">
+        <h2>{{ 'q.detail.delete.title' | t }}</h2>
+        <button type="button" class="modal-close" (click)="deleteOpen.set(false)">{{ 'common.close' | t }}</button>
+      </header>
+      <div class="modal-panel__body">
+        <p>{{ 'q.detail.delete.confirm' | t }}</p>
+      </div>
+      <footer class="modal-panel__foot">
+        <button type="button" class="btn-ghost" (click)="deleteOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
+        <button type="button" class="btn-danger" [disabled]="actionBusy()" (click)="confirmDelete()">
+          {{ 'q.detail.actions.delete' | t }}
+        </button>
+      </footer>
+    </div>
+  }
+
+  @if (rejectOpen()) {
+    <div class="modal-backdrop" (click)="rejectOpen.set(false)"></div>
+    <div class="modal-panel card" role="dialog" aria-modal="true">
+      <header class="modal-panel__head">
+        <h2>{{ 'q.detail.reject.title' | t }}</h2>
+        <button type="button" class="modal-close" (click)="rejectOpen.set(false)">{{ 'common.close' | t }}</button>
+      </header>
+      <div class="modal-panel__body">
+        <label class="field">
+          <span>{{ 'q.detail.reject.reason' | t }}</span>
+          <textarea rows="3" [(ngModel)]="rejectReason"></textarea>
+        </label>
+      </div>
+      <footer class="modal-panel__foot">
+        <button type="button" class="btn-ghost" (click)="rejectOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
+        <button type="button" class="btn-warn" [disabled]="actionBusy()" (click)="submitReject()">
+          {{ 'q.detail.actions.reject' | t }}
+        </button>
+      </footer>
+    </div>
+  }
+
+  @if (patchOpen()) {
+    <div class="modal-backdrop" (click)="patchOpen.set(false)"></div>
+    <div class="modal-panel card" role="dialog" aria-modal="true">
+      <header class="modal-panel__head">
+        <h2>{{ 'q.detail.actions.patchStatus' | t }}</h2>
+        <button type="button" class="modal-close" (click)="patchOpen.set(false)">{{ 'common.close' | t }}</button>
+      </header>
+      <div class="modal-panel__body">
+        <label class="field">
+          <span>{{ 'q.surveys.table.status' | t }}</span>
+          <select [(ngModel)]="patchStatus">
+            <option [ngValue]="SurveyStatus.Draft">{{ 'q.surveyStatus.draft' | t }}</option>
+            <option [ngValue]="SurveyStatus.PendingApproval">{{ 'q.surveyStatus.pending' | t }}</option>
+            <option [ngValue]="SurveyStatus.Approved">{{ 'q.surveyStatus.approved' | t }}</option>
+            <option [ngValue]="SurveyStatus.Published">{{ 'q.surveyStatus.published' | t }}</option>
+            <option [ngValue]="SurveyStatus.Closed">{{ 'q.surveyStatus.closed' | t }}</option>
+            <option [ngValue]="SurveyStatus.Rejected">{{ 'q.surveyStatus.rejected' | t }}</option>
+          </select>
+        </label>
+        <p class="field-hint muted">{{ 'q.detail.patchHint' | t }}</p>
+      </div>
+      <footer class="modal-panel__foot">
+        <button type="button" class="btn-ghost" (click)="patchOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
+        <button type="button" class="btn-primary" [disabled]="actionBusy()" (click)="applyPatch()">
+          {{ 'q.detail.actions.applyPatch' | t }}
+        </button>
+      </footer>
+    </div>
+  }
+</div>

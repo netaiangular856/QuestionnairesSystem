@@ -1,0 +1,94 @@
+<header class="topbar">
+  <button type="button" class="topbar__menu" (click)="toggleSidebar()" [attr.aria-label]="'topbar.menu' | t">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h16v2H4v-2Z" />
+    </svg>
+  </button>
+  <a routerLink="/home" class="topbar__identity topbar__identity-link">
+    <strong>{{ 'app.title' | t }}</strong>
+    <span>Smart Workspace</span>
+  </a>
+  <div class="topbar__spacer"></div>
+
+  <div class="lang-switch">
+    <button type="button" class="lang-switch__btn" [class.is-active]="i18n.lang() === 'ar'" (click)="i18n.lang() !== 'ar' && toggleLang()">
+      AR
+    </button>
+    <button type="button" class="lang-switch__btn" [class.is-active]="i18n.lang() === 'en'" (click)="i18n.lang() !== 'en' && toggleLang()">
+      EN
+    </button>
+  </div>
+
+  <div class="topbar__actions">
+    <button type="button" class="icon-btn icon-btn--bell" (click)="toggleNotifications()" [attr.aria-expanded]="notificationsOpen">
+      <span class="sr-only">{{ 'topbar.notifications' | t }}</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M12 3a6 6 0 0 0-6 6v3.3l-1.6 2.8a1 1 0 0 0 .87 1.5h13.46a1 1 0 0 0 .87-1.5L18 12.3V9a6 6 0 0 0-6-6Zm0 18a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 21Z"
+        />
+      </svg>
+      @if (notifications.length) {
+        <span class="icon-btn__badge">{{ notifications.length }}</span>
+      }
+    </button>
+
+    <button
+      type="button"
+      class="icon-btn icon-btn--menu"
+      (click)="toggleMenu()"
+      [attr.aria-expanded]="menuOpen"
+      [attr.aria-label]="me.displayLabel()"
+    >
+      @if (me.avatarImgSrc(); as avatarSrc) {
+        <span class="icon-btn__avatar icon-btn__avatar--photo">
+          <img [src]="avatarSrc" alt="" width="22" height="22" />
+        </span>
+      } @else {
+        <span class="icon-btn__avatar">{{ me.displayLabel().charAt(0).toUpperCase() }}</span>
+      }
+    </button>
+  </div>
+</header>
+
+@if (menuOpen || notificationsOpen) {
+  <button type="button" class="topbar__backdrop" (click)="closePopups()" aria-label="close"></button>
+}
+
+@if (menuOpen) {
+  <section class="popup-menu card" role="menu">
+    <p class="popup-menu__user">{{ me.displayLabel() }}</p>
+    <a routerLink="/profile" class="popup-menu__item" (click)="closePopups()">{{ 'topbar.openProfile' | t }}</a>
+    <button type="button" class="popup-menu__item" (click)="logout()">{{ 'topbar.logout' | t }}</button>
+  </section>
+}
+
+@if (notificationsOpen) {
+  <section class="notif-modal card" role="dialog" aria-modal="true">
+    <header class="notif-modal__head">
+      <h3>{{ 'topbar.notifications' | t }}</h3>
+      <button type="button" (click)="closePopups()">×</button>
+    </header>
+    <div class="notif-modal__body">
+      @if (loadingNotifications) {
+        <p class="notif-modal__state">{{ 'common.loading' | t }}</p>
+      } @else if (!notifications.length) {
+        <p class="notif-modal__state">{{ 'notifications.empty' | t }}</p>
+      } @else {
+        @for (row of notifications; track row.id) {
+          <article [class.is-read]="row.isRead">
+            <div class="notif-item__head">
+              <strong>{{ row.title }}</strong>
+              <button type="button" [disabled]="row.isRead || markingId === row.id" (click)="markAsRead(row)">
+                {{ 'topbar.notif.markAsRead' | t }}
+              </button>
+            </div>
+            <p>{{ row.message }}</p>
+          </article>
+        }
+      }
+    </div>
+    <a routerLink="/notifications" class="notif-modal__open-all" (click)="closePopups()">
+      {{ 'topbar.notif.openAll' | t }}
+    </a>
+  </section>
+}

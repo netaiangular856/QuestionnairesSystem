@@ -1,0 +1,43 @@
+<div class="page-workspace">
+  <div class="page-head-row">
+    <section class="page-head">
+      <h1>{{ 'q.reports.title' | t }}</h1>
+      <p class="page-head__sub">{{ 'q.reports.subtitle' | t }}</p>
+    </section>
+  </div>
+
+  @if (busy()) {
+    <div class="card card--muted">{{ 'common.loading' | t }}</div>
+  } @else if (failed()) {
+    <div class="card card--muted">{{ 'q.reports.error' | t }}</div>
+  } @else {
+    @if (data(); as d) {
+    <div class="stat-grid">
+      <div class="stat-plate card stat-plate--t0">
+        <span class="stat-plate__label">{{ 'q.reports.totalSurveys' | t }}</span>
+        <span class="stat-plate__value">{{ d.totalSurveys }}</span>
+      </div>
+      <div class="stat-plate card stat-plate--t1">
+        <span class="stat-plate__label">{{ 'q.reports.published' | t }}</span>
+        <span class="stat-plate__value">{{ d.publishedSurveys }}</span>
+      </div>
+      <div class="stat-plate card stat-plate--t2">
+        <span class="stat-plate__label">{{ 'q.reports.responses' | t }}</span>
+        <span class="stat-plate__value">{{ d.totalResponses }}</span>
+      </div>
+      <div class="stat-plate card stat-plate--t3">
+        <span class="stat-plate__label">{{ 'q.reports.openPlans' | t }}</span>
+        <span class="stat-plate__value">{{ d.openActionPlans }}</span>
+      </div>
+    </div>
+
+    <div class="card table-card exports-card">
+      <h2 class="exports-card__title">{{ 'q.reports.exports' | t }}</h2>
+      <p class="exports-card__hint">{{ 'q.reports.exportHint' | t }}</p>
+      @if (canExport) {
+        <p class="exports-card__ok">PDF / Excel — {{ 'permission.REPORT_EXPORT' | t }}</p>
+      }
+    </div>
+    }
+  }
+</div>
