@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IdentityLookupsApiService } from '../../services/identity-lookups-api.service';
+import { EmployeesApiService } from '../../services/employees-api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { UsersApiService } from '../../services/users-api.service';
 import { PagedResult } from '../../shared/models/api.types';
@@ -29,6 +30,7 @@ type ViewMode = 'table' | 'cards';
 export class UsersPageComponent implements OnInit {
   private readonly api = inject(UsersApiService);
   private readonly lookupsApi = inject(IdentityLookupsApiService);
+  private readonly employeesApi = inject(EmployeesApiService);
   private readonly toast = inject(ToastService);
   readonly i18n = inject(I18nService);
 
@@ -42,6 +44,7 @@ export class UsersPageComponent implements OnInit {
   readonly busy = signal(false);
 
   readonly roles = signal<LookupItem[]>([]);
+  readonly employeesLookup = signal<LookupItem[]>([]);
 
   readonly createOpen = signal(false);
   readonly createBusy = signal(false);
@@ -54,6 +57,7 @@ export class UsersPageComponent implements OnInit {
     email: '',
     password: '',
     roleIds: [],
+    employeeId: null,
   };
 
   readonly detailsOpen = signal(false);
@@ -70,6 +74,7 @@ export class UsersPageComponent implements OnInit {
     nameEn: '',
     email: '',
     newPassword: null,
+    employeeId: null,
   };
 
   readonly rolesOpen = signal(false);
@@ -102,6 +107,16 @@ export class UsersPageComponent implements OnInit {
       next: (rows) => this.roles.set(rows),
       error: () => this.toast.show(this.i18n.t('users.toast.loadRolesFailed'), 'error'),
     });
+
+    this.employeesApi.getPagedList({ page: 1, pageSize: 1000, isActive: true }).subscribe({
+      next: (res) => {
+        const items: LookupItem[] = res.items.map((e) => ({
+          id: e.id,
+          name: this.i18n.lang() === 'ar' ? e.nameAr : e.nameEn,
+        }));
+        this.employeesLookup.set(items);
+      },
+    });
   }
 
   nextPage(): void {
@@ -129,6 +144,7 @@ export class UsersPageComponent implements OnInit {
       email: '',
       password: '',
       roleIds: [],
+      employeeId: null,
     };
     this.createRoleIds.set([]);
     this.showCreatePassword.set(false);
@@ -171,6 +187,7 @@ export class UsersPageComponent implements OnInit {
       email: this.createModel.email.trim(),
       password: this.createModel.password,
       roleIds: this.createRoleIds(),
+      employeeId: this.createModel.employeeId || null,
     };
 
     this.api.create(body).subscribe({
@@ -224,6 +241,7 @@ export class UsersPageComponent implements OnInit {
           nameEn: u.nameEn ?? '',
           email: u.email,
           newPassword: null,
+          employeeId: u.employeeId ?? null,
         };
         this.editBusy.set(false);
       },
@@ -261,6 +279,7 @@ export class UsersPageComponent implements OnInit {
       nameEn: this.editModel.nameEn?.trim() ? this.editModel.nameEn.trim() : null,
       email: this.editModel.email.trim(),
       newPassword: this.editModel.newPassword?.trim() ? this.editModel.newPassword.trim() : null,
+      employeeId: this.editModel.employeeId || null,
     };
 
     this.api.update(id, body).subscribe({

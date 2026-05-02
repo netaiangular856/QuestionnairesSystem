@@ -36,5 +36,10 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(x => x.UserName).IsUnique();
         builder.HasIndex(x => x.Email).IsUnique();
         builder.HasIndex(x => x.EmployeeId).IsUnique();
+
+        builder.HasOne(x => x.Employee)
+            .WithOne(x => x.User)
+            .HasForeignKey<User>(x => x.EmployeeId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

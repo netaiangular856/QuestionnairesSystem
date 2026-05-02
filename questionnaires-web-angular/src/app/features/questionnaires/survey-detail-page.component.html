@@ -1,233 +1,348 @@
-<div class="page-workspace">
-  <a routerLink="/surveys" class="back-link">← {{ 'q.detail.back' | t }}</a>
+<div class="page-workspace survey-detail-page">
+  <a routerLink="/surveys" class="back-link survey-detail-back">{{ 'q.detail.back' | t }}</a>
 
   @if (busy()) {
-    <div class="card card--muted">{{ 'common.loading' | t }}</div>
+    <div class="card card--muted survey-detail-skeleton">{{ 'common.loading' | t }}</div>
   } @else if (failed() || !survey()) {
     <div class="card card--muted">{{ 'q.detail.error' | t }}</div>
   } @else {
     @let s = survey()!;
 
-    <header class="detail-hero card feature-hero">
-      <div class="feature-hero__row">
-        <div class="feature-hero__text">
-          <h1>{{ titleOf(s) }}</h1>
-          <p class="feature-hero__meta">
-            <span class="detail-chip detail-chip--status">{{ statusKey(s) | t }}</span>
-            <span class="detail-chip detail-chip--audience">{{ audienceKey(s) | t }}</span>
-            <span class="detail-chip detail-chip--muted">v{{ s.version }}</span>
-          </p>
-          @if (s.ownerDisplayName) {
-            <p class="owner-line">
-              <strong>{{ 'q.detail.owner' | t }}:</strong> {{ s.ownerDisplayName }}
-            </p>
+    <div class="survey-detail-shell">
+      <aside class="survey-detail-toc" [attr.aria-label]="'q.detail.toc.aria' | t">
+        <p class="survey-detail-toc__title">{{ 'q.detail.toc.title' | t }}</p>
+        <nav class="survey-detail-toc__nav">
+          <button type="button" class="survey-detail-toc__item" (click)="jumpToSection('survey-header')">
+            <span class="survey-detail-toc__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 6h16M4 12h10M4 18h7" stroke-linecap="round" />
+              </svg>
+            </span>
+            <span class="survey-detail-toc__label">{{ 'q.detail.toc.jumpSummary' | t }}</span>
+          </button>
+          @if (hasOverviewSection(s)) {
+            <button type="button" class="survey-detail-toc__item" (click)="jumpToSection('survey-overview')">
+              <span class="survey-detail-toc__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-linejoin="round" />
+                  <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke-linecap="round" />
+                </svg>
+              </span>
+              <span class="survey-detail-toc__label">{{ 'q.detail.toc.jumpOverview' | t }}</span>
+            </button>
           }
-          @if (s.code) {
-            <p class="owner-line"><strong>{{ 'q.detail.code' | t }}:</strong> {{ s.code }}</p>
+          @if (canViewQuestions) {
+            <button type="button" class="survey-detail-toc__item" (click)="jumpToSection('survey-questions')">
+              <span class="survey-detail-toc__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke-linecap="round" />
+                </svg>
+              </span>
+              <span class="survey-detail-toc__label">{{ 'q.detail.toc.jumpQuestions' | t }}</span>
+            </button>
           }
-          @if (s.rejectionReason) {
-            <p class="owner-line reject-note">
-              <strong>{{ 'q.detail.rejection' | t }}:</strong> {{ s.rejectionReason }}
-            </p>
+          @if (canReport) {
+            <button type="button" class="survey-detail-toc__item" (click)="jumpToSection('survey-analytics')">
+              <span class="survey-detail-toc__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 20V10M12 20V4M6 20v-6" stroke-linecap="round" />
+                </svg>
+              </span>
+              <span class="survey-detail-toc__label">{{ 'q.detail.toc.jumpAnalytics' | t }}</span>
+            </button>
           }
-        </div>
-        @if (canManage) {
-          <div class="detail-actions">
-            <button type="button" class="action-btn action-btn--edit" [disabled]="actionBusy()" (click)="openEdit()">
-              {{ 'q.detail.actions.edit' | t }}
-            </button>
-            <button type="button" class="action-btn action-btn--info" [disabled]="actionBusy()" (click)="duplicate()">
-              {{ 'q.detail.actions.duplicate' | t }}
-            </button>
-            <button type="button" class="action-btn action-btn--danger" [disabled]="actionBusy()" (click)="openDelete()">
-              {{ 'q.detail.actions.delete' | t }}
-            </button>
-            <button type="button" class="action-btn action-btn--ghost" [disabled]="actionBusy()" (click)="openPatch()">
-              {{ 'q.detail.actions.patchStatus' | t }}
-            </button>
-          </div>
-        }
-      </div>
+        </nav>
+      </aside>
 
-      @if (canManage) {
-        <div class="workflow-bar">
-          @if (showSubmit(s)) {
-            <button type="button" class="action-btn action-btn--primary" [disabled]="actionBusy()" (click)="submitForApproval()">
-              {{ 'q.detail.actions.submitApproval' | t }}
-            </button>
-          }
-          @if (showApproveReject(s)) {
-            <button type="button" class="action-btn action-btn--primary" [disabled]="actionBusy()" (click)="approve()">
-              {{ 'q.detail.actions.approve' | t }}
-            </button>
-            <button type="button" class="action-btn action-btn--warn" [disabled]="actionBusy()" (click)="openReject()">
-              {{ 'q.detail.actions.reject' | t }}
-            </button>
-          }
-          @if (showPublish(s)) {
-            <button type="button" class="action-btn action-btn--primary" [disabled]="actionBusy()" (click)="publish()">
-              {{ 'q.detail.actions.publish' | t }}
-            </button>
-          }
-          @if (showClose(s)) {
-            <button type="button" class="action-btn action-btn--edit" [disabled]="actionBusy()" (click)="closeSurvey()">
-              {{ 'q.detail.actions.close' | t }}
-            </button>
-          }
-        </div>
-      }
-    </header>
-
-    @if (canReport) {
-      <section class="section-block">
-        <h2>{{ 'q.detail.analytics.title' | t }}</h2>
-        @if (analyticsBusy()) {
-          <div class="card card--muted">{{ 'q.detail.analytics.loading' | t }}</div>
-        } @else {
-          @if (analytics(); as an) {
-            <div class="analytics-chart-row">
-              <div class="card analytics-chart-card">
-                <h3 class="analytics-chart-card__title">{{ 'q.detail.analytics.totals' | t }}</h3>
-                @if (an.totalResponses > 0) {
-                  <div class="analytics-pie-block">
-                    <div class="chart-pie-ring" role="img" [attr.aria-label]="'q.detail.analytics.totals' | t">
-                      <div class="chart-pie" [style.background]="pieGradient(an)"></div>
-                      <div class="chart-pie__hole"></div>
-                    </div>
-                    <ul class="chart-cat-labels">
-                      <li>
-                        <span class="chart-cat-labels__swatch chart-cat-labels__swatch--submitted"></span>
-                        {{ 'q.detail.analytics.submitted' | t }}
-                      </li>
-                      <li>
-                        <span class="chart-cat-labels__swatch chart-cat-labels__swatch--progress"></span>
-                        {{ 'q.detail.analytics.inProgress' | t }}
-                      </li>
-                      <li>
-                        <span class="chart-cat-labels__swatch chart-cat-labels__swatch--other"></span>
-                        {{ 'q.detail.analytics.otherResponses' | t }}
-                      </li>
-                    </ul>
-                  </div>
-                  <div class="chart-col-strip" aria-hidden="true">
-                    <div class="chart-col-strip__item">
-                      <div class="chart-col-strip__track">
-                        <div
-                          class="chart-col-strip__fill chart-col-strip__fill--submitted"
-                          [style.height.%]="mixSubmittedPct(an)"
-                        ></div>
-                      </div>
-                    </div>
-                    <div class="chart-col-strip__item">
-                      <div class="chart-col-strip__track">
-                        <div
-                          class="chart-col-strip__fill chart-col-strip__fill--progress"
-                          [style.height.%]="mixInProgressPct(an)"
-                        ></div>
-                      </div>
-                    </div>
-                    <div class="chart-col-strip__item">
-                      <div class="chart-col-strip__track">
-                        <div
-                          class="chart-col-strip__fill chart-col-strip__fill--other"
-                          [style.height.%]="mixOtherPct(an)"
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                } @else {
-                  <p class="analytics-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
-                }
+      <div class="survey-detail-flow">
+        <header id="survey-header" class="survey-detail-hero">
+          <div class="survey-detail-hero__mesh" aria-hidden="true"></div>
+          <div class="survey-detail-hero__accent" aria-hidden="true"></div>
+          <div class="survey-detail-hero__top">
+            <div class="survey-detail-hero__lead">
+              <p class="survey-detail-hero__eyebrow">{{ 'q.detail.hero.eyebrow' | t }}</p>
+              <h1 class="survey-detail-hero__title">{{ titleOf(s) }}</h1>
+              <div class="survey-detail-hero__chips">
+                <span class="survey-chip survey-chip--status">{{ statusKey(s) | t }}</span>
+                <span class="survey-chip survey-chip--audience">{{ audienceKey(s) | t }}</span>
               </div>
-              @if (analyticsSummary(); as sm) {
-                <div class="card analytics-chart-card analytics-chart-card--summary">
-                  <h3 class="analytics-chart-card__title">{{ 'q.detail.analytics.summaryTitle' | t }}</h3>
-                  <div
-                    class="chart-rate chart-rate--plain"
-                    role="img"
-                    [attr.aria-label]="'q.detail.analytics.summaryTitle' | t"
-                  >
-                    <div class="chart-rate__track">
-                      <div class="chart-rate__fill" [style.width.%]="sm.completionRate"></div>
-                    </div>
+            </div>
+            @if (canManage) {
+              <div class="survey-detail-hero__toolbar">
+                <div class="survey-detail-hero__actions detail-actions">
+                  <button type="button" class="action-btn action-btn--edit" [disabled]="actionBusy()" (click)="openEdit()">
+                    {{ 'q.detail.actions.edit' | t }}
+                  </button>
+                  <button type="button" class="action-btn action-btn--info" [disabled]="actionBusy()" (click)="duplicate()">
+                    {{ 'q.detail.actions.duplicate' | t }}
+                  </button>
+                  <button type="button" class="action-btn action-btn--danger" [disabled]="actionBusy()" (click)="openDelete()">
+                    {{ 'q.detail.actions.delete' | t }}
+                  </button>
+                  <button type="button" class="action-btn action-btn--ghost" [disabled]="actionBusy()" (click)="openPatch()">
+                    {{ 'q.detail.actions.patchStatus' | t }}
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="survey-detail-kpis">
+            @if (s.ownerDisplayName) {
+              <div class="survey-detail-kpi">
+                <span class="survey-detail-kpi__label">{{ 'q.detail.owner' | t }}</span>
+                <span class="survey-detail-kpi__value">{{ s.ownerDisplayName }}</span>
+              </div>
+            }
+            @if (s.code) {
+              <div class="survey-detail-kpi">
+                <span class="survey-detail-kpi__label">{{ 'q.detail.code' | t }}</span>
+                <span class="survey-detail-kpi__value survey-detail-kpi__value--mono">{{ s.code }}</span>
+              </div>
+            }
+            <div class="survey-detail-kpi">
+              <span class="survey-detail-kpi__label">{{ 'q.surveys.table.version' | t }}</span>
+              <span class="survey-detail-kpi__value">v{{ s.version }}</span>
+            </div>
+          </div>
+
+          @if (s.rejectionReason) {
+            <div class="survey-detail-alert">
+              <strong>{{ 'q.detail.rejection' | t }}</strong>
+              {{ s.rejectionReason }}
+            </div>
+          }
+
+          @if (canManage) {
+            <div class="survey-detail-workflow survey-detail-workflow--bar">
+              @if (showSubmit(s)) {
+                <button type="button" class="action-btn action-btn--primary" [disabled]="actionBusy()" (click)="submitForApproval()">
+                  {{ 'q.detail.actions.submitApproval' | t }}
+                </button>
+              }
+              @if (showApproveReject(s)) {
+                <button type="button" class="action-btn action-btn--primary" [disabled]="actionBusy()" (click)="approve()">
+                  {{ 'q.detail.actions.approve' | t }}
+                </button>
+                <button type="button" class="action-btn action-btn--warn" [disabled]="actionBusy()" (click)="openReject()">
+                  {{ 'q.detail.actions.reject' | t }}
+                </button>
+              }
+              @if (showPublish(s)) {
+                <button type="button" class="action-btn action-btn--primary" [disabled]="actionBusy()" (click)="publish()">
+                  {{ 'q.detail.actions.publish' | t }}
+                </button>
+              }
+              @if (showClose(s)) {
+                <button type="button" class="action-btn action-btn--edit" [disabled]="actionBusy()" (click)="closeSurvey()">
+                  {{ 'q.detail.actions.close' | t }}
+                </button>
+              }
+            </div>
+          }
+        </header>
+
+        @if (hasOverviewSection(s)) {
+          <section id="survey-overview" class="survey-detail-section card">
+            <div class="survey-detail-section__head">
+              <span class="survey-detail-section__icon" aria-hidden="true">◆</span>
+              <h2 class="survey-detail-section__title">{{ 'q.detail.section.overview' | t }}</h2>
+            </div>
+            <div class="survey-detail-overview">
+              @if (s.descriptionAr?.trim() || s.descriptionEn?.trim()) {
+                <div class="survey-detail-overview__col survey-detail-overview__col--desc">
+                  <h3 class="survey-detail-overview__sub">{{ 'q.detail.section.about' | t }}</h3>
+                  <div class="survey-detail-desc-stack">
+                    @if (s.descriptionAr?.trim()) {
+                      <div class="survey-detail-desc-block">
+                        <span class="survey-detail-desc-block__label">{{ 'q.detail.descAr' | t }}</span>
+                        <p class="survey-detail-desc-block__text">{{ s.descriptionAr }}</p>
+                      </div>
+                    }
+                    @if (s.descriptionEn?.trim()) {
+                      <div class="survey-detail-desc-block">
+                        <span class="survey-detail-desc-block__label">{{ 'q.detail.descEn' | t }}</span>
+                        <p class="survey-detail-desc-block__text">{{ s.descriptionEn }}</p>
+                      </div>
+                    }
                   </div>
                 </div>
               }
-            </div>
-
-            <div class="analytics-nav-grid">
-              @if (canResponses) {
-                <a class="card card--interactive analytics-nav-card" [routerLink]="['/surveys', s.id, 'responses']">
-                  <span class="analytics-nav-card__title">{{ 'q.detail.analytics.navResponses' | t }}</span>
-                  <span class="analytics-nav-card__hint muted">{{ 'q.detail.analytics.navResponsesHint' | t }}</span>
-                  <span class="analytics-nav-card__go" aria-hidden="true">→</span>
-                </a>
+              @if (s.opensAtUtc || s.closesAtUtc) {
+                <div class="survey-detail-overview__col survey-detail-overview__col--schedule">
+                  <h3 class="survey-detail-overview__sub">{{ 'q.detail.section.schedule' | t }}</h3>
+                  <ul class="survey-detail-timeline">
+                    @if (s.opensAtUtc) {
+                      <li class="survey-detail-timeline__item">
+                        <span class="survey-detail-timeline__dot"></span>
+                        <div>
+                          <span class="survey-detail-timeline__label">{{ 'q.detail.opensAt' | t }}</span>
+                          <time class="survey-detail-timeline__time">{{ s.opensAtUtc | date: 'medium' }}</time>
+                        </div>
+                      </li>
+                    }
+                    @if (s.closesAtUtc) {
+                      <li class="survey-detail-timeline__item">
+                        <span class="survey-detail-timeline__dot survey-detail-timeline__dot--end"></span>
+                        <div>
+                          <span class="survey-detail-timeline__label">{{ 'q.detail.closesAt' | t }}</span>
+                          <time class="survey-detail-timeline__time">{{ s.closesAtUtc | date: 'medium' }}</time>
+                        </div>
+                      </li>
+                    }
+                  </ul>
+                </div>
               }
-              @if (canParticipants) {
-                <a class="card card--interactive analytics-nav-card" [routerLink]="['/surveys', s.id, 'participants']">
-                  <span class="analytics-nav-card__title">{{ 'q.detail.analytics.navParticipants' | t }}</span>
-                  <span class="analytics-nav-card__hint muted">{{ 'q.detail.analytics.navParticipantsHint' | t }}</span>
-                  <span class="analytics-nav-card__go" aria-hidden="true">→</span>
-                </a>
-              }
-              <a class="card card--interactive analytics-nav-card" [routerLink]="['/surveys', s.id, 'question-analytics']">
-                <span class="analytics-nav-card__title">{{ 'q.detail.analytics.navQuestions' | t }}</span>
-                <span class="analytics-nav-card__hint muted">{{ 'q.detail.analytics.navQuestionsHint' | t }}</span>
-                <span class="analytics-nav-card__go" aria-hidden="true">→</span>
-              </a>
             </div>
-          } @else {
-            <div class="card card--muted">{{ 'q.detail.analytics.error' | t }}</div>
-          }
+          </section>
         }
-      </section>
-    }
-  }
 
-  @if (editOpen()) {
-    <div class="modal-backdrop" (click)="editOpen.set(false)"></div>
-    <div class="modal-panel card" role="dialog" aria-modal="true">
-      <header class="modal-panel__head">
-        <h2>{{ 'q.detail.edit.title' | t }}</h2>
-        <button type="button" class="modal-close" (click)="editOpen.set(false)">{{ 'common.close' | t }}</button>
-      </header>
-      <div class="modal-panel__body">
-        <label class="field">
-          <span>{{ 'q.surveys.form.titleAr' | t }}</span>
-          <input [(ngModel)]="editModel.titleAr" />
-        </label>
-        <label class="field">
-          <span>{{ 'q.surveys.form.titleEn' | t }}</span>
-          <input [(ngModel)]="editModel.titleEn" />
-        </label>
-        <label class="field">
-          <span>{{ 'q.detail.code' | t }}</span>
-          <input [(ngModel)]="editModel.code" />
-        </label>
-        <label class="field">
-          <span>{{ 'q.detail.descAr' | t }}</span>
-          <textarea rows="2" [(ngModel)]="editModel.descriptionAr"></textarea>
-        </label>
-        <label class="field">
-          <span>{{ 'q.detail.descEn' | t }}</span>
-          <textarea rows="2" [(ngModel)]="editModel.descriptionEn"></textarea>
-        </label>
-        <label class="field">
-          <span>{{ 'q.surveys.form.audience' | t }}</span>
-          <select [(ngModel)]="editModel.audienceScope">
-            <option [ngValue]="SurveyAudienceScope.Everyone">{{ 'q.audience.everyone' | t }}</option>
-            <option [ngValue]="SurveyAudienceScope.Guest">{{ 'q.audience.guest' | t }}</option>
-            <option [ngValue]="SurveyAudienceScope.SpecificUsers">{{ 'q.audience.specific' | t }}</option>
-            <option [ngValue]="SurveyAudienceScope.AllOrganizationMembers">{{ 'q.audience.org' | t }}</option>
-          </select>
-        </label>
+        @if (canViewQuestions) {
+          <section id="survey-questions" class="survey-detail-section card survey-detail-section--questions">
+            <div class="survey-detail-section__head">
+              <span class="survey-detail-section__icon survey-detail-section__icon--svg" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+                  <path d="M9 5a2 2 0 012-2h2a2 2 0 012 2v0a2 2 0 01-2 2h-2a2 2 0 01-2-2v0z" />
+                  <path d="M9 12h6M9 16h6" />
+                </svg>
+              </span>
+              <h2 class="survey-detail-section__title">{{ 'q.detail.questionsBlock.title' | t }}</h2>
+              @if (questions().length > 0) {
+                <span class="survey-detail-section__count">{{ questions().length }}</span>
+              }
+            </div>
+
+            @if (questions().length === 0) {
+              <p class="muted survey-detail-empty">{{ 'q.detail.questionsBlock.empty' | t }}</p>
+            } @else {
+              <ul class="survey-q-list">
+                @for (q of questions(); track q.id) {
+                  <li class="survey-q-item">
+                    <div class="survey-q-item__index">{{ q.displayOrder }}</div>
+                    <div class="survey-q-item__main">
+                      <div class="survey-q-item__meta">
+                        <span class="survey-q-item__type">{{ questionTypeLabelKey(q) | t }}</span>
+                      </div>
+                      <p class="survey-q-item__text">{{ questionTitle(q) }}</p>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          </section>
+        }
+
+        @if (canReport) {
+          <section id="survey-analytics" class="survey-detail-section card survey-detail-section--analytics">
+            <div class="survey-detail-section__head">
+              <span class="survey-detail-section__icon" aria-hidden="true">◎</span>
+              <h2 class="survey-detail-section__title">{{ 'q.detail.analytics.title' | t }}</h2>
+            </div>
+            <p class="survey-detail-section__lead muted">{{ 'q.detail.analytics.lead' | t }}</p>
+
+            @if (analyticsBusy()) {
+              <div class="card card--muted">{{ 'q.detail.analytics.loading' | t }}</div>
+            } @else {
+              @if (analytics(); as an) {
+                <div class="analytics-chart-row">
+                  <div class="card analytics-chart-card">
+                    <h3 class="analytics-chart-card__title">{{ 'q.detail.analytics.totals' | t }}</h3>
+                    @if (an.totalResponses > 0) {
+                      <div class="analytics-pie-block">
+                        <div class="chart-pie-ring" role="img" [attr.aria-label]="'q.detail.analytics.totals' | t">
+                          <div class="chart-pie" [style.background]="pieGradient(an)"></div>
+                          <div class="chart-pie__hole"></div>
+                        </div>
+                        <ul class="chart-cat-labels">
+                          <li>
+                            <span class="chart-cat-labels__swatch chart-cat-labels__swatch--submitted"></span>
+                            {{ 'q.detail.analytics.submitted' | t }}
+                          </li>
+                          <li>
+                            <span class="chart-cat-labels__swatch chart-cat-labels__swatch--progress"></span>
+                            {{ 'q.detail.analytics.inProgress' | t }}
+                          </li>
+                          <li>
+                            <span class="chart-cat-labels__swatch chart-cat-labels__swatch--other"></span>
+                            {{ 'q.detail.analytics.otherResponses' | t }}
+                          </li>
+                        </ul>
+                      </div>
+                      <div class="chart-col-strip" aria-hidden="true">
+                        <div class="chart-col-strip__item">
+                          <div class="chart-col-strip__track">
+                            <div
+                              class="chart-col-strip__fill chart-col-strip__fill--submitted"
+                              [style.height.%]="mixSubmittedPct(an)"
+                            ></div>
+                          </div>
+                        </div>
+                        <div class="chart-col-strip__item">
+                          <div class="chart-col-strip__track">
+                            <div
+                              class="chart-col-strip__fill chart-col-strip__fill--progress"
+                              [style.height.%]="mixInProgressPct(an)"
+                            ></div>
+                          </div>
+                        </div>
+                        <div class="chart-col-strip__item">
+                          <div class="chart-col-strip__track">
+                            <div
+                              class="chart-col-strip__fill chart-col-strip__fill--other"
+                              [style.height.%]="mixOtherPct(an)"
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    } @else {
+                      <p class="analytics-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+                    }
+                  </div>
+                  @if (analyticsSummary(); as sm) {
+                    <div class="card analytics-chart-card analytics-chart-card--summary">
+                      <h3 class="analytics-chart-card__title">{{ 'q.detail.analytics.summaryTitle' | t }}</h3>
+                      <div
+                        class="chart-rate chart-rate--plain"
+                        role="img"
+                        [attr.aria-label]="'q.detail.analytics.summaryTitle' | t"
+                      >
+                        <div class="chart-rate__track">
+                          <div class="chart-rate__fill" [style.width.%]="sm.completionRate"></div>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+
+                <div class="analytics-nav-grid">
+                  @if (canResponses) {
+                    <a class="card card--interactive analytics-nav-card" [routerLink]="['/surveys', s.id, 'responses']">
+                      <span class="analytics-nav-card__title">{{ 'q.detail.analytics.navResponses' | t }}</span>
+                      <span class="analytics-nav-card__hint muted">{{ 'q.detail.analytics.navResponsesHint' | t }}</span>
+                      <span class="analytics-nav-card__go" aria-hidden="true">→</span>
+                    </a>
+                  }
+                  @if (canParticipants) {
+                    <a class="card card--interactive analytics-nav-card" [routerLink]="['/surveys', s.id, 'participants']">
+                      <span class="analytics-nav-card__title">{{ 'q.detail.analytics.navParticipants' | t }}</span>
+                      <span class="analytics-nav-card__hint muted">{{ 'q.detail.analytics.navParticipantsHint' | t }}</span>
+                      <span class="analytics-nav-card__go" aria-hidden="true">→</span>
+                    </a>
+                  }
+                  <a class="card card--interactive analytics-nav-card" [routerLink]="['/surveys', s.id, 'question-analytics']">
+                    <span class="analytics-nav-card__title">{{ 'q.detail.analytics.navQuestions' | t }}</span>
+                    <span class="analytics-nav-card__hint muted">{{ 'q.detail.analytics.navQuestionsHint' | t }}</span>
+                    <span class="analytics-nav-card__go" aria-hidden="true">→</span>
+                  </a>
+                </div>
+              } @else {
+                <div class="card card--muted">{{ 'q.detail.analytics.error' | t }}</div>
+              }
+            }
+          </section>
+        }
       </div>
-      <footer class="modal-panel__foot">
-        <button type="button" class="btn-ghost" (click)="editOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
-        <button type="button" class="btn-primary" [disabled]="actionBusy()" (click)="saveEdit()">
-          {{ 'users.actions.save' | t }}
-        </button>
-      </footer>
     </div>
   }
 

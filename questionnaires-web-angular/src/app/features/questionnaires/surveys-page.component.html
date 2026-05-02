@@ -1,17 +1,22 @@
-<div class="page-workspace">
-  <div class="page-head-row">
-    <section class="page-head">
-      <h1>{{ 'q.surveys.title' | t }}</h1>
-      <p class="page-head__sub">{{ 'q.surveys.subtitle' | t }}</p>
-    </section>
-    @if (canManage) {
-      <div class="page-actions">
-        <button type="button" class="btn-primary btn-primary--icon" (click)="openCreate()">
-          <span class="btn-ico" aria-hidden="true">＋</span>
-          {{ 'q.surveys.create' | t }}
-        </button>
+<div class="page-workspace surveys-list-page">
+  <div class="page-head-row surveys-list-page__intro">
+    <section class="page-head surveys-page-hero">
+      <div class="surveys-page-hero__row">
+        <div class="surveys-page-hero__text">
+          <p class="surveys-page-hero__kicker">{{ 'q.surveys.hero.kicker' | t }}</p>
+          <h1>{{ 'q.surveys.title' | t }}</h1>
+          <p class="page-head__sub">{{ 'q.surveys.subtitle' | t }}</p>
+        </div>
+        @if (canManage) {
+          <div class="surveys-page-hero__actions page-actions">
+            <button type="button" class="btn-primary btn-primary--icon" (click)="goToCreate()">
+              <span class="btn-ico" aria-hidden="true">＋</span>
+              {{ 'q.surveys.create' | t }}
+            </button>
+          </div>
+        }
       </div>
-    }
+    </section>
   </div>
 
   <div class="toolbar toolbar--split card card--interactive">
@@ -83,7 +88,7 @@
                         <button
                           type="button"
                           class="action-btn action-btn--edit"
-                          [disabled]="mutationBusy() || editBusy()"
+                          [disabled]="mutationBusy()"
                           (click)="openEditRow(row, $event)"
                         >
                           {{ 'q.detail.actions.edit' | t }}
@@ -204,7 +209,7 @@
                     <button
                       type="button"
                       class="action-btn action-btn--edit"
-                      [disabled]="mutationBusy() || editBusy()"
+                      [disabled]="mutationBusy()"
                       (click)="openEditRow(row, $event)"
                     >
                       {{ 'q.detail.actions.edit' | t }}
@@ -296,109 +301,6 @@
         </div>
       }
     }
-  }
-
-  @if (createOpen()) {
-    <div class="modal-backdrop" (click)="createOpen.set(false)"></div>
-    <div class="modal-panel modal-panel--wide card" role="dialog" aria-modal="true">
-      <header class="modal-panel__head">
-        <h2>{{ 'q.surveys.modal.createTitle' | t }}</h2>
-        <button type="button" class="modal-close" (click)="createOpen.set(false)">{{ 'common.close' | t }}</button>
-      </header>
-      <div class="modal-panel__body">
-        <label class="field">
-          <span>{{ 'q.surveys.form.titleAr' | t }}</span>
-          <input [(ngModel)]="createModel.titleAr" />
-        </label>
-        <label class="field">
-          <span>{{ 'q.surveys.form.titleEn' | t }}</span>
-          <input [(ngModel)]="createModel.titleEn" />
-        </label>
-        <label class="field">
-          <span>{{ 'q.detail.descAr' | t }}</span>
-          <textarea rows="2" [(ngModel)]="createModel.descriptionAr"></textarea>
-        </label>
-        <label class="field">
-          <span>{{ 'q.detail.descEn' | t }}</span>
-          <textarea rows="2" [(ngModel)]="createModel.descriptionEn"></textarea>
-        </label>
-        <label class="field">
-          <span>{{ 'q.detail.code' | t }}</span>
-          <input [(ngModel)]="createModel.code" [placeholder]="'q.surveys.form.codeHint' | t" />
-        </label>
-        <label class="field">
-          <span>{{ 'q.surveys.form.audience' | t }}</span>
-          <select [(ngModel)]="createModel.audienceScope">
-            <option [ngValue]="SurveyAudienceScope.Everyone">{{ 'q.audience.everyone' | t }}</option>
-            <option [ngValue]="SurveyAudienceScope.Guest">{{ 'q.audience.guest' | t }}</option>
-            <option [ngValue]="SurveyAudienceScope.SpecificUsers">{{ 'q.audience.specific' | t }}</option>
-            <option [ngValue]="SurveyAudienceScope.AllOrganizationMembers">{{ 'q.audience.org' | t }}</option>
-          </select>
-        </label>
-        <label class="field">
-          <span>{{ 'q.surveys.form.template' | t }}</span>
-          <select [(ngModel)]="createModel.templateId">
-            <option [ngValue]="null">{{ 'q.surveys.form.templateNone' | t }}</option>
-            @for (t of templates(); track t.id) {
-              <option [ngValue]="t.id">{{ templateTitle(t) }}</option>
-            }
-          </select>
-        </label>
-      </div>
-      <footer class="modal-panel__foot">
-        <button type="button" class="btn-ghost" (click)="createOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
-        <button type="button" class="btn-primary" [disabled]="createBusy()" (click)="submitCreate()">
-          {{ 'users.actions.save' | t }}
-        </button>
-      </footer>
-    </div>
-  }
-
-  @if (editOpen()) {
-    <div class="modal-backdrop" (click)="editOpen.set(false)"></div>
-    <div class="modal-panel modal-panel--wide card" role="dialog" aria-modal="true">
-      <header class="modal-panel__head">
-        <h2>{{ 'q.detail.edit.title' | t }}</h2>
-        <button type="button" class="modal-close" (click)="editOpen.set(false)">{{ 'common.close' | t }}</button>
-      </header>
-      <div class="modal-panel__body">
-        <label class="field">
-          <span>{{ 'q.surveys.form.titleAr' | t }}</span>
-          <input [(ngModel)]="editModel.titleAr" />
-        </label>
-        <label class="field">
-          <span>{{ 'q.surveys.form.titleEn' | t }}</span>
-          <input [(ngModel)]="editModel.titleEn" />
-        </label>
-        <label class="field">
-          <span>{{ 'q.detail.code' | t }}</span>
-          <input [(ngModel)]="editModel.code" />
-        </label>
-        <label class="field">
-          <span>{{ 'q.detail.descAr' | t }}</span>
-          <textarea rows="2" [(ngModel)]="editModel.descriptionAr"></textarea>
-        </label>
-        <label class="field">
-          <span>{{ 'q.detail.descEn' | t }}</span>
-          <textarea rows="2" [(ngModel)]="editModel.descriptionEn"></textarea>
-        </label>
-        <label class="field">
-          <span>{{ 'q.surveys.form.audience' | t }}</span>
-          <select [(ngModel)]="editModel.audienceScope">
-            <option [ngValue]="SurveyAudienceScope.Everyone">{{ 'q.audience.everyone' | t }}</option>
-            <option [ngValue]="SurveyAudienceScope.Guest">{{ 'q.audience.guest' | t }}</option>
-            <option [ngValue]="SurveyAudienceScope.SpecificUsers">{{ 'q.audience.specific' | t }}</option>
-            <option [ngValue]="SurveyAudienceScope.AllOrganizationMembers">{{ 'q.audience.org' | t }}</option>
-          </select>
-        </label>
-      </div>
-      <footer class="modal-panel__foot">
-        <button type="button" class="btn-ghost" (click)="editOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
-        <button type="button" class="btn-primary" [disabled]="mutationBusy()" (click)="saveEdit()">
-          {{ 'users.actions.save' | t }}
-        </button>
-      </footer>
-    </div>
   }
 
   @if (deleteOpen()) {

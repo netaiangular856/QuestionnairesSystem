@@ -10,4 +10,5 @@ public sealed class UpdateSurveyRequest
     public string? DescriptionEn { get; set; }
     public string? Code { get; set; }
     public SurveyAudienceScope AudienceScope { get; set; }
+    public IReadOnlyList<CreateSurveyQuestionItem>? Questions { get; set; }
 }

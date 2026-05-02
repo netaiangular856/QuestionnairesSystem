@@ -660,6 +660,80 @@ namespace QuestionnairesSystem.Persistence.Migrations
                     b.ToTable("Departments", (string)null);
                 });
 
+            modelBuilder.Entity("QuestionnairesSystem.Domain.Organizations.Employee", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DeletedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(320)
+                        .HasColumnType("nvarchar(320)");
+
+                    b.Property<string>("EmployeeNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("JobTitleAr")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("JobTitleEn")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("ModifiedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ModifiedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<byte>("RecordStatus")
+                        .HasColumnType("tinyint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("EmployeeNumber")
+                        .IsUnique();
+
+                    b.ToTable("Employees", (string)null);
+                });
+
             modelBuilder.Entity("QuestionnairesSystem.Domain.Participants.SurveyParticipant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -717,6 +791,78 @@ namespace QuestionnairesSystem.Persistence.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("SurveyParticipants", (string)null);
+                });
+
+            modelBuilder.Entity("QuestionnairesSystem.Domain.Partners.Partner", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ContactPerson")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DeletedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(320)
+                        .HasColumnType("nvarchar(320)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("ModifiedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ModifiedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<byte>("RecordStatus")
+                        .HasColumnType("tinyint");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Partners", (string)null);
                 });
 
             modelBuilder.Entity("QuestionnairesSystem.Domain.Recommendations.Recommendation", b =>
@@ -1028,6 +1174,9 @@ namespace QuestionnairesSystem.Persistence.Migrations
                     b.Property<DateTime?>("ClosedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("ClosesAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Code")
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
@@ -1056,6 +1205,9 @@ namespace QuestionnairesSystem.Persistence.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("ModifiedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("OpensAtUtc")
                         .HasColumnType("datetime2");
 
                     b.Property<Guid?>("OwnerUserId")
@@ -1103,6 +1255,8 @@ namespace QuestionnairesSystem.Persistence.Migrations
                     b.HasIndex("Status");
 
                     b.HasIndex("TemplateId");
+
+                    b.HasIndex("Status", "ClosesAtUtc");
 
                     b.ToTable("Surveys", (string)null);
                 });
@@ -1295,6 +1449,16 @@ namespace QuestionnairesSystem.Persistence.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("QuestionnairesSystem.Domain.Identity.User", b =>
+                {
+                    b.HasOne("QuestionnairesSystem.Domain.Organizations.Employee", "Employee")
+                        .WithOne("User")
+                        .HasForeignKey("QuestionnairesSystem.Domain.Identity.User", "EmployeeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Employee");
+                });
+
             modelBuilder.Entity("QuestionnairesSystem.Domain.Identity.UserRole", b =>
                 {
                     b.HasOne("QuestionnairesSystem.Domain.Identity.Role", "Role")
@@ -1333,6 +1497,16 @@ namespace QuestionnairesSystem.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ParentDepartment");
+                });
+
+            modelBuilder.Entity("QuestionnairesSystem.Domain.Organizations.Employee", b =>
+                {
+                    b.HasOne("QuestionnairesSystem.Domain.Organizations.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Department");
                 });
 
             modelBuilder.Entity("QuestionnairesSystem.Domain.Participants.SurveyParticipant", b =>
@@ -1492,6 +1666,11 @@ namespace QuestionnairesSystem.Persistence.Migrations
             modelBuilder.Entity("QuestionnairesSystem.Domain.Organizations.Department", b =>
                 {
                     b.Navigation("Children");
+                });
+
+            modelBuilder.Entity("QuestionnairesSystem.Domain.Organizations.Employee", b =>
+                {
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("QuestionnairesSystem.Domain.Participants.SurveyParticipant", b =>

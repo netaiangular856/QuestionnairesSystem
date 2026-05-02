@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -6,8 +7,11 @@ import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, filter, map } from 'rxjs/operators';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SurveyQuestionsApiService } from '../../services/survey-questions-api.service';
 import { SurveysApiService } from '../../services/surveys-api.service';
 import {
+  QuestionDto,
+  QuestionType,
   SurveyAnalyticsDto,
   SurveyAnalyticsSummaryDto,
   SurveyAudienceScope,
@@ -23,7 +27,7 @@ import { I18nService } from '../../shared/services/i18n.service';
 @Component({
   selector: 'app-survey-detail-page',
   standalone: true,
-  imports: [RouterLink, TranslatePipe, FormsModule],
+  imports: [RouterLink, TranslatePipe, FormsModule, DatePipe],
   templateUrl: './survey-detail-page.component.html',
   styleUrl: './survey-detail-page.component.scss',
 })
@@ -32,37 +36,48 @@ export class SurveyDetailPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly surveysApi = inject(SurveysApiService);
+  private readonly surveyQuestionsApi = inject(SurveyQuestionsApiService);
   private readonly toast = inject(ToastService);
   readonly auth = inject(AuthService);
   readonly i18n = inject(I18nService);
 
   readonly canManage = this.auth.hasPermission(PermissionCodes.SurveyManage);
+  readonly canApproveWorkflow = this.auth.hasAnyPermission([
+    PermissionCodes.SurveyManage,
+    PermissionCodes.SurveyApprove,
+  ]);
   readonly canParticipants = this.auth.hasPermission(PermissionCodes.ParticipantView);
   readonly canResponses = this.auth.hasPermission(PermissionCodes.ResponseView);
   readonly canReport = this.auth.hasPermission(PermissionCodes.ReportView);
+  readonly canViewQuestions = this.auth.hasPermission(PermissionCodes.QuestionView);
 
   readonly SurveyStatus = SurveyStatus;
   readonly SurveyAudienceScope = SurveyAudienceScope;
+  readonly QuestionType = QuestionType;
+
+  readonly questionTypeLabels: { value: QuestionType; labelKey: string }[] = [
+    { value: QuestionType.ShortText, labelKey: 'q.templates.qt.shortText' },
+    { value: QuestionType.LongText, labelKey: 'q.templates.qt.longText' },
+    { value: QuestionType.SingleChoice, labelKey: 'q.templates.qt.single' },
+    { value: QuestionType.MultipleChoice, labelKey: 'q.templates.qt.multi' },
+    { value: QuestionType.Rating, labelKey: 'q.templates.qt.rating' },
+    { value: QuestionType.Scale, labelKey: 'q.templates.qt.scale' },
+    { value: QuestionType.YesNo, labelKey: 'q.templates.qt.yesno' },
+    { value: QuestionType.Date, labelKey: 'q.templates.qt.date' },
+    { value: QuestionType.Number, labelKey: 'q.templates.qt.number' },
+  ];
 
   readonly survey = signal<SurveyDetailDto | null>(null);
   readonly failed = signal(false);
   readonly busy = signal(true);
+
+  readonly questions = signal<QuestionDto[]>([]);
 
   readonly analytics = signal<SurveyAnalyticsDto | null>(null);
   readonly analyticsSummary = signal<SurveyAnalyticsSummaryDto | null>(null);
   readonly analyticsBusy = signal(false);
 
   readonly actionBusy = signal(false);
-
-  readonly editOpen = signal(false);
-  editModel: UpdateSurveyRequest = {
-    titleAr: '',
-    titleEn: '',
-    descriptionAr: '',
-    descriptionEn: '',
-    code: '',
-    audienceScope: SurveyAudienceScope.AllOrganizationMembers,
-  };
 
   readonly deleteOpen = signal(false);
 
@@ -87,9 +102,19 @@ export class SurveyDetailPageComponent implements OnInit {
     this.failed.set(false);
     this.analytics.set(null);
     this.analyticsSummary.set(null);
-    this.surveysApi.getById(id).subscribe({
-      next: (s) => {
-        this.survey.set(s);
+    this.questions.set([]);
+    forkJoin({
+      survey: this.surveysApi.getById(id),
+      questions: this.canViewQuestions
+        ? this.surveyQuestionsApi.list(id).pipe(catchError(() => of([] as QuestionDto[])))
+        : of([] as QuestionDto[]),
+    }).subscribe({
+      next: ({ survey, questions }) => {
+        this.survey.set(survey);
+        if (this.canViewQuestions) {
+          const sorted = [...(questions ?? [])].sort((a, b) => a.displayOrder - b.displayOrder);
+          this.questions.set(sorted);
+        }
         this.busy.set(false);
         if (this.canReport) this.loadAnalytics(id);
       },
@@ -136,6 +161,23 @@ export class SurveyDetailPageComponent implements OnInit {
     return qAudienceKey(s.audienceScope);
   }
 
+  hasOverviewSection(s: SurveyDetailDto): boolean {
+    return !!(
+      s.descriptionAr?.trim() ||
+      s.descriptionEn?.trim() ||
+      s.opensAtUtc ||
+      s.closesAtUtc
+    );
+  }
+
+  questionTitle(q: QuestionDto): string {
+    return qLocalizedTitle(this.i18n.lang(), q.titleAr, q.titleEn);
+  }
+
+  questionTypeLabelKey(q: QuestionDto): string {
+    return this.questionTypeLabels.find((x) => x.value === q.type)?.labelKey ?? 'q.templates.qt.shortText';
+  }
+
   /** Stacked strip: submitted (of total responses) */
   mixSubmittedPct(an: SurveyAnalyticsDto): number {
     const t = an.totalResponses;
@@ -170,7 +212,7 @@ export class SurveyDetailPageComponent implements OnInit {
   }
 
   showApproveReject(s: SurveyDetailDto): boolean {
-    return this.canManage && s.status === SurveyStatus.PendingApproval;
+    return this.canApproveWorkflow && s.status === SurveyStatus.PendingApproval;
   }
 
   showPublish(s: SurveyDetailDto): boolean {
@@ -182,48 +224,9 @@ export class SurveyDetailPageComponent implements OnInit {
   }
 
   openEdit(): void {
-    const s = this.survey();
-    if (!s) return;
-    this.editModel = {
-      titleAr: s.titleAr,
-      titleEn: s.titleEn,
-      descriptionAr: s.descriptionAr ?? '',
-      descriptionEn: s.descriptionEn ?? '',
-      code: s.code ?? '',
-      audienceScope: s.audienceScope,
-    };
-    this.editOpen.set(true);
-  }
-
-  saveEdit(): void {
     const id = this.currentId();
-    if (!id || !this.editModel.titleAr.trim() || !this.editModel.titleEn.trim()) {
-      this.toast.show(this.i18n.t('users.toast.editRequired'), 'error');
-      return;
-    }
-    this.actionBusy.set(true);
-    this.surveysApi
-      .update(id, {
-        ...this.editModel,
-        titleAr: this.editModel.titleAr.trim(),
-        titleEn: this.editModel.titleEn.trim(),
-        descriptionAr: this.editModel.descriptionAr?.trim() || null,
-        descriptionEn: this.editModel.descriptionEn?.trim() || null,
-        code: this.editModel.code?.trim() || null,
-      })
-      .subscribe({
-        next: (s) => {
-          this.survey.set(s);
-          this.editOpen.set(false);
-          this.actionBusy.set(false);
-          this.toast.show(this.i18n.t('q.detail.toast.updated'), 'success');
-          if (this.canReport) this.loadAnalytics(id);
-        },
-        error: () => {
-          this.actionBusy.set(false);
-          this.toast.show(this.i18n.t('q.detail.toast.updateFailed'), 'error');
-        },
-      });
+    if (!id) return;
+    void this.router.navigate(['/surveys', id, 'edit']);
   }
 
   openDelete(): void {
@@ -338,6 +341,17 @@ export class SurveyDetailPageComponent implements OnInit {
         this.actionBusy.set(false);
         this.toast.show(this.i18n.t('q.detail.toast.transitionFailed'), 'error');
       },
+    });
+  }
+
+  /** In-page jumps (TOC). Plain `href="#id"` can break SPA routing or hash handling; scroll + fragment keeps URLs shareable. */
+  jumpToSection(elementId: string): void {
+    const el = document.getElementById(elementId);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      fragment: elementId,
+      replaceUrl: true,
     });
   }
 

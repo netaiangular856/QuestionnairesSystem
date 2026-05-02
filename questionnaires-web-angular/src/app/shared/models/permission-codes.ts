@@ -7,6 +7,8 @@ export const PermissionCodes = {
   NotificationManage: 'NOTIFICATION_MANAGE',
   SurveyView: 'SURVEY_VIEW',
   SurveyManage: 'SURVEY_MANAGE',
+  SurveyApprovalView: 'SURVEY_APPROVAL_VIEW',
+  SurveyApprove: 'SURVEY_APPROVE',
   QuestionView: 'QUESTION_VIEW',
   QuestionManage: 'QUESTION_MANAGE',
   TemplateView: 'TEMPLATE_VIEW',
@@ -21,4 +23,8 @@ export const PermissionCodes = {
   RecommendationManage: 'RECOMMENDATION_MANAGE',
   ActionPlanView: 'ACTION_PLAN_VIEW',
   ActionPlanManage: 'ACTION_PLAN_MANAGE',
+  EmployeeView: 'EMPLOYEE_VIEW',
+  EmployeeManage: 'EMPLOYEE_MANAGE',
+  PartnerView: 'PARTNER_VIEW',
+  PartnerManage: 'PARTNER_MANAGE',
 } as const;

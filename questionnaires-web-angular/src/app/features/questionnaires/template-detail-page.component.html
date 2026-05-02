@@ -1,0 +1,96 @@
+<div class="tpl-detail">
+  <a routerLink="/templates" class="tpl-detail__back">{{ 'q.templates.detail.back' | t }}</a>
+
+  @if (busy()) {
+    <div class="tpl-detail__state card">{{ 'common.loading' | t }}</div>
+  } @else if (failed()) {
+    <div class="tpl-detail__state card tpl-detail__state--error">{{ 'q.templates.detail.loadError' | t }}</div>
+  } @else {
+    @if (detail(); as d) {
+      <header class="tpl-detail__hero">
+        <div class="tpl-detail__hero-bg" aria-hidden="true"></div>
+        <div class="tpl-detail__hero-inner">
+          <div class="tpl-detail__hero-main">
+            <p class="tpl-detail__eyebrow">{{ 'q.templates.detail.eyebrow' | t }}</p>
+            <h1 class="tpl-detail__title">{{ titleOf(d) }}</h1>
+            <div class="tpl-detail__meta">
+              <span class="tpl-detail__pill tpl-detail__pill--stat">
+                <span class="tpl-detail__pill-icon" aria-hidden="true">◎</span>
+                {{ d.questionCount }} {{ 'q.templates.table.questions' | t }}
+              </span>
+              <span class="tpl-detail__pill tpl-detail__pill--stat">
+                <span class="tpl-detail__pill-icon" aria-hidden="true">↗</span>
+                {{ d.usageCount }} {{ 'q.templates.table.usage' | t }}
+              </span>
+              @if (d.isArchived) {
+                <span class="tpl-detail__pill tpl-detail__pill--warn">{{ 'q.templates.archived' | t }}</span>
+              } @else {
+                <span class="tpl-detail__pill tpl-detail__pill--ok">{{ 'q.templates.active' | t }}</span>
+              }
+            </div>
+          </div>
+          <div class="tpl-detail__hero-actions">
+            @if (!d.isArchived) {
+              <button
+                type="button"
+                class="action-btn action-btn--primary"
+                [disabled]="mutationBusy()"
+                (click)="useTemplate(d)"
+              >
+                {{ 'q.templates.use' | t }}
+              </button>
+            }
+            @if (canManage) {
+              <button type="button" class="action-btn action-btn--edit" (click)="goEdit(d.id)">
+                {{ 'q.detail.actions.edit' | t }}
+              </button>
+            }
+          </div>
+        </div>
+      </header>
+
+      @if (d.descriptionAr?.trim() || d.descriptionEn?.trim()) {
+        <section class="tpl-detail__panel card">
+          <h2 class="tpl-detail__h2">{{ 'q.templates.detail.sectionDesc' | t }}</h2>
+          <div class="tpl-detail__desc-grid">
+            @if (d.descriptionAr?.trim()) {
+              <div class="tpl-detail__desc-block">
+                <span class="tpl-detail__desc-label">{{ 'q.templates.form.descAr' | t }}</span>
+                <p>{{ d.descriptionAr }}</p>
+              </div>
+            }
+            @if (d.descriptionEn?.trim()) {
+              <div class="tpl-detail__desc-block">
+                <span class="tpl-detail__desc-label">{{ 'q.templates.form.descEn' | t }}</span>
+                <p>{{ d.descriptionEn }}</p>
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      <section class="tpl-detail__panel card tpl-detail__panel--questions">
+        <div class="tpl-detail__panel-head">
+          <h2 class="tpl-detail__h2">{{ 'q.templates.detail.sectionQuestions' | t }}</h2>
+          <span class="tpl-detail__count-badge">{{ d.questions.length }}</span>
+        </div>
+
+        @if (d.questions.length === 0) {
+          <p class="tpl-detail__empty muted">{{ 'q.templates.detail.noQuestions' | t }}</p>
+        } @else {
+          <ol class="tpl-detail__q-list">
+            @for (q of d.questions; track $index) {
+              <li class="tpl-detail__q-item">
+                <span class="tpl-detail__q-num">{{ $index + 1 }}</span>
+                <div class="tpl-detail__q-body">
+                  <span class="tpl-detail__q-type">{{ typeLabelKey(q.type) | t }}</span>
+                  <p class="tpl-detail__q-text">{{ questionTitle(q) }}</p>
+                </div>
+              </li>
+            }
+          </ol>
+        }
+      </section>
+    }
+  }
+</div>

@@ -1,0 +1,149 @@
+<div class="sv-wizard">
+  <div class="sv-wizard__mesh" aria-hidden="true"></div>
+
+  <header class="sv-wizard__hero">
+    <a (click)="cancel()" class="sv-wizard__back" style="cursor: pointer;">{{ 'q.surveys.wizard.back' | t }}</a>
+    <h1 class="sv-wizard__title">{{ 'q.detail.edit.title' | t }}</h1>
+    <p class="sv-wizard__lead">{{ titleAr }}</p>
+
+    <nav class="sv-wizard__steps" [attr.aria-label]="'q.surveys.wizard.stepsAria' | t">
+      @for (i of [0, 1]; track i) {
+        <button
+          type="button"
+          class="sv-wizard__step-pill"
+          [class.sv-wizard__step-pill--active]="step() === i"
+          [class.sv-wizard__step-pill--done]="step() > i"
+          [disabled]="true"
+        >
+          <span class="sv-wizard__step-num">{{ i + 1 }}</span>
+          <span class="sv-wizard__step-label">{{ stepLabelKey(i) | t }}</span>
+        </button>
+      }
+    </nav>
+  </header>
+
+  @if (busy()) {
+    <div class="card sv-panel">{{ 'common.loading' | t }}</div>
+  } @else {
+    <div class="sv-wizard__layout">
+      <main class="sv-wizard__main">
+        @if (step() === 0) {
+          <section class="sv-panel">
+            <h2 class="sv-panel__h">{{ 'q.surveys.wizard.sectionMeta' | t }}</h2>
+            <div class="sv-panel__grid">
+              <label class="field sv-field">
+                <span>{{ 'q.surveys.form.titleAr' | t }}</span>
+                <input [(ngModel)]="titleAr" autocomplete="off" />
+              </label>
+              <label class="field sv-field">
+                <span>{{ 'q.surveys.form.titleEn' | t }}</span>
+                <input [(ngModel)]="titleEn" autocomplete="off" />
+              </label>
+              <label class="field sv-field sv-field--full">
+                <span>{{ 'q.detail.descAr' | t }}</span>
+                <textarea rows="2" [(ngModel)]="descriptionAr"></textarea>
+              </label>
+              <label class="field sv-field sv-field--full">
+                <span>{{ 'q.detail.descEn' | t }}</span>
+                <textarea rows="2" [(ngModel)]="descriptionEn"></textarea>
+              </label>
+              <label class="field sv-field">
+                <span>{{ 'q.detail.code' | t }}</span>
+                <input [(ngModel)]="code" [placeholder]="'q.surveys.form.codeHint' | t" />
+              </label>
+              <label class="field sv-field">
+                <span>{{ 'q.surveys.form.audience' | t }}</span>
+                <select [(ngModel)]="audienceScope">
+                  <option [ngValue]="SurveyAudienceScope.Everyone">{{ 'q.audience.everyone' | t }}</option>
+                  <option [ngValue]="SurveyAudienceScope.Guest">{{ 'q.audience.guest' | t }}</option>
+                  <option [ngValue]="SurveyAudienceScope.SpecificUsers">{{ 'q.audience.specific' | t }}</option>
+                  <option [ngValue]="SurveyAudienceScope.AllOrganizationMembers">{{ 'q.audience.org' | t }}</option>
+                </select>
+              </label>
+            </div>
+          </section>
+        }
+
+        @if (step() === 1) {
+          <div class="sv-panel-header">
+            <h2 class="sv-panel__h">{{ 'q.surveys.wizard.questionsOnly' | t }}</h2>
+            <button type="button" class="btn-primary btn-primary--icon btn-sm" (click)="addQuestion()">
+              <span class="btn-ico" aria-hidden="true">＋</span>
+              {{ 'q.templates.form.addQuestion' | t }}
+            </button>
+          </div>
+          <div class="sv-q-list">
+            @for (q of questions; track $index) {
+              <article class="sv-q-card">
+                <div class="sv-q-card__top">
+                  <span class="sv-q-card__badge">{{ 'q.templates.form.questionLabel' | t }} {{ $index + 1 }}</span>
+                  @if (questions.length > 1) {
+                    <button type="button" class="sv-q-card__remove" (click)="removeQuestion($index)">
+                      {{ 'q.templates.form.removeQuestion' | t }}
+                    </button>
+                  }
+                </div>
+                <div class="sv-q-card__fields">
+                  <label class="field sv-field">
+                    <span>{{ 'q.templates.form.qType' | t }}</span>
+                    <select [(ngModel)]="q.type">
+                      @for (opt of questionTypes; track opt.value) {
+                        <option [ngValue]="opt.value">{{ opt.labelKey | t }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label class="field sv-field sv-field--full">
+                    <span>{{ 'q.templates.form.titleAr' | t }}</span>
+                    <input [(ngModel)]="q.titleAr" />
+                  </label>
+                  <label class="field sv-field sv-field--full">
+                    <span>{{ 'q.templates.form.titleEn' | t }}</span>
+                    <input [(ngModel)]="q.titleEn" />
+                  </label>
+                </div>
+              </article>
+            }
+          </div>
+        }
+
+        <footer class="sv-wizard__foot">
+          <button type="button" class="btn-ghost" (click)="prev()">
+            {{ step() === 0 ? ('q.surveys.wizard.cancel' | t) : ('q.surveys.wizard.prev' | t) }}
+          </button>
+          @if (step() < 1) {
+            <button type="button" class="btn-primary" (click)="next()">
+              {{ 'q.surveys.wizard.next' | t }}
+            </button>
+          } @else {
+            <button type="button" class="btn-primary" [disabled]="saveBusy()" (click)="save()">
+              {{ 'users.actions.save' | t }}
+            </button>
+          }
+        </footer>
+      </main>
+
+      <aside class="sv-wizard__aside" [attr.aria-label]="'q.surveys.wizard.hintsAria' | t">
+        <div class="sv-wizard__aside-glow" aria-hidden="true"></div>
+        @switch (step()) {
+          @case (0) {
+            <h3 class="sv-wizard__aside-title">{{ 'q.surveys.wizard.hints.metaTitle' | t }}</h3>
+            <ul class="sv-wizard__aside-list">
+              <li>{{ 'q.surveys.wizard.hints.meta1' | t }}</li>
+              <li>{{ 'q.surveys.wizard.hints.meta2' | t }}</li>
+              <li>{{ 'q.surveys.wizard.hints.meta3' | t }}</li>
+            </ul>
+          }
+          @default {
+            <h3 class="sv-wizard__aside-title">{{ 'q.surveys.wizard.hints.qTitle' | t }}</h3>
+            <ul class="sv-wizard__aside-list">
+              <li>{{ 'q.surveys.wizard.hints.q1' | t }}</li>
+              <li>{{ 'q.surveys.wizard.hints.q2' | t }}</li>
+              <li>{{ 'q.surveys.wizard.hints.q3' | t }}</li>
+            </ul>
+          }
+        }
+        <p class="sv-wizard__aside-note muted">{{ 'q.surveys.wizard.hints.note' | t }}</p>
+      </aside>
+    </div>
+  }
+</div>

@@ -7,4 +7,5 @@ public sealed class TemplateListItemDto
     public string NameEn { get; init; } = string.Empty;
     public bool IsArchived { get; init; }
     public int UsageCount { get; init; }
+    public int QuestionCount { get; init; }
 }

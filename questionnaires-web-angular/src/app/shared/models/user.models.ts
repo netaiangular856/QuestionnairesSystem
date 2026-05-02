@@ -26,6 +26,7 @@ export interface CreateUserRequest {
   email: string;
   password: string;
   roleIds: string[];
+  employeeId?: string | null;
 }
 
 export interface UpdateUserRequest {
@@ -34,6 +35,7 @@ export interface UpdateUserRequest {
   nameEn?: string | null;
   email: string;
   newPassword?: string | null;
+  employeeId?: string | null;
 }
 
 export interface AssignUserRolesRequest {

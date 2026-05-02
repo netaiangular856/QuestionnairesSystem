@@ -1,4 +1,5 @@
 using QuestionnairesSystem.Domain.Notifications;
+using QuestionnairesSystem.Domain.Organizations;
 using QuestionnairesSystem.Shared.Abstractions;
 
 namespace QuestionnairesSystem.Domain.Identity;
@@ -13,6 +14,8 @@ public sealed class User : AuditableEntity
     public bool IsActive { get; set; } = true;
     public Guid? EmployeeId { get; set; }
     public DateTime? LastLoginUtc { get; set; }
+
+    public Employee? Employee { get; set; }
 
     /// <summary>Stored file name under wwwroot/uploads/avatars (e.g. guid.jpg). Null if no avatar.</summary>
     public string? AvatarFileName { get; set; }

@@ -21,5 +21,7 @@ public sealed class SurveyDetailDto
     public Guid? TemplateId { get; init; }
     public DateTime? PublishedAtUtc { get; init; }
     public DateTime? ClosedAtUtc { get; init; }
+    public DateTime? OpensAtUtc { get; init; }
+    public DateTime? ClosesAtUtc { get; init; }
     public string? RejectionReason { get; init; }
 }

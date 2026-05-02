@@ -21,6 +21,10 @@ using QuestionnairesSystem.Application.Features.Questionnaires.Templates.Interfa
 using QuestionnairesSystem.Application.Features.Questionnaires.Templates.Services;
 using QuestionnairesSystem.Application.Features.Notifications.Interfaces;
 using QuestionnairesSystem.Application.Features.Notifications.Services;
+using QuestionnairesSystem.Application.Features.Organizations.Employees.Interfaces;
+using QuestionnairesSystem.Application.Features.Organizations.Employees.Services;
+using QuestionnairesSystem.Application.Features.Partners.Interfaces;
+using QuestionnairesSystem.Application.Features.Partners.Services;
 
 namespace QuestionnairesSystem.Application.DependencyInjection;
 
@@ -47,6 +51,9 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<IQuestionnaireReportService, QuestionnaireReportService>();
         services.AddScoped<IRecommendationCrudService, RecommendationCrudService>();
         services.AddScoped<IActionPlanCrudService, ActionPlanCrudService>();
+
+        services.AddScoped<IEmployeeService, EmployeeService>();
+        services.AddScoped<IPartnerService, PartnerService>();
 
         return services;
     }

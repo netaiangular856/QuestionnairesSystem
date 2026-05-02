@@ -72,7 +72,8 @@ public sealed class UserService : IUserService
             NameEn = NormalizeOptionalName(request.NameEn),
             Email = email,
             PasswordHash = _passwordHasher.Hash(request.Password),
-            IsActive = true
+            IsActive = true,
+            EmployeeId = request.EmployeeId
         };
 
         _db.Users.Add(user);
@@ -124,6 +125,7 @@ public sealed class UserService : IUserService
         user.NameAr = NormalizeOptionalName(request.NameAr);
         user.NameEn = NormalizeOptionalName(request.NameEn);
         user.Email = email;
+        user.EmployeeId = request.EmployeeId;
 
         if (!string.IsNullOrWhiteSpace(request.NewPassword))
         {

@@ -58,6 +58,8 @@ public sealed class CreateUserRequest
     public string Password { get; set; } = string.Empty;
 
     public IReadOnlyList<Guid> RoleIds { get; set; } = Array.Empty<Guid>();
+
+    public Guid? EmployeeId { get; set; }
 }
 
 public sealed class UpdateUserRequest
@@ -71,6 +73,8 @@ public sealed class UpdateUserRequest
     public string Email { get; set; } = string.Empty;
 
     public string? NewPassword { get; set; }
+
+    public Guid? EmployeeId { get; set; }
 }
 
 public sealed class AssignUserRolesRequest

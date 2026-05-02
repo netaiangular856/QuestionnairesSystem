@@ -21,6 +21,7 @@ public sealed class SurveyConfiguration : IEntityTypeConfiguration<Survey>
 
         builder.HasIndex(x => x.Status);
         builder.HasIndex(x => x.AudienceScope);
+        builder.HasIndex(x => new { x.Status, x.ClosesAtUtc });
         builder.HasIndex(x => x.OwnerUserId);
         builder.HasIndex(x => x.Code).IsUnique().HasFilter("[Code] IS NOT NULL");
 

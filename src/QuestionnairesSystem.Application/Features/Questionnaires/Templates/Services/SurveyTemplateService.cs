@@ -5,6 +5,7 @@ using QuestionnairesSystem.Application.Features.Questionnaires.Surveys.DTOs;
 using QuestionnairesSystem.Application.Features.Questionnaires.Surveys.Interfaces;
 using QuestionnairesSystem.Application.Features.Questionnaires.Templates.DTOs;
 using QuestionnairesSystem.Application.Features.Questionnaires.Templates.Interfaces;
+using QuestionnairesSystem.Application.Features.Questionnaires.Templates;
 using QuestionnairesSystem.Domain.Enums;
 using QuestionnairesSystem.Domain.Templates;
 using QuestionnairesSystem.Persistence;
@@ -37,13 +38,15 @@ public sealed class SurveyTemplateService : ISurveyTemplateService
         if (!validation.IsValid)
             return Result<TemplateDetailDto>.Fail(validation.ToErrorMessages());
 
+        var structureJson = TemplateStructureJson.FromQuestions(request.Questions);
+
         var t = new SurveyTemplate
         {
             NameAr = request.NameAr.Trim(),
             NameEn = request.NameEn.Trim(),
             DescriptionAr = string.IsNullOrWhiteSpace(request.DescriptionAr) ? null : request.DescriptionAr.Trim(),
             DescriptionEn = string.IsNullOrWhiteSpace(request.DescriptionEn) ? null : request.DescriptionEn.Trim(),
-            StructureJson = string.IsNullOrWhiteSpace(request.StructureJson) ? "{}" : request.StructureJson
+            StructureJson = structureJson
         };
         _db.SurveyTemplates.Add(t);
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -56,18 +59,31 @@ public sealed class SurveyTemplateService : ISurveyTemplateService
         if (!includeArchived)
             q = q.Where(t => !t.IsArchived);
 
-        var list = await q
+        var rows = await q
             .OrderBy(t => t.NameEn)
+            .Select(t => new
+            {
+                t.Id,
+                t.NameAr,
+                t.NameEn,
+                t.IsArchived,
+                t.UsageCount,
+                t.StructureJson
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var list = rows
             .Select(t => new TemplateListItemDto
             {
                 Id = t.Id,
                 NameAr = t.NameAr,
                 NameEn = t.NameEn,
                 IsArchived = t.IsArchived,
-                UsageCount = t.UsageCount
+                UsageCount = t.UsageCount,
+                QuestionCount = TemplateStructureJson.CountQuestions(t.StructureJson)
             })
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
+            .ToList();
         return Result<IReadOnlyList<TemplateListItemDto>>.Ok(list);
     }
 
@@ -90,11 +106,13 @@ public sealed class SurveyTemplateService : ISurveyTemplateService
         if (t is null)
             return Result<TemplateDetailDto>.Fail("Template was not found.", QuestionnaireErrors.TemplateNotFound);
 
+        var structureJson = TemplateStructureJson.FromQuestions(request.Questions);
+
         t.NameAr = request.NameAr.Trim();
         t.NameEn = request.NameEn.Trim();
         t.DescriptionAr = string.IsNullOrWhiteSpace(request.DescriptionAr) ? null : request.DescriptionAr.Trim();
         t.DescriptionEn = string.IsNullOrWhiteSpace(request.DescriptionEn) ? null : request.DescriptionEn.Trim();
-        t.StructureJson = string.IsNullOrWhiteSpace(request.StructureJson) ? "{}" : request.StructureJson;
+        t.StructureJson = structureJson;
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return Result<TemplateDetailDto>.Ok(Map(t));
     }
@@ -149,15 +167,20 @@ public sealed class SurveyTemplateService : ISurveyTemplateService
         return Result<TemplateDetailDto>.Ok(Map(t));
     }
 
-    private static TemplateDetailDto Map(SurveyTemplate t) => new()
+    private static TemplateDetailDto Map(SurveyTemplate t)
     {
-        Id = t.Id,
-        NameAr = t.NameAr,
-        NameEn = t.NameEn,
-        DescriptionAr = t.DescriptionAr,
-        DescriptionEn = t.DescriptionEn,
-        StructureJson = t.StructureJson,
-        IsArchived = t.IsArchived,
-        UsageCount = t.UsageCount
-    };
+        var questions = TemplateStructureJson.ParseQuestions(t.StructureJson);
+        return new TemplateDetailDto
+        {
+            Id = t.Id,
+            NameAr = t.NameAr,
+            NameEn = t.NameEn,
+            DescriptionAr = t.DescriptionAr,
+            DescriptionEn = t.DescriptionEn,
+            Questions = questions,
+            IsArchived = t.IsArchived,
+            UsageCount = t.UsageCount,
+            QuestionCount = TemplateStructureJson.CountQuestions(t.StructureJson)
+        };
+    }
 }

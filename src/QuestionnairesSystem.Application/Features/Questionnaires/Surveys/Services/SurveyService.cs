@@ -24,6 +24,7 @@ public sealed class SurveyService : ISurveyService
     private readonly IValidator<SurveyFilterRequest> _filterValidator;
     private readonly IValidator<RejectSurveyRequest> _rejectValidator;
     private readonly IValidator<PatchSurveyStatusRequest> _patchStatusValidator;
+    private readonly IValidator<PublishSurveyRequest> _publishValidator;
 
     public SurveyService(
         QuestionnairesDbContext db,
@@ -32,7 +33,8 @@ public sealed class SurveyService : ISurveyService
         IValidator<UpdateSurveyRequest> updateValidator,
         IValidator<SurveyFilterRequest> filterValidator,
         IValidator<RejectSurveyRequest> rejectValidator,
-        IValidator<PatchSurveyStatusRequest> patchStatusValidator)
+        IValidator<PatchSurveyStatusRequest> patchStatusValidator,
+        IValidator<PublishSurveyRequest> publishValidator)
     {
         _db = db;
         _currentUser = currentUser;
@@ -41,6 +43,7 @@ public sealed class SurveyService : ISurveyService
         _filterValidator = filterValidator;
         _rejectValidator = rejectValidator;
         _patchStatusValidator = patchStatusValidator;
+        _publishValidator = publishValidator;
     }
 
     public async Task<Result<SurveyDetailDto>> CreateAsync(CreateSurveyRequest request, CancellationToken cancellationToken = default)
@@ -59,7 +62,9 @@ public sealed class SurveyService : ISurveyService
             AudienceScope = request.AudienceScope,
             Status = SurveyStatus.Draft,
             OwnerUserId = _currentUser.UserId,
-            TemplateId = request.TemplateId
+            TemplateId = request.TemplateId,
+            OpensAtUtc = request.OpensAtUtc,
+            ClosesAtUtc = request.ClosesAtUtc
         };
 
         if (request.TemplateId is { } tid)
@@ -71,6 +76,8 @@ public sealed class SurveyService : ISurveyService
             TryApplyTemplateStructure(survey, tpl.StructureJson);
             tpl.UsageCount++;
         }
+
+        AppendOwnerQuestions(survey, request.Questions);
 
         _db.Surveys.Add(survey);
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -125,6 +132,8 @@ public sealed class SurveyService : ISurveyService
                     s.Status,
                     s.Version,
                     s.PublishedAtUtc,
+                    s.OpensAtUtc,
+                    s.ClosesAtUtc,
                     OwnerDisplayName = s.Owner == null
                         ? null
                         : (s.Owner.NameAr ?? s.Owner.NameEn ?? s.Owner.UserName),
@@ -143,6 +152,8 @@ public sealed class SurveyService : ISurveyService
                 Version = row.Version,
                 OwnerDisplayName = row.OwnerDisplayName,
                 PublishedAtUtc = row.PublishedAtUtc,
+                OpensAtUtc = row.OpensAtUtc,
+                ClosesAtUtc = row.ClosesAtUtc,
                 QuestionCount = row.QuestionCount,
                 ResponseCount = row.ResponseCount
             });
@@ -171,7 +182,9 @@ public sealed class SurveyService : ISurveyService
         if (!validation.IsValid)
             return Result<SurveyDetailDto>.Fail(validation.ToErrorMessages());
 
-        var s = await _db.Surveys.FirstOrDefaultAsync(x => x.Id == id, cancellationToken).ConfigureAwait(false);
+        var s = await _db.Surveys
+            .Include(x => x.Questions)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken).ConfigureAwait(false);
         if (s is null)
             return Result<SurveyDetailDto>.Fail("Survey was not found.", QuestionnaireErrors.SurveyNotFound);
 
@@ -181,6 +194,18 @@ public sealed class SurveyService : ISurveyService
         s.DescriptionEn = string.IsNullOrWhiteSpace(request.DescriptionEn) ? null : request.DescriptionEn.Trim();
         s.Code = string.IsNullOrWhiteSpace(request.Code) ? null : request.Code.Trim();
         s.AudienceScope = request.AudienceScope;
+
+        if (request.Questions is not null)
+        {
+            // Only allow updating questions if Draft or Rejected
+            if (s.Status != SurveyStatus.Draft && s.Status != SurveyStatus.Rejected)
+                return Result<SurveyDetailDto>.Fail("Questions can only be updated in Draft or Rejected status.");
+
+            _db.Questions.RemoveRange(s.Questions);
+            s.Questions.Clear();
+            AppendOwnerQuestions(s, request.Questions);
+        }
+
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return Result<SurveyDetailDto>.Ok(await MapDetailAsync(s, cancellationToken).ConfigureAwait(false));
     }
@@ -231,7 +256,9 @@ public sealed class SurveyService : ISurveyService
             AudienceScope = source.AudienceScope,
             Version = 1,
             OwnerUserId = _currentUser.UserId,
-            TemplateId = source.TemplateId
+            TemplateId = source.TemplateId,
+            OpensAtUtc = source.OpensAtUtc,
+            ClosesAtUtc = source.ClosesAtUtc
         };
 
         _db.Surveys.Add(copy);
@@ -284,8 +311,41 @@ public sealed class SurveyService : ISurveyService
         return await SetStatusAsync(id, SurveyStatus.Rejected, request.Reason, cancellationToken).ConfigureAwait(false);
     }
 
-    public Task<Result<SurveyDetailDto>> PublishAsync(Guid id, CancellationToken cancellationToken = default) =>
-        SetStatusAsync(id, SurveyStatus.Published, null, cancellationToken);
+    public async Task<Result<SurveyDetailDto>> PublishAsync(
+        Guid id,
+        PublishSurveyRequest? publishRequest,
+        CancellationToken cancellationToken = default)
+    {
+        if (publishRequest is not null)
+        {
+            var pv = await _publishValidator.ValidateAsync(publishRequest, cancellationToken).ConfigureAwait(false);
+            if (!pv.IsValid)
+                return Result<SurveyDetailDto>.Fail(pv.ToErrorMessages());
+        }
+
+        await ApplyPublishAudienceAsync(id, publishRequest, cancellationToken).ConfigureAwait(false);
+
+        var scope = await _db.Surveys.AsNoTracking()
+            .Where(s => s.Id == id)
+            .Select(s => s.AudienceScope)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (scope == SurveyAudienceScope.SpecificUsers)
+        {
+            var memberCount = await _db.SurveyAudienceMembers
+                .CountAsync(m => m.SurveyId == id, cancellationToken)
+                .ConfigureAwait(false);
+            if (memberCount == 0)
+            {
+                return Result<SurveyDetailDto>.Fail(
+                    "SpecificUsers audience requires at least one audience member.",
+                    QuestionnaireErrors.InvalidOperation);
+            }
+        }
+
+        return await SetStatusAsync(id, SurveyStatus.Published, null, cancellationToken).ConfigureAwait(false);
+    }
 
     public Task<Result<SurveyDetailDto>> CloseAsync(Guid id, CancellationToken cancellationToken = default) =>
         SetStatusAsync(id, SurveyStatus.Closed, null, cancellationToken);
@@ -437,6 +497,102 @@ public sealed class SurveyService : ISurveyService
         });
     }
 
+    public async Task<Result<PagedResult<SurveyListItemDto>>> GetPendingApprovalPagedAsync(
+        SurveyFilterRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var clone = new SurveyFilterRequest
+        {
+            Page = request.Page,
+            PageSize = request.PageSize,
+            Search = request.Search,
+            Status = SurveyStatus.PendingApproval
+        };
+        return await GetPagedAsync(clone, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<Result<int>> CloseExpiredPublishedSurveysAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        var ids = await _db.Surveys.AsNoTracking()
+            .Where(s =>
+                s.Status == SurveyStatus.Published &&
+                s.ClosesAtUtc != null &&
+                s.ClosesAtUtc <= now)
+            .Select(s => s.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var closed = 0;
+        foreach (var id in ids)
+        {
+            var r = await CloseAsync(id, cancellationToken).ConfigureAwait(false);
+            if (r.IsSuccess)
+                closed++;
+        }
+
+        return Result<int>.Ok(closed);
+    }
+
+    public async Task<Result<SurveyNumericAnalyticsDto>> GetNumericQuestionAnalyticsAsync(
+        Guid surveyId,
+        CancellationToken cancellationToken = default)
+    {
+        var exists = await _db.Surveys.AsNoTracking().AnyAsync(s => s.Id == surveyId, cancellationToken).ConfigureAwait(false);
+        if (!exists)
+            return Result<SurveyNumericAnalyticsDto>.Fail("Survey was not found.", QuestionnaireErrors.SurveyNotFound);
+
+        QuestionType[] numericTypes =
+        [
+            QuestionType.Rating,
+            QuestionType.Scale,
+            QuestionType.Number,
+            QuestionType.YesNo
+        ];
+
+        var questions = await _db.Questions.AsNoTracking()
+            .Where(q => q.SurveyId == surveyId && numericTypes.Contains(q.Type))
+            .OrderBy(q => q.DisplayOrder)
+            .Select(q => new { q.Id, q.TitleAr, q.TitleEn, q.Type })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var stats = new List<NumericQuestionStatDto>();
+        foreach (var q in questions)
+        {
+            var jsonValues = await (
+                from a in _db.QuestionAnswers.AsNoTracking()
+                join r in _db.SurveyResponses.AsNoTracking() on a.ResponseId equals r.Id
+                where a.QuestionId == q.Id && r.SurveyId == surveyId && r.Status == ResponseStatus.Submitted
+                select a.ValueJson).ToListAsync(cancellationToken).ConfigureAwait(false);
+
+            var values = new List<double>();
+            foreach (var json in jsonValues)
+            {
+                if (TryExtractNumeric(json, out var v))
+                    values.Add(v);
+            }
+
+            stats.Add(new NumericQuestionStatDto
+            {
+                QuestionId = q.Id,
+                TitleAr = q.TitleAr,
+                TitleEn = q.TitleEn,
+                Type = q.Type,
+                AnswerCount = values.Count,
+                Average = values.Count == 0 ? null : values.Average(),
+                Min = values.Count == 0 ? null : values.Min(),
+                Max = values.Count == 0 ? null : values.Max()
+            });
+        }
+
+        return Result<SurveyNumericAnalyticsDto>.Ok(new SurveyNumericAnalyticsDto
+        {
+            SurveyId = surveyId,
+            Questions = stats
+        });
+    }
+
     private async Task<SurveyDetailDto> MapDetailAsync(Survey s, CancellationToken cancellationToken)
     {
         string? ownerDisplayName = null;
@@ -467,8 +623,134 @@ public sealed class SurveyService : ISurveyService
             TemplateId = s.TemplateId,
             PublishedAtUtc = s.PublishedAtUtc,
             ClosedAtUtc = s.ClosedAtUtc,
+            OpensAtUtc = s.OpensAtUtc,
+            ClosesAtUtc = s.ClosesAtUtc,
             RejectionReason = s.RejectionReason
         };
+    }
+
+    private async Task ApplyPublishAudienceAsync(
+        Guid surveyId,
+        PublishSurveyRequest? pub,
+        CancellationToken cancellationToken)
+    {
+        if (pub is null)
+            return;
+
+        var s = await _db.Surveys.FirstOrDefaultAsync(x => x.Id == surveyId, cancellationToken).ConfigureAwait(false);
+        if (s is null)
+            return;
+
+        if (pub.AudienceScope is { } ascope)
+            s.AudienceScope = ascope;
+
+        if (pub.AudienceUserIds is not null)
+        {
+            var existing = await _db.SurveyAudienceMembers
+                .Where(m => m.SurveyId == surveyId)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+            _db.SurveyAudienceMembers.RemoveRange(existing);
+
+            if (s.AudienceScope == SurveyAudienceScope.SpecificUsers)
+            {
+                foreach (var uid in pub.AudienceUserIds.Distinct())
+                {
+                    _db.SurveyAudienceMembers.Add(new SurveyAudienceMember { SurveyId = surveyId, UserId = uid });
+                }
+            }
+        }
+        else if (pub.AudienceScope is not null && s.AudienceScope != SurveyAudienceScope.SpecificUsers)
+        {
+            var existing = await _db.SurveyAudienceMembers
+                .Where(m => m.SurveyId == surveyId)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+            _db.SurveyAudienceMembers.RemoveRange(existing);
+        }
+
+        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    private static void AppendOwnerQuestions(Survey survey, IReadOnlyList<CreateSurveyQuestionItem>? items)
+    {
+        if (items is null || items.Count == 0)
+            return;
+
+        var cursor = survey.Questions.Count == 0 ? 0 : survey.Questions.Max(q => q.DisplayOrder);
+        foreach (var item in items)
+        {
+            int disp;
+            if (item.DisplayOrder is { } explicitOrder)
+            {
+                disp = explicitOrder;
+                cursor = Math.Max(cursor, explicitOrder);
+            }
+            else
+            {
+                disp = ++cursor;
+            }
+
+            survey.Questions.Add(new Question
+            {
+                Survey = survey,
+                DisplayOrder = disp,
+                Type = item.Type,
+                TitleAr = item.TitleAr.Trim(),
+                TitleEn = item.TitleEn.Trim(),
+                HelpTextAr = string.IsNullOrWhiteSpace(item.HelpTextAr) ? null : item.HelpTextAr.Trim(),
+                HelpTextEn = string.IsNullOrWhiteSpace(item.HelpTextEn) ? null : item.HelpTextEn.Trim(),
+                IsRequired = item.IsRequired,
+                OptionsJson = string.IsNullOrWhiteSpace(item.OptionsJson) ? null : item.OptionsJson
+            });
+        }
+    }
+
+    private static bool TryExtractNumeric(string json, out double value)
+    {
+        value = 0;
+        try
+        {
+            using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json);
+            var root = doc.RootElement;
+            if (root.ValueKind == JsonValueKind.Number && root.TryGetDouble(out var d))
+            {
+                value = d;
+                return true;
+            }
+
+            if (root.TryGetProperty("value", out var prop) && prop.TryGetDouble(out var dv))
+            {
+                value = dv;
+                return true;
+            }
+
+            if (root.ValueKind == JsonValueKind.String &&
+                double.TryParse(root.GetString(), System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture, out var ds))
+            {
+                value = ds;
+                return true;
+            }
+
+            if (root.ValueKind == JsonValueKind.True)
+            {
+                value = 1;
+                return true;
+            }
+
+            if (root.ValueKind == JsonValueKind.False)
+            {
+                value = 0;
+                return true;
+            }
+        }
+        catch
+        {
+            return false;
+        }
+
+        return false;
     }
 
     private static void SoftDeleteEntity(Domain.Common.AuditableDomainEntity e)

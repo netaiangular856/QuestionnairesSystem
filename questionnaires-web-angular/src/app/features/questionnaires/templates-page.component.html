@@ -1,9 +1,55 @@
-<div class="page-workspace">
-  <div class="page-head-row">
-    <section class="page-head">
-      <h1>{{ 'q.templates.title' | t }}</h1>
-      <p class="page-head__sub">{{ 'q.templates.subtitle' | t }}</p>
+<div class="page-workspace tpl-list-page">
+  <div class="page-head-row tpl-list-page__intro">
+    <section class="page-head tpl-page-hero">
+      <div class="tpl-page-hero__row">
+        <div class="tpl-page-hero__text">
+          <p class="tpl-page-hero__kicker">{{ 'q.templates.hero.kicker' | t }}</p>
+          <h1>{{ 'q.templates.title' | t }}</h1>
+          <p class="page-head__sub">{{ 'q.templates.subtitle' | t }}</p>
+        </div>
+        @if (canManage) {
+          <div class="tpl-page-hero__actions page-actions">
+            <button type="button" class="btn-primary btn-primary--icon" (click)="goToCreate()">
+              <span class="btn-ico" aria-hidden="true">＋</span>
+              {{ 'q.templates.create' | t }}
+            </button>
+          </div>
+        }
+      </div>
     </section>
+  </div>
+
+  <div class="toolbar toolbar--split card card--interactive">
+    <div class="toolbar__left">
+      <label class="toolbar-check">
+        <input type="checkbox" [(ngModel)]="includeArchived" (change)="load()" />
+        <span>{{ 'q.templates.includeArchived' | t }}</span>
+      </label>
+      <input
+        class="toolbar__search"
+        type="search"
+        [(ngModel)]="search"
+        [placeholder]="'q.templates.search' | t"
+      />
+    </div>
+    <div class="view-toggle" role="group" [attr.aria-label]="'q.templates.view.label' | t">
+      <button
+        type="button"
+        class="view-toggle__btn"
+        [class.view-toggle__btn--active]="viewMode() === 'table'"
+        (click)="setViewMode('table')"
+      >
+        {{ 'q.templates.view.table' | t }}
+      </button>
+      <button
+        type="button"
+        class="view-toggle__btn"
+        [class.view-toggle__btn--active]="viewMode() === 'cards'"
+        (click)="setViewMode('cards')"
+      >
+        {{ 'q.templates.view.cards' | t }}
+      </button>
+    </div>
   </div>
 
   @if (busy()) {
@@ -11,21 +57,193 @@
   } @else if (failed()) {
     <div class="card card--muted">{{ 'q.templates.error' | t }}</div>
   } @else {
-    <div class="tpl-grid">
-      @for (t of items(); track t.id; let idx = $index) {
-        <article class="tpl-card card" [ngClass]="cardVariant(idx)">
-          <div class="tpl-card__accent" aria-hidden="true"></div>
-          <header class="tpl-card__head">
-            <h3>{{ titleOf(t) }}</h3>
-            @if (t.isArchived) {
-              <span class="tpl-badge">{{ 'q.templates.archived' | t }}</span>
-            }
-          </header>
-          <p class="tpl-card__stat">
-            {{ 'q.templates.usage' | t }}: <strong>{{ t.usageCount }}</strong>
-          </p>
-        </article>
-      }
-    </div>
+    @if (filteredItems().length === 0) {
+      <div class="card card--muted">{{ 'q.templates.empty' | t }}</div>
+    } @else if (viewMode() === 'table') {
+      <div class="tpl-table-shell card">
+        <div class="tpl-table-shell__scroll">
+          <table class="data-table tpl-data-table">
+            <thead>
+              <tr>
+                <th>{{ 'q.templates.table.name' | t }}</th>
+                <th>{{ 'q.templates.table.questions' | t }}</th>
+                <th>{{ 'q.templates.table.usage' | t }}</th>
+                <th>{{ 'q.templates.table.status' | t }}</th>
+                <th class="actions-col-head">{{ 'common.actions' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of filteredItems(); track row.id) {
+                <tr class="tpl-data-table__row">
+                  <td class="tpl-data-table__name">
+                    <a [routerLink]="['/templates', row.id]" class="tpl-data-table__name-link">{{ titleOf(row) }}</a>
+                  </td>
+                <td>{{ row.questionCount }}</td>
+                <td>{{ row.usageCount }}</td>
+                <td>
+                  @if (row.isArchived) {
+                    <span class="tpl-badge">{{ 'q.templates.archived' | t }}</span>
+                  } @else {
+                    <span class="q-pill q-pill--neutral">{{ 'q.templates.active' | t }}</span>
+                  }
+                </td>
+                <td class="cell-actions">
+                  <div class="survey-row-actions">
+                    <button
+                      type="button"
+                      class="action-btn action-btn--info"
+                      [disabled]="mutationBusy()"
+                      (click)="goToDetail(row, $event)"
+                    >
+                      {{ 'q.templates.actions.viewDetail' | t }}
+                    </button>
+                    @if (!row.isArchived) {
+                      <button
+                        type="button"
+                        class="action-btn action-btn--primary"
+                        [disabled]="mutationBusy()"
+                        (click)="useTemplate(row, $event)"
+                      >
+                        {{ 'q.templates.use' | t }}
+                      </button>
+                    }
+                    @if (canManage) {
+                      <button
+                        type="button"
+                        class="action-btn action-btn--edit"
+                        [disabled]="mutationBusy()"
+                        (click)="goToEdit(row, $event)"
+                      >
+                        {{ 'q.detail.actions.edit' | t }}
+                      </button>
+                      @if (!row.isArchived) {
+                        <button
+                          type="button"
+                          class="action-btn action-btn--ghost"
+                          [disabled]="mutationBusy()"
+                          (click)="archive(row, $event)"
+                        >
+                          {{ 'q.templates.archive' | t }}
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        class="action-btn action-btn--danger"
+                        [disabled]="mutationBusy()"
+                        (click)="openDelete(row, $event)"
+                      >
+                        {{ 'q.detail.actions.delete' | t }}
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    } @else {
+      <div class="tpl-preview-grid">
+        @for (t of filteredItems(); track t.id) {
+          <article class="tpl-preview-card card card--interactive">
+            <div class="tpl-preview-card__shine" aria-hidden="true"></div>
+            <header class="tpl-preview-card__head">
+              <div class="tpl-preview-card__title-block">
+                <h2 class="tpl-preview-card__title">
+                  <a [routerLink]="['/templates', t.id]" class="tpl-preview-card__title-link">{{ titleOf(t) }}</a>
+                </h2>
+                @if (t.isArchived) {
+                  <span class="tpl-badge">{{ 'q.templates.archived' | t }}</span>
+                }
+              </div>
+              <p class="tpl-preview-card__hint muted">{{ 'q.templates.card.openHint' | t }}</p>
+            </header>
+            <dl class="tpl-preview-card__stats">
+              <div class="tpl-preview-card__stat">
+                <dt>{{ 'q.templates.table.questions' | t }}</dt>
+                <dd>{{ t.questionCount }}</dd>
+              </div>
+              <div class="tpl-preview-card__stat">
+                <dt>{{ 'q.templates.table.usage' | t }}</dt>
+                <dd>{{ t.usageCount }}</dd>
+              </div>
+            </dl>
+            <footer class="tpl-preview-card__actions" (click)="$event.stopPropagation()">
+              <div class="survey-row-actions">
+                <button
+                  type="button"
+                  class="action-btn action-btn--info"
+                  [disabled]="mutationBusy()"
+                  (click)="goToDetail(t, $event)"
+                >
+                  {{ 'q.templates.actions.viewDetail' | t }}
+                </button>
+                @if (!t.isArchived) {
+                  <button
+                    type="button"
+                    class="action-btn action-btn--primary"
+                    [disabled]="mutationBusy()"
+                    (click)="useTemplate(t, $event)"
+                  >
+                    {{ 'q.templates.use' | t }}
+                  </button>
+                }
+                @if (canManage) {
+                  <button
+                    type="button"
+                    class="action-btn action-btn--edit"
+                    [disabled]="mutationBusy()"
+                    (click)="goToEdit(t, $event)"
+                  >
+                    {{ 'q.detail.actions.edit' | t }}
+                  </button>
+                  @if (!t.isArchived) {
+                    <button
+                      type="button"
+                      class="action-btn action-btn--ghost"
+                      [disabled]="mutationBusy()"
+                      (click)="archive(t, $event)"
+                    >
+                      {{ 'q.templates.archive' | t }}
+                    </button>
+                  }
+                  <button
+                    type="button"
+                    class="action-btn action-btn--danger"
+                    [disabled]="mutationBusy()"
+                    (click)="openDelete(t, $event)"
+                  >
+                    {{ 'q.detail.actions.delete' | t }}
+                  </button>
+                }
+              </div>
+            </footer>
+          </article>
+        }
+      </div>
+    }
   }
 </div>
+
+@if (deleteOpen()) {
+  <div class="modal-backdrop" (click)="deleteOpen.set(false)"></div>
+  <div class="modal-panel card" role="dialog" aria-modal="true">
+    <header class="modal-panel__head">
+      <h2>{{ 'q.templates.modal.deleteTitle' | t }}</h2>
+      <button type="button" class="modal-close" (click)="deleteOpen.set(false)">{{ 'common.close' | t }}</button>
+    </header>
+    <div class="modal-panel__body">
+      <p>{{ 'q.templates.modal.deleteBody' | t }}</p>
+      @if (deleteContext) {
+        <p><strong>{{ titleOf(deleteContext) }}</strong></p>
+      }
+    </div>
+    <footer class="modal-panel__foot">
+      <button type="button" class="btn-ghost" (click)="deleteOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
+      <button type="button" class="action-btn action-btn--danger" [disabled]="mutationBusy()" (click)="confirmDelete()">
+        {{ 'q.detail.actions.delete' | t }}
+      </button>
+    </footer>
+  </div>
+}

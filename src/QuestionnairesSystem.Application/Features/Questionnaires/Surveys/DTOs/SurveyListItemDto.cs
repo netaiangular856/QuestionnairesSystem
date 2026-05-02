@@ -15,6 +15,8 @@ public sealed class SurveyListItemDto
     public string? OwnerDisplayName { get; init; }
 
     public DateTime? PublishedAtUtc { get; init; }
+    public DateTime? OpensAtUtc { get; init; }
+    public DateTime? ClosesAtUtc { get; init; }
     public int QuestionCount { get; init; }
     public int ResponseCount { get; init; }
 }

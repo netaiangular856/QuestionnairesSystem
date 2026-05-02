@@ -63,6 +63,8 @@ export class SidebarComponent {
       titleKey: 'nav.group.identity',
       items: [
         { path: '/users', labelKey: 'nav.users', permissions: [PermissionCodes.UserManage], icon: 'users' },
+        { path: '/employees', labelKey: 'nav.employees', permissions: [PermissionCodes.EmployeeView], icon: 'users' },
+        { path: '/partners', labelKey: 'nav.partners', permissions: [PermissionCodes.PartnerView], icon: 'audit' },
         { path: '/roles', labelKey: 'nav.roles', permissions: [PermissionCodes.RoleManage], icon: 'roles' },
         { path: '/audit-logs', labelKey: 'nav.auditLogs', permissions: [PermissionCodes.AuditLogView], icon: 'audit' },
       ],

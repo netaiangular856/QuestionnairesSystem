@@ -1,3 +1,67 @@
+.surveys-list-page__intro {
+  display: block;
+  margin-bottom: 1.5rem;
+}
+
+.surveys-list-page__intro .page-head {
+  flex: none;
+  width: 100%;
+  max-width: 100%;
+}
+
+.surveys-page-hero {
+  position: relative;
+  padding: 1.1rem 1.15rem 1.15rem;
+  margin: -0.25rem 0 0.35rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(13, 148, 136, 0.22);
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.97) 0%, rgba(240, 253, 250, 0.85) 50%, rgba(204, 251, 241, 0.4) 100%);
+  box-shadow: var(--shadow-sm);
+}
+
+.surveys-page-hero__kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #0f766e;
+}
+
+.surveys-page-hero__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem 1.25rem;
+}
+
+.surveys-page-hero__text {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.surveys-page-hero__actions {
+  flex-shrink: 0;
+  padding-top: 0.15rem;
+}
+
+@media (max-width: 520px) {
+  .surveys-page-hero__actions {
+    width: 100%;
+  }
+
+  .surveys-page-hero__actions .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+.surveys-card-grid article.card {
+  border-color: rgba(13, 148, 136, 0.15);
+  background: linear-gradient(165deg, #ffffff 0%, rgba(240, 253, 250, 0.35) 100%);
+}
+
 .q-pill {
   display: inline-flex;
   padding: 0.12rem 0.5rem;

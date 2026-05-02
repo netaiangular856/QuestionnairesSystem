@@ -70,6 +70,29 @@ export const routes: Routes = [
           import('./features/notifications/notifications-page.component').then((m) => m.NotificationsPageComponent),
       },
       {
+        path: 'surveys/new',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.SurveyManage] },
+        loadComponent: () =>
+          import('./features/questionnaires/survey-create-wizard-page.component').then(
+            (m) => m.SurveyCreateWizardPageComponent,
+          ),
+      },
+      {
+        path: 'employees',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.EmployeeView] },
+        loadComponent: () =>
+          import('./features/employees/employees-list.component').then((m) => m.EmployeesListComponent),
+      },
+      {
+        path: 'partners',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.PartnerView] },
+        loadComponent: () =>
+          import('./features/partners/partners-list.component').then((m) => m.PartnersListComponent),
+      },
+      {
         path: 'surveys',
         canActivate: [permissionGuard],
         data: { permissions: [PermissionCodes.SurveyView] },
@@ -109,11 +132,39 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'surveys/:surveyId/edit',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.SurveyManage] },
+        loadComponent: () =>
+          import('./features/questionnaires/survey-editor-page.component').then((m) => m.SurveyEditorPageComponent),
+      },
+      {
         path: 'surveys/:surveyId',
         canActivate: [permissionGuard],
         data: { permissions: [PermissionCodes.SurveyView] },
         loadComponent: () =>
           import('./features/questionnaires/survey-detail-page.component').then((m) => m.SurveyDetailPageComponent),
+      },
+      {
+        path: 'templates/new',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.TemplateManage] },
+        loadComponent: () =>
+          import('./features/questionnaires/template-editor-page.component').then((m) => m.TemplateEditorPageComponent),
+      },
+      {
+        path: 'templates/:templateId/edit',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.TemplateManage] },
+        loadComponent: () =>
+          import('./features/questionnaires/template-editor-page.component').then((m) => m.TemplateEditorPageComponent),
+      },
+      {
+        path: 'templates/:templateId',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.TemplateView] },
+        loadComponent: () =>
+          import('./features/questionnaires/template-detail-page.component').then((m) => m.TemplateDetailPageComponent),
       },
       {
         path: 'templates',

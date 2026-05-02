@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using QuestionnairesSystem.Api.Authorization;
 using QuestionnairesSystem.Api.Extensions;
 using QuestionnairesSystem.Application.Features.Identity;
 using QuestionnairesSystem.Application.Features.Questionnaires.Surveys.DTOs;
@@ -33,6 +34,15 @@ public sealed class SurveysController : ControllerBase
     {
         var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
         var result = await _surveys.GetPagedAsync(request, cancellationToken).ConfigureAwait(false);
+        return result.ToApiActionResult(this, traceId);
+    }
+
+    [HttpGet("pending-approval")]
+    [Authorize(Policy = PermissionCodes.SurveyApprovalView)]
+    public async Task<IActionResult> PendingApproval([FromQuery] SurveyFilterRequest request, CancellationToken cancellationToken)
+    {
+        var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+        var result = await _surveys.GetPendingApprovalPagedAsync(request, cancellationToken).ConfigureAwait(false);
         return result.ToApiActionResult(this, traceId);
     }
 
@@ -91,7 +101,7 @@ public sealed class SurveysController : ControllerBase
     }
 
     [HttpPost("{surveyId:guid}/approve")]
-    [Authorize(Policy = PermissionCodes.SurveyManage)]
+    [Authorize(Policy = AuthorizationPolicies.SurveyApproveOrManage)]
     public async Task<IActionResult> Approve(Guid surveyId, CancellationToken cancellationToken)
     {
         var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
@@ -100,7 +110,7 @@ public sealed class SurveysController : ControllerBase
     }
 
     [HttpPost("{surveyId:guid}/reject")]
-    [Authorize(Policy = PermissionCodes.SurveyManage)]
+    [Authorize(Policy = AuthorizationPolicies.SurveyApproveOrManage)]
     public async Task<IActionResult> Reject(Guid surveyId, [FromBody] RejectSurveyRequest request, CancellationToken cancellationToken)
     {
         var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
@@ -110,10 +120,13 @@ public sealed class SurveysController : ControllerBase
 
     [HttpPost("{surveyId:guid}/publish")]
     [Authorize(Policy = PermissionCodes.SurveyManage)]
-    public async Task<IActionResult> Publish(Guid surveyId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Publish(
+        Guid surveyId,
+        [FromBody] PublishSurveyRequest? request,
+        CancellationToken cancellationToken)
     {
         var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
-        var result = await _surveys.PublishAsync(surveyId, cancellationToken).ConfigureAwait(false);
+        var result = await _surveys.PublishAsync(surveyId, request, cancellationToken).ConfigureAwait(false);
         return result.ToApiActionResult(this, traceId);
     }
 
@@ -154,6 +167,15 @@ public sealed class SurveysController : ControllerBase
     {
         var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
         var result = await _surveys.GetQuestionAnalyticsAsync(surveyId, page, pageSize, cancellationToken).ConfigureAwait(false);
+        return result.ToApiActionResult(this, traceId);
+    }
+
+    [HttpGet("{surveyId:guid}/analytics/numeric")]
+    [Authorize(Policy = PermissionCodes.ReportView)]
+    public async Task<IActionResult> NumericQuestionAnalytics(Guid surveyId, CancellationToken cancellationToken)
+    {
+        var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+        var result = await _surveys.GetNumericQuestionAnalyticsAsync(surveyId, cancellationToken).ConfigureAwait(false);
         return result.ToApiActionResult(this, traceId);
     }
 }

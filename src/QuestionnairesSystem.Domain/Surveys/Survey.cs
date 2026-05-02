@@ -20,6 +20,10 @@ public sealed class Survey : AuditableDomainEntity
     public Guid? TemplateId { get; set; }
     public DateTime? PublishedAtUtc { get; set; }
     public DateTime? ClosedAtUtc { get; set; }
+    /// <summary>بداية المخطط الزمني (اختياري؛ يُستخدم مع النشر والأرشفة).</summary>
+    public DateTime? OpensAtUtc { get; set; }
+    /// <summary>نهاية المخطط؛ عند تجاوزها يُغلق الاستبيان تلقائياً (أرشفة).</summary>
+    public DateTime? ClosesAtUtc { get; set; }
     public string? RejectionReason { get; set; }
 
     public User? Owner { get; set; }

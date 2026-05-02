@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.OpenApi;
 using QuestPDF.Infrastructure;
 using QuestionnairesSystem.Api.Authorization;
+using QuestionnairesSystem.Api.Services;
 using QuestionnairesSystem.Api.Middleware;
 using QuestionnairesSystem.Application.DependencyInjection;
 using QuestionnairesSystem.Application.Features.Identity;
@@ -38,6 +39,7 @@ if (trimmedOrigins.Length > 0)
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddPersistence(builder.Configuration);
+builder.Services.AddHostedService<SurveyScheduleHostedService>();
 
 builder.Services.AddAuthorization(options =>
 {
@@ -56,6 +58,11 @@ builder.Services.AddAuthorization(options =>
                 || user.HasClaim(QuestionnairesClaimTypes.Permission, PermissionCodes.TemplateView)
                 || user.HasClaim(QuestionnairesClaimTypes.Permission, PermissionCodes.TemplateManage);
         }));
+
+    options.AddPolicy(AuthorizationPolicies.SurveyApproveOrManage, policy =>
+        policy.RequireAssertion(context =>
+            context.User.HasClaim(QuestionnairesClaimTypes.Permission, PermissionCodes.SurveyApprove)
+            || context.User.HasClaim(QuestionnairesClaimTypes.Permission, PermissionCodes.SurveyManage)));
 });
 
 QuestPDF.Settings.License = LicenseType.Community;

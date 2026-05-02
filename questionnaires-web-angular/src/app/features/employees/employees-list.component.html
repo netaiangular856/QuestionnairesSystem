@@ -1,0 +1,275 @@
+<div class="page-workspace">
+  <div class="page-head-row">
+    <section class="page-head">
+      <h1>{{ 'employees.title' | t }}</h1>
+      <p class="page-head__sub">{{ 'employees.subtitle' | t }}</p>
+    </section>
+    <div class="page-actions">
+      <button type="button" class="btn-primary btn-primary--icon" (click)="openCreate()">
+        <span class="btn-ico" aria-hidden="true">＋</span>
+        {{ 'employees.create' | t }}
+      </button>
+    </div>
+  </div>
+
+  <div class="toolbar card card--interactive">
+    <input
+      class="toolbar__search"
+      type="search"
+      [(ngModel)]="filter.search"
+      (keyup.enter)="onSearch()"
+      [placeholder]="'employees.search' | t"
+    />
+    <button type="button" class="btn-primary" (click)="onSearch()">{{ 'common.search' | t }}</button>
+    <div class="view-mode">
+      <button
+        type="button"
+        class="mode-btn"
+        [class.mode-btn--active]="viewMode() === 'table'"
+        (click)="setViewMode('table')"
+      >
+        {{ 'users.view.table' | t }}
+      </button>
+      <button
+        type="button"
+        class="mode-btn"
+        [class.mode-btn--active]="viewMode() === 'cards'"
+        (click)="setViewMode('cards')"
+      >
+        {{ 'users.view.cards' | t }}
+      </button>
+    </div>
+  </div>
+
+  @if (result()) {
+    @if (viewMode() === 'table') {
+      <div class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>{{ 'employees.table.number' | t }}</th>
+              <th>{{ 'employees.table.name' | t }}</th>
+              <th>{{ 'employees.table.job' | t }}</th>
+              <th>{{ 'employees.table.dept' | t }}</th>
+              <th>{{ 'common.status' | t }}</th>
+              <th class="actions-col-head">{{ 'common.actions' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of result()!.items; track row.id) {
+              <tr>
+                <td class="bold">{{ row.employeeNumber }}</td>
+                <td>
+                  <div class="flex-col">
+                    <span class="bold">{{ i18n.lang() === 'ar' ? row.nameAr : row.nameEn }}</span>
+                    <span class="muted small">{{ row.email }}</span>
+                  </div>
+                </td>
+                <td>{{ i18n.lang() === 'ar' ? row.jobTitleAr : row.jobTitleEn }}</td>
+                <td>{{ i18n.lang() === 'ar' ? row.departmentNameAr : row.departmentNameEn }}</td>
+                <td>
+                  <span class="status-chip" [class.status-chip--inactive]="!row.isActive">
+                    {{ (row.isActive ? 'profile.statusActive' : 'users.status.inactive') | t }}
+                  </span>
+                </td>
+                <td class="cell-actions">
+                  <div class="cell-actions__wrap">
+                    <button type="button" class="action-btn action-btn--edit" (click)="openEdit(row.id)">{{ 'users.actions.edit' | t }}</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        <div class="pager">
+          <button type="button" (click)="prevPage()" [disabled]="!result()!.hasPreviousPage">{{ 'common.previous' | t }}</button>
+          <span>{{ result()!.page }} / {{ result()!.totalPages || 1 }}</span>
+          <button type="button" (click)="nextPage()" [disabled]="!result()!.hasNextPage">{{ 'common.next' | t }}</button>
+        </div>
+      </div>
+    } @else {
+      <div class="cards-grid">
+        @for (row of result()!.items; track row.id) {
+          <article class="card user-card user-card--employee">
+            <div class="user-card__accent"></div>
+            <header class="user-card__head">
+              <div class="user-card__avatar-placeholder">
+                {{ (i18n.lang() === 'ar' ? row.nameAr : row.nameEn).charAt(0) }}
+              </div>
+              <div class="user-card__titles">
+                <h3>{{ i18n.lang() === 'ar' ? row.nameAr : row.nameEn }}</h3>
+                <p class="muted small">{{ i18n.lang() === 'ar' ? row.jobTitleAr : row.jobTitleEn }}</p>
+              </div>
+              <span class="status-chip status-chip--sm" [class.status-chip--inactive]="!row.isActive">
+                {{ (row.isActive ? 'profile.statusActive' : 'users.status.inactive') | t }}
+              </span>
+            </header>
+            
+            <div class="user-card__info-grid">
+              <div class="user-card__info-item">
+                <span class="muted x-small">{{ 'employees.table.number' | t }}</span>
+                <span class="bold small">#{{ row.employeeNumber }}</span>
+              </div>
+              <div class="user-card__info-item">
+                <span class="muted x-small">{{ 'employees.form.email' | t }}</span>
+                <span class="small truncate">{{ row.email || '-' }}</span>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <button type="button" class="action-btn action-btn--edit action-btn--full" (click)="openEdit(row.id)">
+                {{ 'users.actions.edit' | t }}
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+      <div class="pager card">
+        <button type="button" (click)="prevPage()" [disabled]="!result()!.hasPreviousPage">{{ 'common.previous' | t }}</button>
+        <span>{{ result()!.page }} / {{ result()!.totalPages || 1 }}</span>
+        <button type="button" (click)="nextPage()" [disabled]="!result()!.hasNextPage">{{ 'common.next' | t }}</button>
+      </div>
+    }
+  } @else if (loading()) {
+    <div class="skeleton table-skel"></div>
+  }
+</div>
+
+@if (createOpen()) {
+  <div class="modal-backdrop" (click)="createOpen.set(false)"></div>
+  <div class="modal-panel modal-panel--employee card" role="dialog" aria-modal="true">
+    <header class="modal-panel__head">
+      <div class="modal-panel__title-group">
+        <span class="modal-panel__icon">👤</span>
+        <h2>{{ 'employees.create' | t }}</h2>
+      </div>
+      <button type="button" class="modal-close" (click)="createOpen.set(false)">✕</button>
+    </header>
+    <div class="modal-panel__body">
+      <div class="form-grid">
+        <!-- Basic Info Section -->
+        <div class="form-section-title full">
+          <span>{{ 'profile.account' | t }}</span>
+        </div>
+        
+        <label class="field">
+          <span>{{ 'employees.form.number' | t }} <span class="required">*</span></span>
+          <input type="text" [(ngModel)]="createModel.employeeNumber" [placeholder]="'#1234'" />
+        </label>
+        
+        <label class="field">
+          <span>{{ 'employees.form.email' | t }}</span>
+          <input type="email" [(ngModel)]="createModel.email" placeholder="example@company.com" />
+        </label>
+
+        <label class="field">
+          <span>{{ 'employees.form.nameAr' | t }} <span class="required">*</span></span>
+          <input type="text" [(ngModel)]="createModel.nameAr" />
+        </label>
+        <label class="field">
+          <span>{{ 'employees.form.nameEn' | t }} <span class="required">*</span></span>
+          <input type="text" [(ngModel)]="createModel.nameEn" />
+        </label>
+
+        <!-- Job Info Section -->
+        <div class="form-section-title full">
+          <span>{{ 'employees.table.job' | t }}</span>
+        </div>
+
+        <label class="field">
+          <span>{{ 'employees.form.jobAr' | t }}</span>
+          <input type="text" [(ngModel)]="createModel.jobTitleAr" />
+        </label>
+        <label class="field">
+          <span>{{ 'employees.form.jobEn' | t }}</span>
+          <input type="text" [(ngModel)]="createModel.jobTitleEn" />
+        </label>
+        
+        <label class="field">
+          <span>{{ 'employees.form.phone' | t }}</span>
+          <input type="text" [(ngModel)]="createModel.phoneNumber" />
+        </label>
+      </div>
+    </div>
+    <footer class="modal-panel__foot">
+      <button type="button" class="btn-ghost" (click)="createOpen.set(false)" [disabled]="createBusy()">{{ 'users.actions.cancel' | t }}</button>
+      <button type="button" class="btn-primary" (click)="saveCreate()" [disabled]="createBusy()">
+        @if (createBusy()) { <span class="spinner"></span> }
+        {{ 'users.actions.save' | t }}
+      </button>
+    </footer>
+  </div>
+}
+
+@if (editOpen()) {
+  <div class="modal-backdrop" (click)="editOpen.set(false)"></div>
+  <div class="modal-panel modal-panel--employee card" role="dialog" aria-modal="true">
+    <header class="modal-panel__head">
+      <div class="modal-panel__title-group">
+        <span class="modal-panel__icon">📝</span>
+        <h2>{{ 'employees.edit' | t }}</h2>
+      </div>
+      <button type="button" class="modal-close" (click)="editOpen.set(false)">✕</button>
+    </header>
+    <div class="modal-panel__body">
+      <div class="form-grid">
+        <!-- Basic Info Section -->
+        <div class="form-section-title full">
+          <span>{{ 'profile.account' | t }}</span>
+        </div>
+
+        <label class="field">
+          <span>{{ 'employees.form.number' | t }} <span class="required">*</span></span>
+          <input type="text" [(ngModel)]="editModel.employeeNumber" />
+        </label>
+        
+        <label class="field">
+          <span>{{ 'employees.form.email' | t }}</span>
+          <input type="email" [(ngModel)]="editModel.email" />
+        </label>
+
+        <label class="field">
+          <span>{{ 'employees.form.nameAr' | t }} <span class="required">*</span></span>
+          <input type="text" [(ngModel)]="editModel.nameAr" />
+        </label>
+        <label class="field">
+          <span>{{ 'employees.form.nameEn' | t }} <span class="required">*</span></span>
+          <input type="text" [(ngModel)]="editModel.nameEn" />
+        </label>
+
+        <!-- Job Info Section -->
+        <div class="form-section-title full">
+          <span>{{ 'employees.table.job' | t }}</span>
+        </div>
+
+        <label class="field">
+          <span>{{ 'employees.form.jobAr' | t }}</span>
+          <input type="text" [(ngModel)]="editModel.jobTitleAr" />
+        </label>
+        <label class="field">
+          <span>{{ 'employees.form.jobEn' | t }}</span>
+          <input type="text" [(ngModel)]="editModel.jobTitleEn" />
+        </label>
+        
+        <label class="field">
+          <span>{{ 'employees.form.phone' | t }}</span>
+          <input type="text" [(ngModel)]="editModel.phoneNumber" />
+        </label>
+
+        <label class="field full">
+          <span class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="editModel.isActive" />
+            {{ 'employees.form.isActive' | t }}
+          </span>
+        </label>
+      </div>
+    </div>
+    <footer class="modal-panel__foot">
+      <button type="button" class="btn-ghost" (click)="editOpen.set(false)" [disabled]="editBusy()">{{ 'users.actions.cancel' | t }}</button>
+      <button type="button" class="btn-primary" (click)="saveEdit()" [disabled]="editBusy()">
+        @if (editBusy()) { <span class="spinner"></span> }
+        {{ 'users.actions.save' | t }}
+      </button>
+    </footer>
+  </div>
+}

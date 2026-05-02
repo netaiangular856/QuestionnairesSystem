@@ -52,6 +52,8 @@ export interface SurveyListItemDto {
   version: number;
   ownerDisplayName: string | null;
   publishedAtUtc: string | null;
+  opensAtUtc: string | null;
+  closesAtUtc: string | null;
   questionCount: number;
   responseCount: number;
 }
@@ -71,6 +73,8 @@ export interface SurveyDetailDto {
   templateId: string | null;
   publishedAtUtc: string | null;
   closedAtUtc: string | null;
+  opensAtUtc: string | null;
+  closesAtUtc: string | null;
   rejectionReason: string | null;
 }
 
@@ -81,6 +85,18 @@ export interface SurveyFilterRequest {
   search?: string | null;
 }
 
+/** Matches backend CreateSurveyQuestionItem — type uses backend QuestionType enum values (byte). */
+export interface CreateSurveyQuestionItem {
+  type: number;
+  titleAr: string;
+  titleEn: string;
+  helpTextAr?: string | null;
+  helpTextEn?: string | null;
+  isRequired: boolean;
+  optionsJson?: string | null;
+  displayOrder?: number | null;
+}
+
 export interface CreateSurveyRequest {
   titleAr: string;
   titleEn: string;
@@ -89,6 +105,15 @@ export interface CreateSurveyRequest {
   code?: string | null;
   audienceScope: SurveyAudienceScope;
   templateId?: string | null;
+  questions?: CreateSurveyQuestionItem[] | null;
+  opensAtUtc?: string | null;
+  closesAtUtc?: string | null;
+}
+
+/** Optional body for POST /publish — audience at publish time. */
+export interface PublishSurveyRequest {
+  audienceScope?: SurveyAudienceScope | null;
+  audienceUserIds?: string[] | null;
 }
 
 export interface UpdateSurveyRequest {
@@ -98,6 +123,7 @@ export interface UpdateSurveyRequest {
   descriptionEn?: string | null;
   code?: string | null;
   audienceScope: SurveyAudienceScope;
+  questions?: CreateSurveyQuestionItem[] | null;
 }
 
 export interface PatchSurveyStatusRequest {
@@ -130,6 +156,22 @@ export interface QuestionAnalyticsItemDto {
   answerCount: number;
 }
 
+export interface NumericQuestionStatDto {
+  questionId: string;
+  titleAr: string;
+  titleEn: string;
+  type: number;
+  average: number | null;
+  min: number | null;
+  max: number | null;
+  answerCount: number;
+}
+
+export interface SurveyNumericAnalyticsDto {
+  surveyId: string;
+  questions: NumericQuestionStatDto[];
+}
+
 export interface QuestionDto {
   id: string;
   surveyId: string;
@@ -143,12 +185,58 @@ export interface QuestionDto {
   optionsJson: string | null;
 }
 
+/** Mirrors backend QuestionType (byte). */
+export enum QuestionType {
+  ShortText = 1,
+  LongText = 2,
+  SingleChoice = 3,
+  MultipleChoice = 4,
+  Rating = 5,
+  Scale = 6,
+  YesNo = 7,
+  Date = 8,
+  Number = 9,
+}
+
 export interface TemplateListItemDto {
   id: string;
   nameAr: string;
   nameEn: string;
   isArchived: boolean;
   usageCount: number;
+  questionCount: number;
+}
+
+export interface TemplateDetailDto {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
+  questions: CreateSurveyQuestionItem[];
+  isArchived: boolean;
+  usageCount: number;
+  questionCount: number;
+}
+
+export interface CreateTemplateRequest {
+  nameAr: string;
+  nameEn: string;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
+  questions: CreateSurveyQuestionItem[];
+}
+
+export interface UpdateTemplateRequest {
+  nameAr: string;
+  nameEn: string;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
+  questions: CreateSurveyQuestionItem[];
+}
+
+export interface UseTemplateResultDto {
+  surveyId: string;
 }
 
 export interface RecommendationDto {

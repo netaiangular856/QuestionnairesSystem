@@ -6,6 +6,7 @@ import { ApiResponse, PagedResult } from '../shared/models/api.types';
 import {
   CreateSurveyRequest,
   PatchSurveyStatusRequest,
+  PublishSurveyRequest,
   QuestionAnalyticsItemDto,
   RejectSurveyRequest,
   SurveyAnalyticsDto,
@@ -13,6 +14,7 @@ import {
   SurveyDetailDto,
   SurveyFilterRequest,
   SurveyListItemDto,
+  SurveyNumericAnalyticsDto,
   UpdateSurveyRequest,
 } from '../shared/models/questionnaire.models';
 import { toHttpParams, unwrapApiResponse, unwrapApiVoid } from '../shared/utils/api-helpers';
@@ -31,6 +33,17 @@ export class SurveysApiService {
     });
     return this.http
       .get<ApiResponse<PagedResult<SurveyListItemDto>>>(this.base, { params })
+      .pipe(map((r) => unwrapApiResponse(r)));
+  }
+
+  getPendingApprovalPaged(filter: SurveyFilterRequest) {
+    const params = toHttpParams({
+      page: filter.page,
+      pageSize: filter.pageSize,
+      search: filter.search || undefined,
+    });
+    return this.http
+      .get<ApiResponse<PagedResult<SurveyListItemDto>>>(`${this.base}/pending-approval`, { params })
       .pipe(map((r) => unwrapApiResponse(r)));
   }
 
@@ -84,9 +97,9 @@ export class SurveysApiService {
       .pipe(map((r) => unwrapApiResponse(r)));
   }
 
-  publish(id: string) {
+  publish(id: string, body?: PublishSurveyRequest | null) {
     return this.http
-      .post<ApiResponse<SurveyDetailDto>>(`${this.base}/${id}/publish`, {})
+      .post<ApiResponse<SurveyDetailDto>>(`${this.base}/${id}/publish`, body ?? {})
       .pipe(map((r) => unwrapApiResponse(r)));
   }
 
@@ -112,6 +125,12 @@ export class SurveysApiService {
     const params = toHttpParams({ page, pageSize });
     return this.http
       .get<ApiResponse<PagedResult<QuestionAnalyticsItemDto>>>(`${this.base}/${id}/analytics/questions`, { params })
+      .pipe(map((r) => unwrapApiResponse(r)));
+  }
+
+  getNumericQuestionAnalytics(id: string) {
+    return this.http
+      .get<ApiResponse<SurveyNumericAnalyticsDto>>(`${this.base}/${id}/analytics/numeric`)
       .pipe(map((r) => unwrapApiResponse(r)));
   }
 }

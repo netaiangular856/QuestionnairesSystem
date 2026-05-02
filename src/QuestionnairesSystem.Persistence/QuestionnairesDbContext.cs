@@ -8,6 +8,7 @@ using QuestionnairesSystem.Domain.Identity;
 using QuestionnairesSystem.Domain.Lookups;
 using QuestionnairesSystem.Domain.Notifications;
 using QuestionnairesSystem.Domain.Organizations;
+using QuestionnairesSystem.Domain.Partners;
 using QuestionnairesSystem.Domain.Participants;
 using QuestionnairesSystem.Domain.Recommendations;
 using QuestionnairesSystem.Domain.Responses;
@@ -51,6 +52,8 @@ public sealed class QuestionnairesDbContext : DbContext
     public DbSet<LookupItem> LookupItems => Set<LookupItem>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Department> Departments => Set<Department>();
+    public DbSet<Employee> Employees => Set<Employee>();
+    public DbSet<Partner> Partners => Set<Partner>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
