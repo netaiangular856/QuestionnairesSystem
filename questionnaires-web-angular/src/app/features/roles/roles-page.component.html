@@ -91,14 +91,31 @@
   } @else {
     <div class="cards-grid">
       @for (row of result()!.items; track row.id) {
-        <article class="card role-card">
-          <header class="role-card__head">
-            <h3>{{ roleDisplayName(row) }}</h3>
-            <span class="status-chip" [class.status-chip--inactive]="!row.isSystemRole">
+        <article class="card user-card">
+          <header class="user-card__head">
+            <div class="user-card__avatar-placeholder">
+              {{ roleDisplayName(row).charAt(0).toUpperCase() }}
+            </div>
+            <div class="user-card__titles">
+              <h3>{{ roleDisplayName(row) }}</h3>
+            </div>
+            <span class="status-chip status-chip--sm" [class.status-chip--inactive]="!row.isSystemRole">
               {{ row.isSystemRole ? ('roles.type.system' | t) : ('roles.type.custom' | t) }}
             </span>
           </header>
-          <p class="role-card__line">{{ roleDisplayDescription(row) || '-' }}</p>
+
+          <div class="user-card__info-grid">
+            <div class="user-card__info-item">
+              <div class="user-card__info-icon">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+              </div>
+              <div class="user-card__info-content">
+                <span class="muted x-small">{{ 'common.description' | t }}</span>
+                <span class="small">{{ roleDisplayDescription(row) || '-' }}</span>
+              </div>
+            </div>
+          </div>
+
           <div class="card-actions">
             <button type="button" class="action-btn action-btn--info" (click)="openDetails(row.id)">{{ 'roles.actions.details' | t }}</button>
             <button type="button" class="action-btn action-btn--edit" (click)="openEdit(row.id)">{{ 'roles.actions.edit' | t }}</button>

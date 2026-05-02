@@ -71,32 +71,6 @@
   margin-bottom: 1rem;
 }
 
-.role-card {
-  padding: 1rem;
-}
-
-.role-card__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.role-card__head h3 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.role-card__line {
-  margin: 0.5rem 0;
-  color: var(--color-muted);
-}
-
-.card-actions {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
 
 .modal-backdrop {
   position: fixed;

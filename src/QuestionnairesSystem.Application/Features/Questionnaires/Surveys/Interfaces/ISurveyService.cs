@@ -23,6 +23,10 @@ public interface ISurveyService
         SurveyFilterRequest request,
         CancellationToken cancellationToken = default);
 
+    Task<Result<PagedResult<SurveyListItemDto>>> GetAvailableForParticipationPagedAsync(
+        SurveyFilterRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<Result<int>> CloseExpiredPublishedSurveysAsync(CancellationToken cancellationToken = default);
 
     Task<Result<SurveyAnalyticsDto>> GetAnalyticsAsync(Guid surveyId, CancellationToken cancellationToken = default);
@@ -34,6 +38,10 @@ public interface ISurveyService
         CancellationToken cancellationToken = default);
 
     Task<Result<SurveyNumericAnalyticsDto>> GetNumericQuestionAnalyticsAsync(
+        Guid surveyId,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<SurveyComprehensiveAnalyticsDto>> GetComprehensiveAnalyticsAsync(
         Guid surveyId,
         CancellationToken cancellationToken = default);
 }

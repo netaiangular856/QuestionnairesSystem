@@ -1,84 +1,126 @@
-<div class="page-workspace">
-  <a [routerLink]="['/surveys', surveyId]" class="back-link">← {{ 'q.subpages.back' | t }}</a>
-  <h1 class="page-title">{{ 'q.subpages.questionAnalyticsTitle' | t }}</h1>
-
-  <div class="toolbar toolbar--split card card--interactive">
-    <div class="toolbar__spacer"></div>
-    <div class="view-toggle" role="group" [attr.aria-label]="'q.surveys.view.label' | t">
-      <button
-        type="button"
-        class="view-toggle__btn"
-        [class.view-toggle__btn--active]="viewMode() === 'table'"
-        (click)="setViewMode('table')"
-      >
-        {{ 'q.surveys.view.table' | t }}
-      </button>
-      <button
-        type="button"
-        class="view-toggle__btn"
-        [class.view-toggle__btn--active]="viewMode() === 'cards'"
-        (click)="setViewMode('cards')"
-      >
-        {{ 'q.surveys.view.cards' | t }}
-      </button>
-    </div>
-  </div>
+﻿<div class="page-workspace">
+  <a [routerLink]="['/surveys', surveyId]" class="back-link">← {{ "q.subpages.back" | t }}</a>
+  <h1 class="page-title">{{ "q.subpages.questionAnalyticsTitle" | t }}</h1>
 
   @if (busy()) {
-    <div class="card card--muted">{{ 'common.loading' | t }}</div>
+    <div class="card card--muted">{{ "common.loading" | t }}</div>
   } @else if (failed()) {
-    <div class="card card--muted">{{ 'q.detail.analytics.error' | t }}</div>
+    <div class="card card--muted">{{ "q.detail.analytics.error" | t }}</div>
   } @else {
-    @if (result(); as res) {
-      @if (viewMode() === 'table') {
-        <div class="card table-card">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>{{ 'q.detail.analytics.questionTitle' | t }}</th>
-                <th>{{ 'q.detail.analytics.answers' | t }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (qa of res.items; track qa.questionId) {
-                <tr>
-                  <td>{{ qa.titleEn }}</td>
-                  <td>{{ qa.answerCount }}</td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="2" class="muted">—</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-          <div class="pager">
-            <button type="button" (click)="prevPage()" [disabled]="!res.hasPreviousPage">{{ 'common.previous' | t }}</button>
-            <span>{{ res.page }} / {{ res.totalPages || 1 }}</span>
-            <button type="button" (click)="nextPage()" [disabled]="!res.hasNextPage">{{ 'common.next' | t }}</button>
+    @if (analytics(); as data) {
+      <!-- Main Analytics Grid -->
+      <div class="analytics-main-grid">
+        <!-- Overview Stats Section -->
+        <div class="overview-section">
+          <div class="section-header">
+            <h2>{{ 'q.detail.section.overview' | t }}</h2>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon">👥</div>
+              <div class="stat-content">
+                <h3>{{ 'q.detail.analytics.participantsCount' | t }}</h3>
+                <p class="stat-number">{{ data.overview.totalParticipants }}</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">✅</div>
+              <div class="stat-content">
+                <h3>{{ 'q.detail.analytics.submitted' | t }}</h3>
+                <p class="stat-number">{{ data.overview.submittedResponses }}</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">📊</div>
+              <div class="stat-content">
+                <h3>{{ 'q.detail.analytics.completionRate' | t }}</h3>
+                <p class="stat-number">{{ data.overview.completionRate | number:"1.1-1" }}%</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">❓</div>
+              <div class="stat-content">
+                <h3>{{ 'q.detail.analytics.questionsCount' | t }}</h3>
+                <p class="stat-number">{{ data.overview.totalQuestions }}</p>
+              </div>
+            </div>
           </div>
         </div>
-      } @else {
-        <div class="subpage-card-grid">
-          @for (qa of res.items; track qa.questionId) {
-            <article class="card subpage-card">
-              <h2 class="subpage-card__title">{{ qa.titleEn || '—' }}</h2>
-              <p class="subpage-card__foot muted">
-                {{ 'q.detail.analytics.answers' | t }}: {{ qa.answerCount }}
-              </p>
-            </article>
-          } @empty {
-            <p class="muted subpage-card-grid__empty">—</p>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+          <div class="section-header">
+            <h2>{{ 'q.detail.analytics.title' | t }}</h2>
+          </div>
+          <div class="charts-grid">
+            <!-- Response Timeline Chart -->
+            <div class="chart-container">
+              <h3>📈 {{ 'q.detail.analytics.totalResponses' | t }}</h3>
+              <div class="chart-wrapper">
+                <canvas baseChart [data]="timelineChartData()" [options]="chartOptions"></canvas>
+              </div>
+            </div>
+
+            <!-- Category Distribution Chart -->
+            <div class="chart-container">
+              <h3>🍩 {{ 'q.detail.analytics.otherResponses' | t }}</h3>
+              <div class="chart-wrapper">
+                <canvas baseChart [data]="categoryChartData()" [options]="chartOptions"></canvas>
+              </div>
+            </div>
+
+            <!-- Rating Distribution Chart -->
+            @if (ratingChartData().datasets.length > 0) {
+              <div class="chart-container">
+                <h3>⭐ {{ 'q.detail.analytics.title' | t }}</h3>
+                <div class="chart-wrapper">
+                  <canvas baseChart [data]="ratingChartData()" [options]="chartOptions"></canvas>
+                </div>
+              </div>
+            }
+
+            <!-- Top Questions Chart -->
+            <div class="chart-container">
+              <h3>📊 {{ 'q.detail.analytics.perQuestion' | t }}</h3>
+              <div class="chart-wrapper">
+                <canvas baseChart [data]="questionChartData()" [options]="chartOptions"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Question Analytics -->
+      <div class="questions-analytics">
+        <h2>{{ 'q.detail.analytics.perQuestion' | t }}</h2>
+        <div class="questions-grid">
+          @for (question of data.questions; track question.questionId) {
+            <div class="question-card card">
+              <h3>{{ getQuestionTitle(question) }}</h3>
+              <p class="question-type">{{ getQuestionTypeLabel(question.questionType) }}</p>
+              <p class="answer-count">{{ question.totalAnswers }} {{ 'q.detail.analytics.answers' | t }}</p>
+              
+              @if (question.averageRating) {
+                <div class="rating-info">
+                  <span>{{ 'q.detail.analytics.completionRate' | t }}: {{ question.averageRating | number:"1.1-1" }}</span>
+                  <span>Min: {{ question.minRating | number:"1.0-1" }}</span>
+                  <span>Max: {{ question.maxRating | number:"1.0-1" }}</span>
+                </div>
+              }
+
+              <!-- Chart for each question -->
+              <div class="question-chart">
+                <canvas 
+                  baseChart 
+                  [data]="getQuestionChart(question.questionId)" 
+                  [type]="getQuestionChartType(question.questionType)"
+                  [options]="chartOptions">
+                </canvas>
+              </div>
+            </div>
           }
         </div>
-        <div class="card pager-card">
-          <div class="pager">
-            <button type="button" (click)="prevPage()" [disabled]="!res.hasPreviousPage">{{ 'common.previous' | t }}</button>
-            <span>{{ res.page }} / {{ res.totalPages || 1 }}</span>
-            <button type="button" (click)="nextPage()" [disabled]="!res.hasNextPage">{{ 'common.next' | t }}</button>
-          </div>
-        </div>
-      }
+      </div>
     }
   }
 </div>

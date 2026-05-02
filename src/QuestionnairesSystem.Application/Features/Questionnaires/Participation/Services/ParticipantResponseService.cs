@@ -11,6 +11,8 @@ using QuestionnairesSystem.Shared.Api;
 using QuestionnairesSystem.Shared.Constants;
 using QuestionnairesSystem.Shared.Results;
 
+using QuestionnairesSystem.Shared.Identity;
+
 namespace QuestionnairesSystem.Application.Features.Questionnaires.Participation.Services;
 
 public sealed class ParticipantResponseService : IParticipantResponseService
@@ -18,15 +20,18 @@ public sealed class ParticipantResponseService : IParticipantResponseService
     private readonly QuestionnairesDbContext _db;
     private readonly IValidator<CreateParticipantRequest> _participantValidator;
     private readonly IValidator<CreateResponseRequest> _responseValidator;
+    private readonly ICurrentUserService _currentUser;
 
     public ParticipantResponseService(
         QuestionnairesDbContext db,
         IValidator<CreateParticipantRequest> participantValidator,
-        IValidator<CreateResponseRequest> responseValidator)
+        IValidator<CreateResponseRequest> responseValidator,
+        ICurrentUserService currentUser)
     {
         _db = db;
         _participantValidator = participantValidator;
         _responseValidator = responseValidator;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<ParticipantDto>> AddParticipantAsync(
@@ -107,11 +112,34 @@ public sealed class ParticipantResponseService : IParticipantResponseService
         if (!exists)
             return Result<ResponseDetailDto>.Fail("Survey was not found.", QuestionnaireErrors.SurveyNotFound);
 
+        var userId = request.RespondentUserId ?? _currentUser.UserId;
+        var participantId = request.ParticipantId;
+
+        // If no participant linked but we have a user, create a new participant record for this entry
+        if (participantId == null)
+        {
+            var user = userId.HasValue 
+                ? await _db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, cancellationToken).ConfigureAwait(false)
+                : null;
+
+            var p = new SurveyParticipant
+            {
+                SurveyId = surveyId,
+                UserId = userId,
+                Email = user?.Email,
+                Status = ParticipantStatus.Invited,
+                InvitedAtUtc = DateTime.UtcNow
+            };
+            _db.SurveyParticipants.Add(p);
+            await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            participantId = p.Id;
+        }
+
         var r = new SurveyResponse
         {
             SurveyId = surveyId,
-            ParticipantId = request.ParticipantId,
-            RespondentUserId = request.RespondentUserId,
+            ParticipantId = participantId,
+            RespondentUserId = userId,
             Status = ResponseStatus.InProgress,
             StartedAtUtc = DateTime.UtcNow
         };
@@ -227,7 +255,9 @@ public sealed class ParticipantResponseService : IParticipantResponseService
 
     public async Task<Result<ResponseDetailDto>> SubmitResponseAsync(Guid responseId, CancellationToken cancellationToken = default)
     {
-        var r = await _db.SurveyResponses.FirstOrDefaultAsync(x => x.Id == responseId, cancellationToken).ConfigureAwait(false);
+        var r = await _db.SurveyResponses
+            .Include(x => x.Participant)
+            .FirstOrDefaultAsync(x => x.Id == responseId, cancellationToken).ConfigureAwait(false);
         if (r is null)
             return Result<ResponseDetailDto>.Fail("Response was not found.", QuestionnaireErrors.ResponseNotFound);
 
@@ -236,6 +266,13 @@ public sealed class ParticipantResponseService : IParticipantResponseService
 
         r.Status = ResponseStatus.Submitted;
         r.SubmittedAtUtc = DateTime.UtcNow;
+
+        if (r.Participant != null)
+        {
+            r.Participant.Status = ParticipantStatus.Completed;
+            r.Participant.CompletedAtUtc = r.SubmittedAtUtc;
+        }
+
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         return Result<ResponseDetailDto>.Ok(await LoadResponseDetailAsync(responseId, cancellationToken).ConfigureAwait(false));
     }
@@ -259,11 +296,19 @@ public sealed class ParticipantResponseService : IParticipantResponseService
             })
             .FirstAsync(cancellationToken)
             .ConfigureAwait(false);
+
         var answers = await _db.QuestionAnswers.AsNoTracking()
             .Where(a => a.ResponseId == responseId)
-            .Select(a => new AnswerDto { QuestionId = a.QuestionId, ValueJson = a.ValueJson })
+            .Select(a => new AnswerDto
+            {
+                QuestionId = a.QuestionId,
+                QuestionTitleAr = a.Question.TitleAr,
+                QuestionTitleEn = a.Question.TitleEn,
+                ValueJson = a.ValueJson
+            })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
         return new ResponseDetailDto
         {
             Id = head.Id,

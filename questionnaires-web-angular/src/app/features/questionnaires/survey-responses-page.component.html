@@ -39,6 +39,7 @@
                 <th>{{ 'common.status' | t }}</th>
                 <th>{{ 'q.detail.table.started' | t }}</th>
                 <th>{{ 'q.detail.table.submitted' | t }}</th>
+                <th class="actions-col-head">{{ 'common.actions' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -48,10 +49,17 @@
                   <td>{{ rStatus(r) | t }}</td>
                   <td>{{ r.startedAtUtc ? (r.startedAtUtc | date: 'short') : '—' }}</td>
                   <td>{{ r.submittedAtUtc ? (r.submittedAtUtc | date: 'short') : '—' }}</td>
+                  <td class="cell-actions">
+                    <a
+                      class="action-btn action-btn--info"
+                      [routerLink]="['/surveys', surveyId, 'responses', r.id]"
+                      >{{ 'common.view' | t }}</a
+                    >
+                  </td>
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="4" class="muted">—</td>
+                  <td colspan="5" class="muted">—</td>
                 </tr>
               }
             </tbody>
@@ -65,7 +73,10 @@
       } @else {
         <div class="subpage-card-grid">
           @for (r of res.items; track r.id) {
-            <article class="card subpage-card">
+            <article
+              class="card subpage-card card--interactive"
+              [routerLink]="['/surveys', surveyId, 'responses', r.id]"
+            >
               <h2 class="subpage-card__title">{{ r.respondentDisplayName || '—' }}</h2>
               <span class="q-pill q-pill--neutral">{{ rStatus(r) | t }}</span>
               <p class="subpage-card__foot muted">
@@ -76,6 +87,11 @@
                 {{ 'q.detail.table.submitted' | t }}:
                 {{ r.submittedAtUtc ? (r.submittedAtUtc | date: 'short') : '—' }}
               </p>
+              <div class="subpage-card__actions">
+                <button class="action-btn action-btn--info action-btn--sm">
+                  {{ 'common.view' | t }}
+                </button>
+              </div>
             </article>
           } @empty {
             <p class="muted subpage-card-grid__empty">—</p>

@@ -91,14 +91,39 @@
       @for (row of result()!.items; track row.id) {
         <article class="card user-card">
           <header class="user-card__head">
-            <h3>{{ userDisplayName(row) }}</h3>
-            <span class="status-chip" [class.status-chip--inactive]="!row.isActive">
+            <div class="user-card__avatar-placeholder">
+              {{ userDisplayName(row).charAt(0).toUpperCase() }}
+            </div>
+            <div class="user-card__titles">
+              <h3>{{ userDisplayName(row) }}</h3>
+              <p class="small">{{ row.userName }}</p>
+            </div>
+            <span class="status-chip status-chip--sm" [class.status-chip--inactive]="!row.isActive">
               {{ row.isActive ? ('users.status.active' | t) : ('users.status.inactive' | t) }}
             </span>
           </header>
-          <p class="user-card__line user-card__line--secondary">{{ 'users.table.userName' | t }}: {{ row.userName }}</p>
-          <p class="user-card__line">{{ row.email }}</p>
-          <p class="user-card__line">{{ 'users.table.lastLogin' | t }}: {{ row.lastLoginUtc ? (row.lastLoginUtc | date: 'short') : '-' }}</p>
+
+          <div class="user-card__info-grid">
+            <div class="user-card__info-item">
+              <div class="user-card__info-icon">
+                <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              </div>
+              <div class="user-card__info-content">
+                <span class="muted x-small">{{ 'users.form.email' | t }}</span>
+                <span class="small truncate">{{ row.email }}</span>
+              </div>
+            </div>
+            <div class="user-card__info-item">
+              <div class="user-card__info-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </div>
+              <div class="user-card__info-content">
+                <span class="muted x-small">{{ 'users.table.lastLogin' | t }}</span>
+                <span class="small">{{ row.lastLoginUtc ? (row.lastLoginUtc | date: 'short') : '-' }}</span>
+              </div>
+            </div>
+          </div>
+
           <div class="card-actions">
             <button type="button" class="action-btn action-btn--info" (click)="openDetails(row.id)">{{ 'users.actions.details' | t }}</button>
             <button type="button" class="action-btn action-btn--edit" (click)="openEdit(row.id)">{{ 'users.actions.edit' | t }}</button>

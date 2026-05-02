@@ -1,4 +1,4 @@
-.back-link {
+﻿.back-link {
   display: inline-block;
   margin-bottom: 0.75rem;
   font-weight: 700;
@@ -16,88 +16,267 @@
   color: #78716c;
 }
 
-.pager {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-}
-
-.toolbar--split {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  padding: 0.75rem 1rem;
-}
-
-.toolbar__spacer {
-  flex: 1;
-  min-width: 0;
-}
-
-.view-toggle {
-  display: inline-flex;
-  border-radius: 999px;
-  padding: 3px;
-  background: rgba(28, 25, 23, 0.06);
-  border: 1px solid rgba(28, 25, 23, 0.12);
-}
-
-.view-toggle__btn {
-  border: none;
-  background: transparent;
-  padding: 0.4rem 1rem;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: 0.82rem;
-  cursor: pointer;
-  color: #57534e;
-}
-
-.view-toggle__btn--active {
-  background: #fff;
-  color: var(--color-text);
-  box-shadow: 0 2px 8px rgba(28, 25, 23, 0.12);
-}
-
-.subpage-card-grid {
+// Main Analytics Grid
+.analytics-main-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 0.85rem;
-  margin-bottom: 0.85rem;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
 }
 
-.subpage-card-grid__empty {
-  grid-column: 1 / -1;
-  margin: 0;
+.overview-section, .charts-section {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
-.subpage-card {
+.section-header {
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #f3f4f6;
+  padding-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1f2937;
+  }
+}
+
+// Stats Grid with Modern Design
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-card {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  padding: 1rem 1.1rem;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  }
+
+  .stat-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+  }
+
+  .stat-content {
+    flex: 1;
+
+    h3 {
+      margin: 0 0 0.5rem;
+      font-size: 0.9rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .stat-number {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 800;
+      color: #1e293b;
+    }
+  }
 }
 
-.subpage-card__title {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 800;
+// Modern Charts Grid
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
 }
 
-.subpage-card__foot {
-  margin: 0;
-  font-size: 0.8rem;
+.chart-container {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  }
+
+  h3 {
+    margin: 0 0 1rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .chart-wrapper {
+    height: 280px;
+    position: relative;
+  }
 }
 
-.pager-card {
-  padding: 0;
+// Questions Analytics with Modern Design
+.questions-analytics {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+
+  h2 {
+    margin: 0 0 1.5rem;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1f2937;
+    border-bottom: 2px solid #f3f4f6;
+    padding-bottom: 1rem;
+  }
 }
 
-.pager-card .pager {
-  border-top: none;
+.questions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 1.5rem;
+}
+
+.question-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  }
+
+  h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.4;
+  }
+
+  .question-type {
+    margin: 0 0 0.5rem;
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 500;
+    background: #f1f5f9;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    display: inline-block;
+  }
+
+  .answer-count {
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+    color: #475569;
+    font-weight: 600;
+  }
+
+  .rating-info {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.85rem;
+
+    span {
+      margin-right: 1rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+  }
+
+  .question-chart {
+    margin-top: 1rem;
+    height: 220px;
+    position: relative;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    
+    canvas {
+      max-height: 200px;
+    }
+  }
+}
+
+// RTL Support (Arabic)
+[dir="rtl"] {
+  .stat-card {
+    flex-direction: row-reverse;
+  }
+
+  .rating-info span {
+    margin-right: 0;
+    margin-left: 1rem;
+  }
+
+  .chart-container h3 {
+    flex-direction: row-reverse;
+  }
+
+  .questions-grid {
+    direction: rtl;
+  }
+}
+
+// Responsive Design
+@media (max-width: 768px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .questions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chart-container .chart-wrapper {
+    height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .question-card {
+    padding: 1rem;
+  }
+
+  .stat-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+
+    .stat-icon {
+      font-size: 2rem;
+    }
+  }
+
+  [dir="rtl"] .stat-card {
+    flex-direction: column;
+  }
 }

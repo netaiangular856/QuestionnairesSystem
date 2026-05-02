@@ -39,6 +39,8 @@ internal static class PermissionDefinitions
         new(PermissionCodes.ActionPlanManage, "إدارة خطط العمل", "Manage action plans", null, "Manage action plans, initiatives, and progress", "ActionPlan"),
         new(PermissionCodes.EmployeeView, "عرض الموظفين", "View employees", null, "View employee directory", "Organization"),
         new(PermissionCodes.EmployeeManage, "إدارة الموظفين", "Manage employees", null, "Create, update, and delete employees", "Organization"),
+        new(PermissionCodes.DepartmentView, "عرض الأقسام", "View departments", null, "View department hierarchy", "Organization"),
+        new(PermissionCodes.DepartmentManage, "إدارة الأقسام", "Manage departments", null, "Create, update, and delete departments", "Organization"),
         new(PermissionCodes.PartnerView, "عرض الشركاء", "View partners", null, "View partner directory", "Partner"),
         new(PermissionCodes.PartnerManage, "إدارة الشركاء", "Manage partners", null, "Create, update, and delete partners", "Partner"),
         new(PermissionCodes.SettingsView, "عرض الإعدادات", "View settings", null, "View system settings", "Settings"),

@@ -40,13 +40,17 @@ export class SidebarComponent {
     {
       id: 'main',
       titleKey: 'nav.group.main',
-      items: [{ path: '/dashboard', labelKey: 'nav.dashboard', permissions: [], icon: 'home' }],
+      items: [
+        { path: '/dashboard', labelKey: 'nav.dashboard', permissions: [], icon: 'home' },
+        { path: '/available-surveys', labelKey: 'nav.availableSurveys', permissions: [], icon: 'survey' },
+      ],
     },
     {
       id: 'questionnaires',
       titleKey: 'nav.group.questionnaires',
       items: [
         { path: '/surveys', labelKey: 'nav.surveys', permissions: [PermissionCodes.SurveyView], icon: 'survey' },
+        { path: '/surveys-approval', labelKey: 'nav.surveysApproval', permissions: [PermissionCodes.SurveyApprovalView], icon: 'audit' },
         { path: '/templates', labelKey: 'nav.templates', permissions: [PermissionCodes.TemplateView], icon: 'template' },
         {
           path: '/recommendations',
@@ -64,6 +68,7 @@ export class SidebarComponent {
       items: [
         { path: '/users', labelKey: 'nav.users', permissions: [PermissionCodes.UserManage], icon: 'users' },
         { path: '/employees', labelKey: 'nav.employees', permissions: [PermissionCodes.EmployeeView], icon: 'users' },
+        { path: '/departments', labelKey: 'nav.departments', permissions: [PermissionCodes.DepartmentView], icon: 'template' },
         { path: '/partners', labelKey: 'nav.partners', permissions: [PermissionCodes.PartnerView], icon: 'audit' },
         { path: '/roles', labelKey: 'nav.roles', permissions: [PermissionCodes.RoleManage], icon: 'roles' },
         { path: '/audit-logs', labelKey: 'nav.auditLogs', permissions: [PermissionCodes.AuditLogView], icon: 'audit' },

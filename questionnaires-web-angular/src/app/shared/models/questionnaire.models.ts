@@ -298,6 +298,8 @@ export interface ResponseListItemDto {
 
 export interface AnswerDto {
   questionId: string;
+  questionTitleAr?: string | null;
+  questionTitleEn?: string | null;
   valueJson: string;
 }
 
@@ -316,4 +318,68 @@ export interface ResponseDetailDto {
 export interface ParticipantDetailDto {
   participant: ParticipantDto;
   response: ResponseDetailDto | null;
+}
+
+export interface AnswerUpsertDto {
+  questionId: string;
+  valueJson: string;
+}
+
+export interface CreateResponseRequest {
+  participantId?: string | null;
+  respondentUserId?: string | null;
+  answers?: AnswerUpsertDto[] | null;
+}
+
+export interface SurveyComprehensiveAnalyticsDto {
+  surveyId: string;
+  surveyTitle: string;
+  overview: SurveyOverviewAnalytics;
+  responseTimeline: ResponseTimelineAnalytics[];
+  questions: QuestionAnalyticsDto[];
+  categories: CategoryAnalyticsDto[];
+  ratings: RatingAnalyticsDto[];
+}
+
+export interface SurveyOverviewAnalytics {
+  totalParticipants: number;
+  submittedResponses: number;
+  inProgressResponses: number;
+  completionRate: number;
+  totalQuestions: number;
+}
+
+export interface ResponseTimelineAnalytics {
+  date: string;
+  responseCount: number;
+}
+
+export interface QuestionAnalyticsDto {
+  questionId: string;
+  titleAr: string;
+  titleEn: string;
+  questionType: string;
+  totalAnswers: number;
+  answerDistribution: AnswerDistributionDto[];
+  averageRating?: number;
+  minRating?: number;
+  maxRating?: number;
+}
+
+export interface AnswerDistributionDto {
+  optionText: string;
+  count: number;
+  percentage: number;
+}
+
+export interface CategoryAnalyticsDto {
+  categoryName: string;
+  responseCount: number;
+  percentage: number;
+}
+
+export interface RatingAnalyticsDto {
+  rating: number;
+  count: number;
+  percentage: number;
 }

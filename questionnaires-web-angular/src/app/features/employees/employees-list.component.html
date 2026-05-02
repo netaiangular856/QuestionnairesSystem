@@ -91,14 +91,13 @@
       <div class="cards-grid">
         @for (row of result()!.items; track row.id) {
           <article class="card user-card user-card--employee">
-            <div class="user-card__accent"></div>
             <header class="user-card__head">
               <div class="user-card__avatar-placeholder">
                 {{ (i18n.lang() === 'ar' ? row.nameAr : row.nameEn).charAt(0) }}
               </div>
               <div class="user-card__titles">
                 <h3>{{ i18n.lang() === 'ar' ? row.nameAr : row.nameEn }}</h3>
-                <p class="muted small">{{ i18n.lang() === 'ar' ? row.jobTitleAr : row.jobTitleEn }}</p>
+                <p class="small">{{ i18n.lang() === 'ar' ? row.jobTitleAr : row.jobTitleEn }}</p>
               </div>
               <span class="status-chip status-chip--sm" [class.status-chip--inactive]="!row.isActive">
                 {{ (row.isActive ? 'profile.statusActive' : 'users.status.inactive') | t }}
@@ -107,12 +106,22 @@
             
             <div class="user-card__info-grid">
               <div class="user-card__info-item">
-                <span class="muted x-small">{{ 'employees.table.number' | t }}</span>
-                <span class="bold small">#{{ row.employeeNumber }}</span>
+                <div class="user-card__info-icon">
+                  <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </div>
+                <div class="user-card__info-content">
+                  <span class="muted x-small">{{ 'employees.table.number' | t }}</span>
+                  <span class="bold small">#{{ row.employeeNumber }}</span>
+                </div>
               </div>
               <div class="user-card__info-item">
-                <span class="muted x-small">{{ 'employees.form.email' | t }}</span>
-                <span class="small truncate">{{ row.email || '-' }}</span>
+                <div class="user-card__info-icon">
+                  <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                </div>
+                <div class="user-card__info-content">
+                  <span class="muted x-small">{{ 'employees.form.email' | t }}</span>
+                  <span class="small truncate">{{ row.email || '-' }}</span>
+                </div>
               </div>
             </div>
 

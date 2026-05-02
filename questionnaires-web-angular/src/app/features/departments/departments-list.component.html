@@ -1,0 +1,322 @@
+<div class="page-workspace">
+  <div class="page-head-row">
+    <section class="page-head">
+      <h1>{{ 'nav.departments' | t }}</h1>
+      <p class="page-head__sub">{{ 'departments.subtitle' | t }}</p>
+    </section>
+    <div class="page-actions">
+      <button type="button" class="btn-primary btn-primary--icon" (click)="openCreate()">
+        <span class="btn-ico" aria-hidden="true">＋</span>
+        {{ 'departments.create' | t }}
+      </button>
+    </div>
+  </div>
+
+  <div class="toolbar card">
+    <div class="toolbar__main">
+      <input
+        class="toolbar__search"
+        type="search"
+        [(ngModel)]="filter.search"
+        (keyup.enter)="onSearch()"
+        [placeholder]="'departments.search' | t"
+      />
+      <button type="button" class="btn-primary" (click)="onSearch()">{{ 'common.search' | t }}</button>
+    </div>
+    
+    <div class="view-mode-selector">
+      <button
+        type="button"
+        class="view-btn"
+        [class.view-btn--active]="viewMode() === 'cards'"
+        (click)="setViewMode('cards')"
+        title="Cards"
+      >
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      </button>
+      <button
+        type="button"
+        class="view-btn"
+        [class.view-btn--active]="viewMode() === 'table'"
+        (click)="setViewMode('table')"
+        title="Table"
+      >
+        <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+      </button>
+      <button
+        type="button"
+        class="view-btn"
+        [class.view-btn--active]="viewMode() === 'tree'"
+        (click)="setViewMode('tree')"
+        title="Hierarchy"
+      >
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"></circle><circle cx="5" cy="19" r="3"></circle><circle cx="19" cy="19" r="3"></circle><path d="M12 8v8M5 16l7-8 7 8"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="skeleton-grid">
+      @for (i of [1,2,3,4]; track i) { <div class="skeleton card" style="height: 200px"></div> }
+    </div>
+  } @else {
+    @if (viewMode() === 'cards') {
+      <div class="dept-grid">
+        @for (dept of result()?.items; track dept.id) {
+          <div class="card dept-card" [class.dept-card--has-parent]="dept.parentDepartmentId">
+            <div class="dept-card__header">
+              <div class="dept-card__icon">
+                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              </div>
+              <div class="dept-card__titles">
+                <h3>{{ i18n.lang() === 'ar' ? dept.nameAr : dept.nameEn }}</h3>
+                <span class="dept-card__code">{{ dept.code }}</span>
+              </div>
+              <div class="dept-card__menu">
+                <button type="button" class="btn-icon-sm" (click)="openEdit(dept.id)" [title]="'common.edit' | t">✎</button>
+                <button type="button" class="btn-icon-sm btn-icon-sm--danger" (click)="deleteDept(dept.id)" [title]="'common.delete' | t">✕</button>
+              </div>
+            </div>
+
+            @if (dept.parentDepartmentNameAr) {
+              <div class="dept-card__parent">
+                <span class="muted x-small uppercase-label">{{ 'departments.form.parent' | t }}</span>
+                <span class="parent-link">{{ i18n.lang() === 'ar' ? dept.parentDepartmentNameAr : dept.parentDepartmentNameEn }}</span>
+              </div>
+            }
+
+            <div class="dept-card__stats">
+              <div class="stat-item">
+                <span class="stat-label">{{ 'employees.title' | t }}</span>
+                <span class="stat-value">{{ dept.employeeCount }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">{{ 'departments.sub' | t }}</span>
+                <span class="stat-value">{{ dept.subDepartmentCount }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    } @else if (viewMode() === 'table') {
+      <div class="card table-card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>{{ 'departments.table.code' | t }}</th>
+              <th>{{ 'departments.table.name' | t }}</th>
+              <th>{{ 'departments.table.parent' | t }}</th>
+              <th>{{ 'departments.table.employees' | t }}</th>
+              <th>{{ 'departments.table.sub' | t }}</th>
+              <th class="actions-col-head">{{ 'common.actions' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (dept of result()?.items; track dept.id) {
+              <tr>
+                <td class="bold">{{ dept.code }}</td>
+                <td>{{ i18n.lang() === 'ar' ? dept.nameAr : dept.nameEn }}</td>
+                <td>{{ (i18n.lang() === 'ar' ? dept.parentDepartmentNameAr : dept.parentDepartmentNameEn) || '-' }}</td>
+                <td>{{ dept.employeeCount }}</td>
+                <td>{{ dept.subDepartmentCount }}</td>
+                <td class="cell-actions">
+                  <div class="cell-actions__wrap">
+                    <button type="button" class="action-btn action-btn--edit" (click)="openEdit(dept.id)">{{ 'common.edit' | t }}</button>
+                    <button type="button" class="action-btn action-btn--danger" (click)="deleteDept(dept.id)">{{ 'common.delete' | t }}</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (viewMode() === 'tree') {
+      <div class="tree-wrapper" [class.tree-wrapper--fullscreen]="isFullscreen()" [class.tree-wrapper--compact]="isCompact()">
+        <!-- Tree Toolbar -->
+        <div class="tree-controls card">
+          <button type="button" class="ctrl-btn" (click)="toggleOrientation()">
+            <i class="pi pi-directions"></i>
+            {{ (orientation() === 'vertical' ? 'departments.ctrl.horizontal' : 'departments.ctrl.vertical') | t }}
+          </button>
+          <button type="button" class="ctrl-btn" (click)="isCompact.set(!isCompact())" [class.ctrl-btn--active]="isCompact()">
+            <i class="pi pi-th-large"></i>
+            {{ 'departments.ctrl.compact' | t }}
+          </button>
+          <button type="button" class="ctrl-btn" (click)="expandAll()">
+            <i class="pi pi-plus-circle"></i>
+            {{ 'departments.ctrl.expandAll' | t }}
+          </button>
+          <button type="button" class="ctrl-btn" (click)="collapseAll()">
+            <i class="pi pi-minus-circle"></i>
+            {{ 'departments.ctrl.collapseAll' | t }}
+          </button>
+          <div class="ctrl-divider"></div>
+          <button type="button" class="ctrl-btn" (click)="zoomIn()" [title]="'departments.ctrl.zoomIn' | t">
+            <i class="pi pi-search-plus"></i>
+          </button>
+          <button type="button" class="ctrl-btn" (click)="zoomOut()" [title]="'departments.ctrl.zoomOut' | t">
+            <i class="pi pi-search-minus"></i>
+          </button>
+          <button type="button" class="ctrl-btn" (click)="resetZoom()">
+            {{ 'departments.ctrl.fit' | t }}
+          </button>
+          <button type="button" class="ctrl-btn" (click)="toggleFullscreen()">
+            <i class="pi" [class.pi-window-maximize]="!isFullscreen()" [class.pi-window-minimize]="isFullscreen()"></i>
+          </button>
+        </div>
+
+        <!-- Scrollable Container -->
+        <div class="tree-viewport" 
+             [class.tree-viewport--horizontal]="orientation() === 'horizontal'"
+             (wheel)="onWheel($event)"
+             (mousedown)="startDragging($event)"
+             (mousemove)="onDrag($event)"
+             (mouseup)="stopDragging($event)"
+             (mouseleave)="stopDragging($event)">
+          <div class="tree-canvas" [style.transform]="'translate(' + translateX() + 'px, ' + translateY() + 'px) scale(' + zoom() + ')'">
+            <p-organization-chart 
+              [value]="orgChartData()" 
+              selectionMode="single" 
+              styleClass="dept-org-chart"
+              [class.dept-org-chart--horizontal]="orientation() === 'horizontal'"
+            >
+              <ng-template pTemplate="person" let-node>
+                <div class="org-node-card" [class.org-node-card--root]="node.data.parentDepartmentId === null">
+                  <div class="org-node-card__content">
+                    <div class="org-node-card__name">{{ i18n.lang() === 'ar' ? node.data.nameAr : node.data.nameEn }}</div>
+                  </div>
+                  
+                  <div class="org-node-card__actions">
+                    <button type="button" class="org-node-btn" (click)="openCreate(node.data.id)" [title]="'departments.create' | t">＋</button>
+                    <button type="button" class="org-node-btn" (click)="openEdit(node.data.id)" [title]="'common.edit' | t">✎</button>
+                  </div>
+
+                  @if (node.children?.length) {
+                    <div class="org-node-card__connector-badge">
+                      {{ node.children.length }} ⌵
+                    </div>
+                  }
+                </div>
+              </ng-template>
+            </p-organization-chart>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (viewMode() !== 'tree') {
+      <div class="pager card">
+        <button type="button" (click)="prevPage()" [disabled]="!result()?.hasPreviousPage">{{ 'common.previous' | t }}</button>
+        <span>{{ result()?.page }} / {{ result()?.totalPages || 1 }}</span>
+        <button type="button" (click)="nextPage()" [disabled]="!result()?.hasNextPage">{{ 'common.next' | t }}</button>
+      </div>
+    }
+  }
+</div>
+
+<ng-template #treeNodeTmpl let-node let-depth="depth">
+  <div class="tree-node" [style.padding-inline-start.px]="depth * 24">
+    <div class="tree-node__content card">
+      <div class="tree-node__main">
+        <button
+          type="button"
+          class="tree-toggle"
+          [class.tree-toggle--empty]="!node.children?.length"
+          (click)="toggleNode(node.id)"
+        >
+          @if (node.children?.length) {
+            {{ isExpanded(node.id) ? '▾' : '▸' }}
+          }
+        </button>
+        <span class="tree-node__title">{{ i18n.lang() === 'ar' ? node.nameAr : node.nameEn }}</span>
+        <span class="tree-node__badge">{{ node.employeeCount }} {{ 'employees.title' | t }}</span>
+      </div>
+      <div class="tree-node__actions">
+        <button type="button" class="btn-mini" (click)="openCreate(node.id)" [title]="'departments.create' | t">＋</button>
+        <button type="button" class="btn-mini" (click)="openEdit(node.id)" [title]="'common.edit' | t">✎</button>
+      </div>
+    </div>
+    @if (node.children?.length && isExpanded(node.id)) {
+      <div class="tree-node__children">
+        @for (child of node.children; track child.id) {
+          <ng-container *ngTemplateOutlet="treeNodeTmpl; context: { $implicit: child, depth: depth + 1 }"></ng-container>
+        }
+      </div>
+    }
+  </div>
+</ng-template>
+
+@if (createOpen() || editOpen()) {
+  <div class="modal-backdrop" (click)="createOpen.set(false); editOpen.set(false)"></div>
+  <div class="modal-panel card" role="dialog" aria-modal="true">
+    <header class="modal-panel__head">
+      <h2>{{ (createOpen() ? 'departments.create' : 'departments.edit') | t }}</h2>
+      <button type="button" class="modal-close" (click)="createOpen.set(false); editOpen.set(false)">✕</button>
+    </header>
+    <div class="modal-panel__body">
+      @if (createOpen()) {
+        <div class="form-grid">
+          <label class="field">
+            <span>{{ 'departments.form.code' | t }} <span class="required">*</span></span>
+            <input type="text" [(ngModel)]="createModel.code" />
+          </label>
+          
+          <label class="field">
+            <span>{{ 'departments.form.nameAr' | t }} <span class="required">*</span></span>
+            <input type="text" [(ngModel)]="createModel.nameAr" />
+          </label>
+
+          <label class="field">
+            <span>{{ 'departments.form.nameEn' | t }} <span class="required">*</span></span>
+            <input type="text" [(ngModel)]="createModel.nameEn" />
+          </label>
+
+          <label class="field">
+            <span>{{ 'departments.form.parent' | t }}</span>
+            <select [(ngModel)]="createModel.parentDepartmentId">
+              <option [ngValue]="null">---</option>
+              @for (d of allDepartments(); track d.id) {
+                <option [value]="d.id">{{ i18n.lang() === 'ar' ? d.nameAr : d.nameEn }}</option>
+              }
+            </select>
+          </label>
+        </div>
+      } @else if (editOpen()) {
+        <div class="form-grid">
+          <label class="field">
+            <span>{{ 'departments.form.code' | t }} <span class="required">*</span></span>
+            <input type="text" [(ngModel)]="editModel.code" />
+          </label>
+          
+          <label class="field">
+            <span>{{ 'departments.form.nameAr' | t }} <span class="required">*</span></span>
+            <input type="text" [(ngModel)]="editModel.nameAr" />
+          </label>
+
+          <label class="field">
+            <span>{{ 'departments.form.nameEn' | t }} <span class="required">*</span></span>
+            <input type="text" [(ngModel)]="editModel.nameEn" />
+          </label>
+
+          <label class="field">
+            <span>{{ 'departments.form.parent' | t }}</span>
+            <select [(ngModel)]="editModel.parentDepartmentId">
+              <option [ngValue]="null">---</option>
+              @for (d of allDepartments(); track d.id) {
+                @if (d.id !== editId()) {
+                  <option [value]="d.id">{{ i18n.lang() === 'ar' ? d.nameAr : d.nameEn }}</option>
+                }
+              }
+            </select>
+          </label>
+        </div>
+      }
+    </div>
+    <footer class="modal-panel__foot">
+      <button type="button" class="btn-ghost" (click)="createOpen.set(false); editOpen.set(false)">{{ 'common.cancel' | t }}</button>
+      <button type="button" class="btn-primary" (click)="createOpen() ? saveCreate() : saveEdit()" [disabled]="createBusy() || editBusy()">
+        {{ 'common.save' | t }}
+      </button>
+    </footer>
+  </div>
+}

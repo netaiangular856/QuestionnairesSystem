@@ -118,46 +118,7 @@ public sealed class SurveyService : ISurveyService
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var items = new List<SurveyListItemDto>();
-        foreach (var id in ids)
-        {
-            var row = await _db.Surveys.AsNoTracking()
-                .Where(s => s.Id == id)
-                .Select(s => new
-                {
-                    s.Id,
-                    s.TitleAr,
-                    s.TitleEn,
-                    s.Code,
-                    s.Status,
-                    s.Version,
-                    s.PublishedAtUtc,
-                    s.OpensAtUtc,
-                    s.ClosesAtUtc,
-                    OwnerDisplayName = s.Owner == null
-                        ? null
-                        : (s.Owner.NameAr ?? s.Owner.NameEn ?? s.Owner.UserName),
-                    QuestionCount = s.Questions.Count,
-                    ResponseCount = s.Responses.Count(r => r.Status == ResponseStatus.Submitted)
-                })
-                .FirstAsync(cancellationToken)
-                .ConfigureAwait(false);
-            items.Add(new SurveyListItemDto
-            {
-                Id = row.Id,
-                TitleAr = row.TitleAr,
-                TitleEn = row.TitleEn,
-                Code = row.Code,
-                Status = row.Status,
-                Version = row.Version,
-                OwnerDisplayName = row.OwnerDisplayName,
-                PublishedAtUtc = row.PublishedAtUtc,
-                OpensAtUtc = row.OpensAtUtc,
-                ClosesAtUtc = row.ClosesAtUtc,
-                QuestionCount = row.QuestionCount,
-                ResponseCount = row.ResponseCount
-            });
-        }
+        var items = await MapListItemsAsync(ids, cancellationToken).ConfigureAwait(false);
 
         return Result<PagedResult<SurveyListItemDto>>.Ok(new PagedResult<SurveyListItemDto>
         {
@@ -501,14 +462,143 @@ public sealed class SurveyService : ISurveyService
         SurveyFilterRequest request,
         CancellationToken cancellationToken = default)
     {
-        var clone = new SurveyFilterRequest
+        var validation = await _filterValidator.ValidateAsync(request, cancellationToken).ConfigureAwait(false);
+        if (!validation.IsValid)
+            return Result<PagedResult<SurveyListItemDto>>.Fail(validation.ToErrorMessages());
+
+        var page = request.Page <= 0 ? PaginationConstants.DefaultPage : request.Page;
+        var pageSize = request.PageSize <= 0 ? PaginationConstants.DefaultPageSize : request.PageSize;
+        if (pageSize > PaginationConstants.MaxPageSize) pageSize = PaginationConstants.MaxPageSize;
+
+        var q = _db.Surveys.AsNoTracking()
+            .Where(s => s.Status == SurveyStatus.PendingApproval);
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {            var term = request.Search.Trim();
+            q = q.Where(s =>
+                s.TitleAr.Contains(term) ||
+                s.TitleEn.Contains(term) ||
+                (s.Code != null && s.Code.Contains(term)));
+        }
+
+        var total = await q.CountAsync(cancellationToken).ConfigureAwait(false);
+        var ids = await q
+            .OrderByDescending(s => s.CreatedOnUtc)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(s => s.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var items = await MapListItemsAsync(ids, cancellationToken).ConfigureAwait(false);
+
+        return Result<PagedResult<SurveyListItemDto>>.Ok(new PagedResult<SurveyListItemDto>
+        {            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = total
+        });
+    }
+
+    public async Task<Result<PagedResult<SurveyListItemDto>>> GetAvailableForParticipationPagedAsync(
+        SurveyFilterRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var validation = await _filterValidator.ValidateAsync(request, cancellationToken).ConfigureAwait(false);
+        if (!validation.IsValid)
+            return Result<PagedResult<SurveyListItemDto>>.Fail(validation.ToErrorMessages());
+
+        var page = request.Page <= 0 ? PaginationConstants.DefaultPage : request.Page;
+        var pageSize = request.PageSize <= 0 ? PaginationConstants.DefaultPageSize : request.PageSize;
+        if (pageSize > PaginationConstants.MaxPageSize) pageSize = PaginationConstants.MaxPageSize;
+
+        var now = DateTime.UtcNow;
+        var userId = _currentUser.UserId;
+
+        // Base filter: Published, not closed, and within time window (if set)
+        var q = _db.Surveys.AsNoTracking()
+            .Where(s => s.Status == SurveyStatus.Published)
+            .Where(s => s.ClosedAtUtc == null)
+            .Where(s => s.OpensAtUtc == null || s.OpensAtUtc <= now)
+            .Where(s => s.ClosesAtUtc == null || s.ClosesAtUtc >= now);
+
+        // Audience filtering
+        q = q.Where(s =>
+            s.AudienceScope == SurveyAudienceScope.Everyone ||
+            s.AudienceScope == SurveyAudienceScope.AllOrganizationMembers ||
+            (s.AudienceScope == SurveyAudienceScope.SpecificUsers && s.AudienceMembers.Any(m => m.UserId == userId))
+        );
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {            var term = request.Search.Trim();
+            q = q.Where(s =>
+                s.TitleAr.Contains(term) ||
+                s.TitleEn.Contains(term) ||
+                (s.Code != null && s.Code.Contains(term)));
+        }
+
+        var total = await q.CountAsync(cancellationToken).ConfigureAwait(false);
+        var ids = await q
+            .OrderByDescending(s => s.PublishedAtUtc)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(s => s.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var items = await MapListItemsAsync(ids, cancellationToken).ConfigureAwait(false);
+
+        return Result<PagedResult<SurveyListItemDto>>.Ok(new PagedResult<SurveyListItemDto>
+        {            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = total
+        });
+    }
+
+    private async Task<List<SurveyListItemDto>> MapListItemsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken)
+    {        var items = new List<SurveyListItemDto>();
+        foreach (var id in ids)
         {
-            Page = request.Page,
-            PageSize = request.PageSize,
-            Search = request.Search,
-            Status = SurveyStatus.PendingApproval
-        };
-        return await GetPagedAsync(clone, cancellationToken).ConfigureAwait(false);
+            var row = await _db.Surveys.AsNoTracking()
+                .Where(s => s.Id == id)
+                .Select(s => new
+                {
+                    s.Id,
+                    s.TitleAr,
+                    s.TitleEn,
+                    s.Code,
+                    s.Status,
+                    s.Version,
+                    s.PublishedAtUtc,
+                    s.OpensAtUtc,
+                    s.ClosesAtUtc,
+                    OwnerDisplayName = s.Owner == null
+                        ? null
+                        : (s.Owner.NameAr ?? s.Owner.NameEn ?? s.Owner.UserName),
+                    QuestionCount = s.Questions.Count,
+                    ResponseCount = s.Responses.Count(r => r.Status == ResponseStatus.Submitted)
+                })
+                .FirstAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            items.Add(new SurveyListItemDto
+            {
+                Id = row.Id,
+                TitleAr = row.TitleAr,
+                TitleEn = row.TitleEn,
+                Code = row.Code,
+                Status = row.Status,
+                Version = row.Version,
+                OwnerDisplayName = row.OwnerDisplayName,
+                PublishedAtUtc = row.PublishedAtUtc,
+                OpensAtUtc = row.OpensAtUtc,
+                ClosesAtUtc = row.ClosesAtUtc,
+                QuestionCount = row.QuestionCount,
+                ResponseCount = row.ResponseCount
+            });
+        }
+        return items;
     }
 
     public async Task<Result<int>> CloseExpiredPublishedSurveysAsync(CancellationToken cancellationToken = default)
@@ -590,6 +680,210 @@ public sealed class SurveyService : ISurveyService
         {
             SurveyId = surveyId,
             Questions = stats
+        });
+    }
+
+    public async Task<Result<SurveyComprehensiveAnalyticsDto>> GetComprehensiveAnalyticsAsync(
+        Guid surveyId,
+        CancellationToken cancellationToken = default)
+    {
+        var survey = await _db.Surveys.AsNoTracking()
+            .Where(s => s.Id == surveyId)
+            .Select(s => new { s.Id, s.TitleAr, s.TitleEn })
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (survey is null)
+            return Result<SurveyComprehensiveAnalyticsDto>.Fail("Survey was not found.", QuestionnaireErrors.SurveyNotFound);
+
+        // Get overview analytics
+        var totalParticipants = await _db.SurveyParticipants.AsNoTracking()
+            .CountAsync(p => p.SurveyId == surveyId, cancellationToken)
+            .ConfigureAwait(false);
+
+        var responses = await _db.SurveyResponses.AsNoTracking()
+            .Where(r => r.SurveyId == surveyId)
+            .GroupBy(r => r.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var submitted = responses.FirstOrDefault(r => r.Status == ResponseStatus.Submitted)?.Count ?? 0;
+        var inProgress = responses.FirstOrDefault(r => r.Status == ResponseStatus.InProgress)?.Count ?? 0;
+
+        var totalQuestions = await _db.Questions.AsNoTracking()
+            .CountAsync(q => q.SurveyId == surveyId, cancellationToken)
+            .ConfigureAwait(false);
+
+        var overview = new SurveyOverviewAnalytics
+        {
+            TotalParticipants = totalParticipants,
+            SubmittedResponses = submitted,
+            InProgressResponses = inProgress,
+            CompletionRate = totalParticipants > 0 ? (double)submitted / totalParticipants * 100 : 0,
+            TotalQuestions = totalQuestions
+        };
+
+        // Get response timeline (last 30 days)
+        var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+        var submittedDates = await _db.SurveyResponses.AsNoTracking()
+            .Where(r => r.SurveyId == surveyId && r.Status == ResponseStatus.Submitted && r.SubmittedAtUtc >= thirtyDaysAgo)
+            .Select(r => r.SubmittedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var timeline = submittedDates
+            .Where(date => date.HasValue)
+            .GroupBy(date => DateTime.SpecifyKind(date.Value.Date, DateTimeKind.Utc))
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .OrderBy(x => x.Date)
+            .ToList();
+
+        var responseTimeline = timeline.Select(t => new ResponseTimelineAnalytics
+        {
+            Date = t.Date.ToString("yyyy-MM-dd"),
+            ResponseCount = t.Count
+        }).ToList();
+
+        // Get question analytics
+        var questions = await _db.Questions.AsNoTracking()
+            .Where(q => q.SurveyId == surveyId)
+            .OrderBy(q => q.DisplayOrder)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var questionAnalytics = new List<QuestionAnalyticsDto>();
+        foreach (var question in questions)
+        {
+            var answers = await _db.QuestionAnswers.AsNoTracking()
+                .Join(_db.SurveyResponses.AsNoTracking(), a => a.ResponseId, r => r.Id, (a, r) => new { a, r })
+                .Where(x => x.a.QuestionId == question.Id && x.r.SurveyId == surveyId && x.r.Status == ResponseStatus.Submitted)
+                .Select(x => x.a.ValueJson)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var questionType = question.Type.ToString();
+            var answerDistribution = new List<AnswerDistributionDto>();
+            double? averageRating = null;
+            double? minRating = null;
+            double? maxRating = null;
+
+            if (question.Type == QuestionType.Rating || question.Type == QuestionType.Scale)
+            {
+                var numericValues = new List<double>();
+                foreach (var answer in answers)
+                {
+                    if (double.TryParse(answer, out var value))
+                    {
+                        numericValues.Add(value);
+                    }
+                }
+
+                if (numericValues.Any())
+                {
+                    averageRating = numericValues.Average();
+                    minRating = numericValues.Min();
+                    maxRating = numericValues.Max();
+
+                    // Create rating distribution
+                    var ratingGroups = numericValues.GroupBy(v => (int)v)
+                        .Select(g => new { Rating = g.Key, Count = g.Count() })
+                        .OrderBy(x => x.Rating);
+
+                    answerDistribution = ratingGroups.Select(g => new AnswerDistributionDto
+                    {
+                        OptionText = g.Rating.ToString(),
+                        Count = g.Count,
+                        Percentage = answers.Count > 0 ? (double)g.Count / answers.Count * 100 : 0
+                    }).ToList();
+                }
+            }
+            else if (question.Type == QuestionType.MultipleChoice || question.Type == QuestionType.SingleChoice)
+            {
+                var optionGroups = answers.Where(a => !string.IsNullOrEmpty(a))
+                    .GroupBy(a => a)
+                    .Select(g => new { Option = g.Key, Count = g.Count() })
+                    .OrderByDescending(x => x.Count);
+
+                answerDistribution = optionGroups.Select(g => new AnswerDistributionDto
+                {
+                    OptionText = g.Option,
+                    Count = g.Count,
+                    Percentage = answers.Count > 0 ? (double)g.Count / answers.Count * 100 : 0
+                }).ToList();
+            }
+            else if (question.Type == QuestionType.YesNo)
+            {
+                var yesCount = answers.Count(a => a?.ToLower() == "true");
+                var noCount = answers.Count(a => a?.ToLower() == "false");
+
+                answerDistribution = new List<AnswerDistributionDto>
+                {
+                    new() { OptionText = "Yes", Count = yesCount, Percentage = answers.Count > 0 ? (double)yesCount / answers.Count * 100 : 0 },
+                    new() { OptionText = "No", Count = noCount, Percentage = answers.Count > 0 ? (double)noCount / answers.Count * 100 : 0 }
+                };
+            }
+
+            questionAnalytics.Add(new QuestionAnalyticsDto
+            {
+                QuestionId = question.Id,
+                TitleAr = question.TitleAr,
+                TitleEn = question.TitleEn,
+                QuestionType = questionType,
+                TotalAnswers = answers.Count,
+                AnswerDistribution = answerDistribution,
+                AverageRating = averageRating,
+                MinRating = minRating,
+                MaxRating = maxRating
+            });
+        }
+
+        // Get category analytics (simplified - based on question types)
+        var categoryGroups = questionAnalytics.GroupBy(q => q.QuestionType)
+            .Select(g => new { Category = g.Key, Count = g.Sum(q => q.TotalAnswers) })
+            .OrderByDescending(x => x.Count);
+
+        var categories = categoryGroups.Select(g => new CategoryAnalyticsDto
+        {
+            CategoryName = g.Category,
+            ResponseCount = g.Count,
+            Percentage = questionAnalytics.Sum(q => q.TotalAnswers) > 0 ? 
+                (double)g.Count / questionAnalytics.Sum(q => q.TotalAnswers) * 100 : 0
+        }).ToList();
+
+        // Get overall rating analytics
+        var allRatingQuestions = questionAnalytics.Where(q => 
+            q.QuestionType == "Rating" || q.QuestionType == "Scale").ToList();
+        
+        var ratings = new List<RatingAnalyticsDto>();
+        if (allRatingQuestions.Any())
+        {
+            var allRatings = allRatingQuestions.SelectMany(q => q.AnswerDistribution)
+                .Where(ad => int.TryParse(ad.OptionText, out _))
+                .ToList();
+
+            var ratingGroups = allRatings.GroupBy(ad => int.Parse(ad.OptionText))
+                .Select(g => new { Rating = g.Key, Count = g.Sum(ad => ad.Count) })
+                .OrderBy(x => x.Rating);
+
+            var totalRatingResponses = ratingGroups.Sum(g => g.Count);
+            ratings = ratingGroups.Select(g => new RatingAnalyticsDto
+            {
+                Rating = g.Rating,
+                Count = g.Count,
+                Percentage = totalRatingResponses > 0 ? (double)g.Count / totalRatingResponses * 100 : 0
+            }).ToList();
+        }
+
+        return Result<SurveyComprehensiveAnalyticsDto>.Ok(new SurveyComprehensiveAnalyticsDto
+        {
+            SurveyId = surveyId,
+            SurveyTitle = survey.TitleEn,
+            Overview = overview,
+            ResponseTimeline = responseTimeline,
+            Questions = questionAnalytics,
+            Categories = categories,
+            Ratings = ratings
         });
     }
 

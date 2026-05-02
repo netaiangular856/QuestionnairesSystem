@@ -91,14 +91,13 @@
       <div class="cards-grid">
         @for (row of result()!.items; track row.id) {
           <article class="card user-card user-card--partner">
-            <div class="user-card__accent"></div>
             <header class="user-card__head">
               <div class="user-card__avatar-placeholder">
                 {{ (i18n.lang() === 'ar' ? row.nameAr : row.nameEn).charAt(0) }}
               </div>
               <div class="user-card__titles">
                 <h3>{{ i18n.lang() === 'ar' ? row.nameAr : row.nameEn }}</h3>
-                <p class="muted small">{{ getTypeLabel(row.type) | t }}</p>
+                <p class="small">{{ getTypeLabel(row.type) | t }}</p>
               </div>
               <span class="status-chip status-chip--sm" [class.status-chip--inactive]="!row.isActive">
                 {{ (row.isActive ? 'profile.statusActive' : 'users.status.inactive') | t }}
@@ -107,12 +106,22 @@
             
             <div class="user-card__info-grid">
               <div class="user-card__info-item">
-                <span class="muted x-small">{{ 'partners.table.code' | t }}</span>
-                <span class="bold small">#{{ row.code }}</span>
+                <div class="user-card__info-icon">
+                  <svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                </div>
+                <div class="user-card__info-content">
+                  <span class="muted x-small">{{ 'partners.table.code' | t }}</span>
+                  <span class="bold small">#{{ row.code }}</span>
+                </div>
               </div>
               <div class="user-card__info-item">
-                <span class="muted x-small">{{ 'employees.form.email' | t }}</span>
-                <span class="small truncate">{{ row.email || '-' }}</span>
+                <div class="user-card__info-icon">
+                  <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                </div>
+                <div class="user-card__info-content">
+                  <span class="muted x-small">{{ 'employees.form.email' | t }}</span>
+                  <span class="small truncate">{{ row.email || '-' }}</span>
+                </div>
               </div>
             </div>
 

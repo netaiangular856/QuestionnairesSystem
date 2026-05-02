@@ -11,6 +11,7 @@ import {
   RejectSurveyRequest,
   SurveyAnalyticsDto,
   SurveyAnalyticsSummaryDto,
+  SurveyComprehensiveAnalyticsDto,
   SurveyDetailDto,
   SurveyFilterRequest,
   SurveyListItemDto,
@@ -44,6 +45,17 @@ export class SurveysApiService {
     });
     return this.http
       .get<ApiResponse<PagedResult<SurveyListItemDto>>>(`${this.base}/pending-approval`, { params })
+      .pipe(map((r) => unwrapApiResponse(r)));
+  }
+
+  getAvailablePaged(filter: SurveyFilterRequest) {
+    const params = toHttpParams({
+      page: filter.page,
+      pageSize: filter.pageSize,
+      search: filter.search || undefined,
+    });
+    return this.http
+      .get<ApiResponse<PagedResult<SurveyListItemDto>>>(`${this.base}/available`, { params })
       .pipe(map((r) => unwrapApiResponse(r)));
   }
 
@@ -131,6 +143,12 @@ export class SurveysApiService {
   getNumericQuestionAnalytics(id: string) {
     return this.http
       .get<ApiResponse<SurveyNumericAnalyticsDto>>(`${this.base}/${id}/analytics/numeric`)
+      .pipe(map((r) => unwrapApiResponse(r)));
+  }
+
+  getComprehensiveAnalytics(id: string) {
+    return this.http
+      .get<ApiResponse<SurveyComprehensiveAnalyticsDto>>(`${this.base}/${id}/analytics/comprehensive`)
       .pipe(map((r) => unwrapApiResponse(r)));
   }
 }

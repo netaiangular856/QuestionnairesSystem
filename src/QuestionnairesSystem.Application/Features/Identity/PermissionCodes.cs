@@ -36,6 +36,10 @@ public static class PermissionCodes
     public const string ActionPlanManage = "ACTION_PLAN_MANAGE";
     public const string EmployeeView = "EMPLOYEE_VIEW";
     public const string EmployeeManage = "EMPLOYEE_MANAGE";
+
+    public const string DepartmentView = "DEPARTMENT_VIEW";
+    public const string DepartmentManage = "DEPARTMENT_MANAGE";
+
     public const string PartnerView = "PARTNER_VIEW";
     public const string PartnerManage = "PARTNER_MANAGE";
     public const string SettingsView = "SETTINGS_VIEW";

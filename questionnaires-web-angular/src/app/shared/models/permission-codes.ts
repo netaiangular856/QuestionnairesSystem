@@ -25,6 +25,8 @@ export const PermissionCodes = {
   ActionPlanManage: 'ACTION_PLAN_MANAGE',
   EmployeeView: 'EMPLOYEE_VIEW',
   EmployeeManage: 'EMPLOYEE_MANAGE',
+  DepartmentView: 'DEPARTMENT_VIEW',
+  DepartmentManage: 'DEPARTMENT_MANAGE',
   PartnerView: 'PARTNER_VIEW',
   PartnerManage: 'PARTNER_MANAGE',
 } as const;

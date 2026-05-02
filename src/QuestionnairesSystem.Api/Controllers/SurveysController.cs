@@ -46,6 +46,15 @@ public sealed class SurveysController : ControllerBase
         return result.ToApiActionResult(this, traceId);
     }
 
+    [HttpGet("available")]
+    [Authorize] // Any authenticated user can see surveys available for them
+    public async Task<IActionResult> Available([FromQuery] SurveyFilterRequest request, CancellationToken cancellationToken)
+    {
+        var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+        var result = await _surveys.GetAvailableForParticipationPagedAsync(request, cancellationToken).ConfigureAwait(false);
+        return result.ToApiActionResult(this, traceId);
+    }
+
     [HttpGet("{surveyId:guid}")]
     [Authorize(Policy = PermissionCodes.SurveyView)]
     public async Task<IActionResult> GetById(Guid surveyId, CancellationToken cancellationToken)
@@ -176,6 +185,15 @@ public sealed class SurveysController : ControllerBase
     {
         var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
         var result = await _surveys.GetNumericQuestionAnalyticsAsync(surveyId, cancellationToken).ConfigureAwait(false);
+        return result.ToApiActionResult(this, traceId);
+    }
+
+    [HttpGet("{surveyId:guid}/analytics/comprehensive")]
+    [Authorize(Policy = PermissionCodes.ReportView)]
+    public async Task<IActionResult> ComprehensiveAnalytics(Guid surveyId, CancellationToken cancellationToken)
+    {
+        var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+        var result = await _surveys.GetComprehensiveAnalyticsAsync(surveyId, cancellationToken).ConfigureAwait(false);
         return result.ToApiActionResult(this, traceId);
     }
 }

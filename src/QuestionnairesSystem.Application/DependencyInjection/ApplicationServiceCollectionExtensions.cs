@@ -21,6 +21,8 @@ using QuestionnairesSystem.Application.Features.Questionnaires.Templates.Interfa
 using QuestionnairesSystem.Application.Features.Questionnaires.Templates.Services;
 using QuestionnairesSystem.Application.Features.Notifications.Interfaces;
 using QuestionnairesSystem.Application.Features.Notifications.Services;
+using QuestionnairesSystem.Application.Features.Organizations.Departments.Interfaces;
+using QuestionnairesSystem.Application.Features.Organizations.Departments.Services;
 using QuestionnairesSystem.Application.Features.Organizations.Employees.Interfaces;
 using QuestionnairesSystem.Application.Features.Organizations.Employees.Services;
 using QuestionnairesSystem.Application.Features.Partners.Interfaces;
@@ -52,6 +54,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<IRecommendationCrudService, RecommendationCrudService>();
         services.AddScoped<IActionPlanCrudService, ActionPlanCrudService>();
 
+        services.AddScoped<IDepartmentService, DepartmentService>();
         services.AddScoped<IEmployeeService, EmployeeService>();
         services.AddScoped<IPartnerService, PartnerService>();
 

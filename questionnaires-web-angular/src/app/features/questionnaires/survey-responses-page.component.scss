@@ -94,7 +94,45 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  padding: 1rem 1.1rem;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--color-border);
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.12);
+    border-color: #0d9488;
+    background: linear-gradient(to bottom right, #ffffff, #f0fdfa);
+
+    .action-btn--info {
+      background: #0d9488 !important;
+      color: #ffffff !important;
+      border-color: #0d9488 !important;
+    }
+  }
+
+  &__actions {
+    margin-top: 0.75rem;
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+.action-btn--info {
+  background: #f1f5f9;
+  color: #0f766e;
+  border: 1px solid #e2e8f0;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+}
+
+.action-btn--sm {
+  padding: 0.45rem 1rem;
+  font-size: 0.8rem;
 }
 
 .subpage-card__title {

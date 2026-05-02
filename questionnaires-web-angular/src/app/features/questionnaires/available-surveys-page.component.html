@@ -1,0 +1,129 @@
+<div class="page-workspace available-surveys-page">
+  <div class="page-head-row surveys-list-page__intro">
+    <section class="page-head surveys-page-hero">
+      <div class="surveys-page-hero__row">
+        <div class="surveys-page-hero__text">
+          <p class="surveys-page-hero__kicker">{{ 'q.available.hero.kicker' | t }}</p>
+          <h1>{{ 'q.available.title' | t }}</h1>
+          <p class="page-head__sub">{{ 'q.available.subtitle' | t }}</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toolbar toolbar--split card card--interactive">
+    <div class="toolbar__left">
+      <input
+        class="toolbar__search"
+        type="search"
+        [(ngModel)]="search"
+        (keyup.enter)="page = 1; load()"
+        [placeholder]="'q.available.searchPlaceholder' | t"
+      />
+      <button type="button" class="btn-primary" (click)="page = 1; load()">{{ 'common.search' | t }}</button>
+    </div>
+    <div class="view-toggle" role="group">
+      <button
+        type="button"
+        class="view-toggle__btn"
+        [class.view-toggle__btn--active]="viewMode() === 'table'"
+        (click)="setViewMode('table')"
+      >
+        {{ 'q.surveys.view.table' | t }}
+      </button>
+      <button
+        type="button"
+        class="view-toggle__btn"
+        [class.view-toggle__btn--active]="viewMode() === 'cards'"
+        (click)="setViewMode('cards')"
+      >
+        {{ 'q.surveys.view.cards' | t }}
+      </button>
+    </div>
+  </div>
+
+  @if (busy() && !result()) {
+    <div class="card card--muted">{{ 'common.loading' | t }}</div>
+  } @else if (failed()) {
+    <div class="card card--muted">{{ 'common.error' | t }}</div>
+  } @else {
+    @if (result(); as res) {
+      @if (res.items.length === 0) {
+        <div class="card card--muted">{{ 'q.available.empty' | t }}</div>
+      } @else {
+        @if (viewMode() === 'table') {
+          <div class="card table-card">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>{{ 'q.surveys.table.title' | t }}</th>
+                  <th>{{ 'q.surveys.table.code' | t }}</th>
+                  <th>{{ 'q.surveys.table.questions' | t }}</th>
+                  <th>{{ 'q.surveys.table.published' | t }}</th>
+                  <th class="actions-col-head">{{ 'common.actions' | t }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of res.items; track row.id) {
+                  <tr>
+                    <td><strong>{{ titleOf(row) }}</strong></td>
+                    <td><code class="code-text">{{ row.code || '—' }}</code></td>
+                    <td>{{ row.questionCount }}</td>
+                    <td>{{ row.publishedAtUtc ? (row.publishedAtUtc | date: 'mediumDate') : '—' }}</td>
+                    <td class="cell-actions">
+                      <div class="survey-row-actions">
+                        <button class="action-btn action-btn--primary" (click)="fillSurvey(row)">
+                          {{ 'q.available.actions.fill' | t }}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            <div class="pager">
+              <button type="button" (click)="prevPage()" [disabled]="page <= 1">{{ 'common.previous' | t }}</button>
+              <span>{{ res.page }} / {{ res.totalPages || 1 }}</span>
+              <button type="button" (click)="nextPage()" [disabled]="!res.hasNextPage">{{ 'common.next' | t }}</button>
+            </div>
+          </div>
+        } @else {
+          <div class="surveys-card-grid">
+            @for (row of res.items; track row.id) {
+              <article class="card survey-card card--interactive" (click)="fillSurvey(row)">
+                <h2 class="survey-card__title">{{ titleOf(row) }}</h2>
+                <div class="survey-card__pills">
+                  <span class="q-pill q-pill--neutral">{{ row.code || 'SURVEY' }}</span>
+                </div>
+                <dl class="survey-card__stats">
+                  <div>
+                    <dt>{{ 'q.surveys.table.questions' | t }}</dt>
+                    <dd>{{ row.questionCount }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'q.surveys.table.published' | t }}</dt>
+                    <dd>{{ row.publishedAtUtc ? (row.publishedAtUtc | date: 'mediumDate') : '—' }}</dd>
+                  </div>
+                </dl>
+                <footer class="survey-card__actions">
+                  <button class="btn-fill-survey">
+                    <i class="pi pi-file-edit"></i>
+                    {{ 'q.available.actions.fill' | t }}
+                  </button>
+                </footer>
+              </article>
+            }
+          </div>
+          <div class="card pager-card">
+            <div class="pager">
+              <button type="button" (click)="prevPage()" [disabled]="page <= 1">{{ 'common.previous' | t }}</button>
+              <span>{{ res.page }} / {{ res.totalPages || 1 }}</span>
+              <button type="button" (click)="nextPage()" [disabled]="!res.hasNextPage">{{ 'common.next' | t }}</button>
+            </div>
+          </div>
+        }
+      }
+    }
+  }
+</div>
+

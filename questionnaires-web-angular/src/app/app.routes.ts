@@ -86,11 +86,45 @@ export const routes: Routes = [
           import('./features/employees/employees-list.component').then((m) => m.EmployeesListComponent),
       },
       {
+        path: 'departments',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.DepartmentView] },
+        loadComponent: () =>
+          import('./features/departments/departments-list.component').then((m) => m.DepartmentsListComponent),
+      },
+      {
         path: 'partners',
         canActivate: [permissionGuard],
         data: { permissions: [PermissionCodes.PartnerView] },
         loadComponent: () =>
           import('./features/partners/partners-list.component').then((m) => m.PartnersListComponent),
+      },
+      {
+        path: 'surveys-approval',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.SurveyApprovalView] },
+        loadComponent: () =>
+          import('./features/questionnaires/survey-approval-page.component').then((m) => m.SurveyApprovalPageComponent),
+      },
+      {
+        path: 'available-surveys',
+        loadComponent: () =>
+          import('./features/questionnaires/available-surveys-page.component').then((m) => m.AvailableSurveysPageComponent),
+      },
+      {
+        path: 'surveys/:surveyId/fill',
+        loadComponent: () =>
+          import('./features/questionnaires/survey-fill-page.component').then((m) => m.SurveyFillPageComponent),
+      },
+      {
+        path: 'surveys/:surveyId/participants/:participantId',
+        loadComponent: () =>
+          import('./features/questionnaires/survey-fill-page.component').then((m) => m.SurveyFillPageComponent),
+      },
+      {
+        path: 'surveys/:surveyId/responses/:responseId',
+        loadComponent: () =>
+          import('./features/questionnaires/survey-fill-page.component').then((m) => m.SurveyFillPageComponent),
       },
       {
         path: 'surveys',
