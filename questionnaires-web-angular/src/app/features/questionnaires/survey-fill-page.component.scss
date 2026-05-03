@@ -1,3 +1,18 @@
+/* Page-local tokens: global styles omit --color-text-* so headings fell back to harsh black */
+.survey-fill-page.sv-wizard {
+  --fill-body: #334155;
+  --fill-heading: #1e293b;
+  --fill-muted: #64748b;
+  --color-text-primary: var(--fill-heading);
+  --color-text-secondary: var(--fill-muted);
+  color: var(--fill-body);
+
+  strong {
+    color: var(--fill-heading);
+    font-weight: 700;
+  }
+}
+
 .sv-wizard {
   --sv-accent: #0d9488;
   --sv-accent-strong: #0f766e;
@@ -133,7 +148,7 @@
     margin: 0;
     font-size: 1.15rem;
     font-weight: 700;
-    color: #0f172a;
+    color: #1e293b;
     line-height: 1.5;
   }
 }
@@ -182,8 +197,8 @@
 .sv-q-card {
   padding: 1.5rem;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  background: var(--color-card);
+  border: 1px solid rgba(13, 148, 136, 0.18);
+  background: linear-gradient(165deg, #ffffff 0%, rgba(240, 253, 250, 0.35) 100%);
   box-shadow: var(--shadow-sm);
   transition: all 0.2s ease;
   
@@ -250,33 +265,136 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  
-  input, textarea {
+
+  /* Do not style radio/checkbox like text fields — breaks accent-color & shows harsh black */
+  input:not([type='radio']):not([type='checkbox']),
+  textarea {
     width: 100%;
     padding: 0.75rem 1rem;
     border-radius: var(--radius-md);
-    border: 1px solid var(--color-border);
+    border: 1px solid #e2e8f0;
     font-size: 0.95rem;
-    color: #334155; /* Dark slate instead of black */
-    background-color: #ffffff;
+    color: #334155;
+    -webkit-text-fill-color: #334155;
+    background-color: #fafafa;
     transition: all 0.2s;
-    
+
+    &:hover {
+      border-color: #cbd5e1;
+      background-color: #ffffff;
+    }
+
     &:focus {
       outline: none;
       border-color: var(--sv-accent);
       box-shadow: 0 0 0 3px var(--sv-accent-soft);
-      color: #0f172a; /* Slightly darker on focus but still not pure black */
+      color: #1e293b;
+      -webkit-text-fill-color: #1e293b;
+      background-color: #ffffff;
     }
 
     &::placeholder {
       color: #94a3b8;
+      -webkit-text-fill-color: #94a3b8;
     }
   }
 
-  input[type="number"],
-  input[type="date"] {
-    max-width: 240px; /* More compact for specific types */
+  /* Number inputs often ignore inherited color and render harsh #000 in Chromium */
+  input[type='number'] {
+    max-width: 240px;
+    color: #334155;
+    -webkit-text-fill-color: #334155;
+    caret-color: var(--sv-accent-strong);
+
+    &:focus {
+      color: #1e293b;
+      -webkit-text-fill-color: #1e293b;
+    }
+
+    &::placeholder {
+      color: #94a3b8;
+      -webkit-text-fill-color: #94a3b8;
+    }
+
+    &:-webkit-autofill,
+    &:-webkit-autofill:hover,
+    &:-webkit-autofill:focus {
+      -webkit-text-fill-color: #334155;
+      box-shadow: 0 0 0 1000px #ffffff inset;
+      transition: background-color 99999s ease-out;
+    }
+
+    &::-webkit-inner-spin-button,
+    &::-webkit-outer-spin-button {
+      opacity: 0.55;
+    }
   }
+}
+
+/* Same pattern as survey wizard — visible calendar + hide broken native glyph */
+.sv-datetime-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  max-width: 280px;
+}
+
+.sv-datetime-wrap input[type='date'] {
+  width: 100%;
+  min-height: 2.375rem;
+  padding-inline-end: 2.75rem;
+  max-width: none;
+  color-scheme: light;
+  color: #334155;
+  -webkit-text-fill-color: #334155;
+  background-color: #fafafa;
+
+  &:focus {
+    color: #1e293b;
+    -webkit-text-fill-color: #1e293b;
+    background-color: #ffffff;
+  }
+}
+
+.sv-datetime-wrap__btn {
+  position: absolute;
+  inset-inline-end: 0.3rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.15rem;
+  height: 2rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: rgba(13, 148, 136, 0.12);
+  color: var(--sv-accent-strong);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.sv-datetime-wrap__btn:hover {
+  background: rgba(13, 148, 136, 0.22);
+}
+
+.sv-datetime-wrap__btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-card), 0 0 0 4px rgba(13, 148, 136, 0.35);
+}
+
+.sv-datetime-wrap__btn .pi {
+  font-size: 1.05rem;
+}
+
+.sv-datetime-wrap input[type='date']::-webkit-calendar-picker-indicator {
+  display: none;
 }
 
 /* Options Styling */
@@ -291,32 +409,74 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid #e2e8f0;
   border-radius: var(--radius-md);
   cursor: pointer;
-  background: #fff;
+  background: #fafafa;
   transition: all 0.2s;
-  
-  input {
-    width: 1.1rem;
-    height: 1.1rem;
+
+  /* رسم مخصص: المتصفح الافتراضي يظهر حلقة/مربعاً شبه أسود قبل التحديد */
+  input[type='radio'],
+  input[type='checkbox'] {
+    flex-shrink: 0;
+    width: 1.15rem;
+    height: 1.15rem;
     margin: 0;
-    accent-color: var(--sv-accent);
+    padding: 0;
+    cursor: pointer;
+    vertical-align: middle;
+    appearance: none;
+    -webkit-appearance: none;
+    background: #ffffff;
+    border: 2px solid #cbd5e1;
+    box-shadow: none;
+    color: inherit;
+    -webkit-text-fill-color: currentColor;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
   }
-  
+
+  input[type='radio'] {
+    border-radius: 50%;
+  }
+
+  input[type='radio']:checked {
+    border-color: var(--sv-accent);
+    background: radial-gradient(circle, var(--sv-accent) 42%, #ffffff 43%);
+  }
+
+  input[type='checkbox'] {
+    border-radius: 4px;
+  }
+
+  input[type='checkbox']:checked {
+    border-color: var(--sv-accent);
+    background-color: var(--sv-accent);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M1 5l3 3 7-7'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 0.65rem auto;
+  }
+
+  input[type='radio']:focus-visible,
+  input[type='checkbox']:focus-visible {
+    outline: 2px solid rgba(13, 148, 136, 0.45);
+    outline-offset: 2px;
+  }
+
   &__label {
     font-size: 0.95rem;
     font-weight: 600;
-    color: var(--color-text-primary);
+    color: #1e293b;
+    line-height: 1.35;
   }
-  
+
   &:hover {
-    background: #f8fafc;
-    border-color: var(--sv-accent);
+    background: #f1f5f9;
+    border-color: rgba(13, 148, 136, 0.35);
   }
-  
+
   &--active {
-    background: var(--sv-accent-soft);
+    background: rgba(13, 148, 136, 0.1);
     border-color: var(--sv-accent);
   }
 }
@@ -435,8 +595,8 @@
   top: 1.5rem;
   padding: 1.5rem;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  background: var(--color-card);
+  border: 1px solid rgba(13, 148, 136, 0.2);
+  background: linear-gradient(160deg, #ffffff 0%, rgba(240, 253, 250, 0.55) 100%);
   overflow: hidden;
 }
 
@@ -488,15 +648,26 @@
 }
 
 /* Footer Styling */
-.sv-wizard__foot {
+.survey-fill-page .sv-wizard__foot {
   margin-top: 1rem;
   padding: 1rem 1.5rem;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(13, 148, 136, 0.22);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: var(--shadow-sm);
+  color: #334155;
 }
 
 .loading-overlay {
   padding: 4rem;
   text-align: center;
+  color: #475569;
+}
+
+.loading-overlay p {
+  margin: 0.75rem 0 0;
+  font-size: 0.95rem;
 }

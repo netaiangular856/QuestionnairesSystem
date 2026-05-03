@@ -59,11 +59,31 @@
             </label>
             <label class="field sv-field">
               <span>{{ 'q.surveys.wizard.opensAt' | t }}</span>
-              <input type="datetime-local" [(ngModel)]="opensAtLocal" />
+              <div class="sv-datetime-wrap">
+                <input #opensAtInput type="datetime-local" [(ngModel)]="opensAtLocal" />
+                <button
+                  type="button"
+                  class="sv-datetime-wrap__btn"
+                  (click)="openDateTimePicker(opensAtInput, $event)"
+                  [attr.aria-label]="'q.surveys.wizard.pickDateTime' | t"
+                >
+                  <i class="pi pi-calendar" aria-hidden="true"></i>
+                </button>
+              </div>
             </label>
             <label class="field sv-field">
               <span>{{ 'q.surveys.wizard.closesAt' | t }}</span>
-              <input type="datetime-local" [(ngModel)]="closesAtLocal" />
+              <div class="sv-datetime-wrap">
+                <input #closesAtInput type="datetime-local" [(ngModel)]="closesAtLocal" />
+                <button
+                  type="button"
+                  class="sv-datetime-wrap__btn"
+                  (click)="openDateTimePicker(closesAtInput, $event)"
+                  [attr.aria-label]="'q.surveys.wizard.pickDateTime' | t"
+                >
+                  <i class="pi pi-calendar" aria-hidden="true"></i>
+                </button>
+              </div>
             </label>
           </div>
         </section>
@@ -153,7 +173,7 @@
                     <div class="sv-q-card__fields">
                       <label class="field sv-field">
                         <span>{{ 'q.templates.form.qType' | t }}</span>
-                        <select [(ngModel)]="q.type">
+                        <select [(ngModel)]="q.type" (ngModelChange)="onQuestionTypeChange(q)">
                           @for (opt of questionTypes; track opt.value) {
                             <option [ngValue]="opt.value">{{ opt.labelKey | t }}</option>
                           }
@@ -167,6 +187,32 @@
                         <span>{{ 'q.templates.form.titleEn' | t }}</span>
                         <input [(ngModel)]="q.titleEn" />
                       </label>
+                      @if (q.type === QuestionType.SingleChoice || q.type === QuestionType.MultipleChoice) {
+                        <div class="sv-choice-options sv-field sv-field--full">
+                          <span class="sv-choice-options__title">{{ 'q.surveys.wizard.choiceOptionsSection' | t }}</span>
+                          <p class="muted sv-choice-options__hint">{{ 'q.surveys.wizard.choiceOptionsHint' | t }}</p>
+                          @for (row of q.choiceOptions ?? []; track $index) {
+                            <div class="sv-choice-options__row">
+                              <label class="field sv-field">
+                                <span>{{ 'q.surveys.wizard.optionLabelAr' | t }}</span>
+                                <input [(ngModel)]="row.labelAr" />
+                              </label>
+                              <label class="field sv-field">
+                                <span>{{ 'q.surveys.wizard.optionLabelEn' | t }}</span>
+                                <input [(ngModel)]="row.labelEn" />
+                              </label>
+                              @if ((q.choiceOptions?.length ?? 0) > 2) {
+                                <button type="button" class="sv-choice-options__remove" (click)="removeChoiceOption(q, $index)">
+                                  {{ 'q.surveys.wizard.removeOption' | t }}
+                                </button>
+                              }
+                            </div>
+                          }
+                          <button type="button" class="btn-ghost btn-sm sv-choice-options__add" (click)="addChoiceOption(q)">
+                            {{ 'q.surveys.wizard.addOption' | t }}
+                          </button>
+                        </div>
+                      }
                     </div>
                   </article>
                 }
@@ -197,7 +243,7 @@
                   <div class="sv-q-card__fields">
                     <label class="field sv-field">
                       <span>{{ 'q.templates.form.qType' | t }}</span>
-                      <select [(ngModel)]="q.type">
+                      <select [(ngModel)]="q.type" (ngModelChange)="onQuestionTypeChange(q)">
                         @for (opt of questionTypes; track opt.value) {
                           <option [ngValue]="opt.value">{{ opt.labelKey | t }}</option>
                         }
@@ -211,6 +257,32 @@
                       <span>{{ 'q.templates.form.titleEn' | t }}</span>
                       <input [(ngModel)]="q.titleEn" />
                     </label>
+                    @if (q.type === QuestionType.SingleChoice || q.type === QuestionType.MultipleChoice) {
+                      <div class="sv-choice-options sv-field sv-field--full">
+                        <span class="sv-choice-options__title">{{ 'q.surveys.wizard.choiceOptionsSection' | t }}</span>
+                        <p class="muted sv-choice-options__hint">{{ 'q.surveys.wizard.choiceOptionsHint' | t }}</p>
+                        @for (row of q.choiceOptions ?? []; track $index) {
+                          <div class="sv-choice-options__row">
+                            <label class="field sv-field">
+                              <span>{{ 'q.surveys.wizard.optionLabelAr' | t }}</span>
+                              <input [(ngModel)]="row.labelAr" />
+                            </label>
+                            <label class="field sv-field">
+                              <span>{{ 'q.surveys.wizard.optionLabelEn' | t }}</span>
+                              <input [(ngModel)]="row.labelEn" />
+                            </label>
+                            @if ((q.choiceOptions?.length ?? 0) > 2) {
+                              <button type="button" class="sv-choice-options__remove" (click)="removeChoiceOption(q, $index)">
+                                {{ 'q.surveys.wizard.removeOption' | t }}
+                              </button>
+                            }
+                          </div>
+                        }
+                        <button type="button" class="btn-ghost btn-sm sv-choice-options__add" (click)="addChoiceOption(q)">
+                          {{ 'q.surveys.wizard.addOption' | t }}
+                        </button>
+                      </div>
+                    }
                   </div>
                 </article>
               }

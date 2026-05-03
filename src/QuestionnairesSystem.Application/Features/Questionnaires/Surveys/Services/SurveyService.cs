@@ -388,7 +388,25 @@ public sealed class SurveyService : ISurveyService
 
         var a = analytics.Value!;
         var invited = a.ParticipantCount;
-        var rate = invited <= 0 ? 0 : Math.Round(100.0 * a.SubmittedResponses / invited, 2);
+        // Invited completion = distinct participants with a submitted response / invited (not raw response count).
+        var participantsSubmitted = await _db.SurveyResponses.AsNoTracking()
+            .Where(r => r.SurveyId == surveyId && r.Status == ResponseStatus.Submitted && r.ParticipantId != null)
+            .Select(r => r.ParticipantId!.Value)
+            .Distinct()
+            .CountAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        double rate;
+        if (invited > 0)
+        {
+            rate = Math.Min(100.0, Math.Round(100.0 * participantsSubmitted / invited, 2));
+        }
+        else
+        {
+            var started = a.SubmittedResponses + a.InProgressResponses;
+            rate = started > 0 ? Math.Round(100.0 * a.SubmittedResponses / started, 2) : 0;
+        }
+
         return Result<SurveyAnalyticsSummaryDto>.Ok(new SurveyAnalyticsSummaryDto
         {
             SurveyId = surveyId,
@@ -711,16 +729,34 @@ public sealed class SurveyService : ISurveyService
         var submitted = responses.FirstOrDefault(r => r.Status == ResponseStatus.Submitted)?.Count ?? 0;
         var inProgress = responses.FirstOrDefault(r => r.Status == ResponseStatus.InProgress)?.Count ?? 0;
 
+        var participantsWithSubmitted = await _db.SurveyResponses.AsNoTracking()
+            .Where(r => r.SurveyId == surveyId && r.Status == ResponseStatus.Submitted && r.ParticipantId != null)
+            .Select(r => r.ParticipantId!.Value)
+            .Distinct()
+            .CountAsync(cancellationToken)
+            .ConfigureAwait(false);
+
         var totalQuestions = await _db.Questions.AsNoTracking()
             .CountAsync(q => q.SurveyId == surveyId, cancellationToken)
             .ConfigureAwait(false);
+
+        double completionRate;
+        if (totalParticipants > 0)
+        {
+            completionRate = Math.Min(100.0, (double)participantsWithSubmitted / totalParticipants * 100.0);
+        }
+        else
+        {
+            var started = submitted + inProgress;
+            completionRate = started > 0 ? (double)submitted / started * 100.0 : 0;
+        }
 
         var overview = new SurveyOverviewAnalytics
         {
             TotalParticipants = totalParticipants,
             SubmittedResponses = submitted,
             InProgressResponses = inProgress,
-            CompletionRate = totalParticipants > 0 ? (double)submitted / totalParticipants * 100 : 0,
+            CompletionRate = completionRate,
             TotalQuestions = totalQuestions
         };
 
@@ -753,6 +789,7 @@ public sealed class SurveyService : ISurveyService
             .ConfigureAwait(false);
 
         var questionAnalytics = new List<QuestionAnalyticsDto>();
+        var textAnswerCorpus = new List<string>();
         foreach (var question in questions)
         {
             var answers = await _db.QuestionAnswers.AsNoTracking()
@@ -793,6 +830,8 @@ public sealed class SurveyService : ISurveyService
                     answerDistribution = ratingGroups.Select(g => new AnswerDistributionDto
                     {
                         OptionText = g.Rating.ToString(),
+                        OptionTextAr = g.Rating.ToString(),
+                        OptionTextEn = g.Rating.ToString(),
                         Count = g.Count,
                         Percentage = answers.Count > 0 ? (double)g.Count / answers.Count * 100 : 0
                     }).ToList();
@@ -800,17 +839,48 @@ public sealed class SurveyService : ISurveyService
             }
             else if (question.Type == QuestionType.MultipleChoice || question.Type == QuestionType.SingleChoice)
             {
-                var optionGroups = answers.Where(a => !string.IsNullOrEmpty(a))
-                    .GroupBy(a => a)
-                    .Select(g => new { Option = g.Key, Count = g.Count() })
-                    .OrderByDescending(x => x.Count);
+                var labelMap = ParseChoiceOptionsMap(question.OptionsJson);
+                var optionCounts = new Dictionary<string, int>(StringComparer.Ordinal);
 
-                answerDistribution = optionGroups.Select(g => new AnswerDistributionDto
+                foreach (var raw in answers.Where(a => !string.IsNullOrWhiteSpace(a)))
                 {
-                    OptionText = g.Option,
-                    Count = g.Count,
-                    Percentage = answers.Count > 0 ? (double)g.Count / answers.Count * 100 : 0
-                }).ToList();
+                    if (question.Type == QuestionType.SingleChoice)
+                    {
+                        var val = TryDeserializeChoiceValue(raw);
+                        if (string.IsNullOrEmpty(val))
+                            continue;
+                        optionCounts.TryGetValue(val, out var n);
+                        optionCounts[val] = n + 1;
+                    }
+                    else
+                    {
+                        foreach (var val in TryDeserializeChoiceArray(raw))
+                        {
+                            if (string.IsNullOrEmpty(val))
+                                continue;
+                            optionCounts.TryGetValue(val, out var n);
+                            optionCounts[val] = n + 1;
+                        }
+                    }
+                }
+
+                answerDistribution = optionCounts
+                    .OrderByDescending(kv => kv.Value)
+                    .Select(kv =>
+                    {
+                        labelMap.TryGetValue(kv.Key, out var labels);
+                        var ar = string.IsNullOrWhiteSpace(labels.Ar) ? kv.Key : labels.Ar;
+                        var en = string.IsNullOrWhiteSpace(labels.En) ? kv.Key : labels.En;
+                        return new AnswerDistributionDto
+                        {
+                            OptionText = string.IsNullOrWhiteSpace(en) ? kv.Key : en,
+                            OptionTextAr = ar,
+                            OptionTextEn = en,
+                            Count = kv.Value,
+                            Percentage = answers.Count > 0 ? (double)kv.Value / answers.Count * 100 : 0
+                        };
+                    })
+                    .ToList();
             }
             else if (question.Type == QuestionType.YesNo)
             {
@@ -819,9 +889,34 @@ public sealed class SurveyService : ISurveyService
 
                 answerDistribution = new List<AnswerDistributionDto>
                 {
-                    new() { OptionText = "Yes", Count = yesCount, Percentage = answers.Count > 0 ? (double)yesCount / answers.Count * 100 : 0 },
-                    new() { OptionText = "No", Count = noCount, Percentage = answers.Count > 0 ? (double)noCount / answers.Count * 100 : 0 }
+                    new()
+                    {
+                        OptionText = "Yes",
+                        OptionTextAr = "نعم",
+                        OptionTextEn = "Yes",
+                        Count = yesCount,
+                        Percentage = answers.Count > 0 ? (double)yesCount / answers.Count * 100 : 0
+                    },
+                    new()
+                    {
+                        OptionText = "No",
+                        OptionTextAr = "لا",
+                        OptionTextEn = "No",
+                        Count = noCount,
+                        Percentage = answers.Count > 0 ? (double)noCount / answers.Count * 100 : 0
+                    }
                 };
+            }
+            else if (question.Type is QuestionType.ShortText or QuestionType.LongText)
+            {
+                foreach (var raw in answers)
+                {
+                    var plain = TextAnswerKeywordAggregator.UnwrapJsonAnswerText(raw);
+                    if (!string.IsNullOrWhiteSpace(plain))
+                    {
+                        textAnswerCorpus.Add(plain);
+                    }
+                }
             }
 
             questionAnalytics.Add(new QuestionAnalyticsDto
@@ -875,6 +970,8 @@ public sealed class SurveyService : ISurveyService
             }).ToList();
         }
 
+        var textAnswerKeywords = TextAnswerKeywordAggregator.Aggregate(textAnswerCorpus);
+
         return Result<SurveyComprehensiveAnalyticsDto>.Ok(new SurveyComprehensiveAnalyticsDto
         {
             SurveyId = surveyId,
@@ -883,7 +980,8 @@ public sealed class SurveyService : ISurveyService
             ResponseTimeline = responseTimeline,
             Questions = questionAnalytics,
             Categories = categories,
-            Ratings = ratings
+            Ratings = ratings,
+            TextAnswerKeywords = textAnswerKeywords
         });
     }
 
@@ -1050,6 +1148,70 @@ public sealed class SurveyService : ISurveyService
     private static void SoftDeleteEntity(Domain.Common.AuditableDomainEntity e)
     {
         e.RecordStatus = RecordStatus.Deleted;
+    }
+
+    private static Dictionary<string, (string Ar, string En)> ParseChoiceOptionsMap(string? optionsJson)
+    {
+        var map = new Dictionary<string, (string Ar, string En)>(StringComparer.Ordinal);
+        if (string.IsNullOrWhiteSpace(optionsJson))
+            return map;
+        try
+        {
+            using var doc = JsonDocument.Parse(optionsJson);
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                return map;
+            foreach (var el in doc.RootElement.EnumerateArray())
+            {
+                if (!el.TryGetProperty("value", out var vEl))
+                    continue;
+                var v = vEl.GetString();
+                if (string.IsNullOrEmpty(v))
+                    continue;
+                var ar = el.TryGetProperty("labelAr", out var la) ? la.GetString() ?? string.Empty : string.Empty;
+                var en = el.TryGetProperty("labelEn", out var le) ? le.GetString() ?? string.Empty : string.Empty;
+                map[v] = (ar, en);
+            }
+        }
+        catch
+        {
+            /* ignore malformed options JSON */
+        }
+        return map;
+    }
+
+    private static string? TryDeserializeChoiceValue(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+        var t = json.Trim();
+        try
+        {
+            if (t.StartsWith('['))
+                return null;
+            return JsonSerializer.Deserialize<string>(json);
+        }
+        catch
+        {
+            return t.Trim('"');
+        }
+    }
+
+    private static IReadOnlyList<string> TryDeserializeChoiceArray(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return Array.Empty<string>();
+        var t = json.Trim();
+        try
+        {
+            if (!t.StartsWith('['))
+                return Array.Empty<string>();
+            var arr = JsonSerializer.Deserialize<string[]>(json);
+            return arr ?? Array.Empty<string>();
+        }
+        catch
+        {
+            return Array.Empty<string>();
+        }
     }
 
     private static void TryApplyTemplateStructure(Survey survey, string structureJson)

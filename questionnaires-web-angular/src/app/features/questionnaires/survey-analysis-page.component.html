@@ -1,0 +1,219 @@
+<div class="sa-page">
+  <header class="sa-hero" role="banner">
+    <div class="sa-hero__content">
+      <p class="sa-hero__kicker">{{ 'q.analysis.heroKicker' | t }}</p>
+      <h1 class="sa-hero__title">{{ 'q.analysis.title' | t }}</h1>
+      <p class="sa-hero__lead">{{ 'q.analysis.lead' | t }}</p>
+    </div>
+  </header>
+
+  <section class="sa-panel sa-filters">
+    <div class="sa-filters__grid">
+      <label class="sa-field">
+        <span class="sa-field__label">{{ 'q.analysis.filterSurvey' | t }}</span>
+        <select class="sa-input" [(ngModel)]="selectedSurveyId">
+          <option value="">{{ 'q.analysis.filterSurveyAll' | t }}</option>
+          @for (s of surveyList(); track s.id) {
+            <option [value]="s.id">{{ s.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="sa-field">
+        <span class="sa-field__label">{{ 'q.analysis.filterFrom' | t }}</span>
+        <input class="sa-input" type="date" [(ngModel)]="fromDate" />
+      </label>
+      <label class="sa-field">
+        <span class="sa-field__label">{{ 'q.analysis.filterTo' | t }}</span>
+        <input class="sa-input" type="date" [(ngModel)]="toDate" />
+      </label>
+      <div class="sa-filters__actions">
+        <button type="button" class="sa-btn sa-btn--primary" (click)="apply()" [disabled]="busy()">
+          {{ 'q.analysis.apply' | t }}
+        </button>
+        <button type="button" class="sa-btn sa-btn--ghost" (click)="reset()" [disabled]="busy()">
+          {{ 'q.analysis.reset' | t }}
+        </button>
+      </div>
+    </div>
+  </section>
+
+  @if (busy()) {
+    <div class="sa-state sa-state--loading sa-panel" role="status" aria-live="polite">
+      <span class="sa-spinner" aria-hidden="true"></span>
+      <span class="sa-state__text">{{ 'q.analysis.loading' | t }}</span>
+    </div>
+  } @else if (failed()) {
+    <div class="sa-state sa-state--err sa-panel" role="alert">
+      <span class="sa-state__text">{{ 'q.analysis.error' | t }}</span>
+    </div>
+  } @else {
+    @if (data(); as d) {
+    <div class="sa-main">
+    <section class="sa-section sa-section--enter">
+      <div class="sa-section__head">
+        <span class="sa-section__eyebrow">{{ 'q.analysis.sectionOverview' | t }}</span>
+      </div>
+      <div class="sa-kpi-grid">
+        <article class="sa-kpi">
+          <p class="sa-kpi__label">{{ 'q.analysis.kpi.surveysInScope' | t }}</p>
+          <p class="sa-kpi__value">{{ d.overview.surveysInScope }}</p>
+        </article>
+        <article class="sa-kpi">
+          <p class="sa-kpi__label">{{ 'q.analysis.kpi.published' | t }}</p>
+          <p class="sa-kpi__value">{{ d.overview.publishedSurveys }}</p>
+        </article>
+        <article class="sa-kpi sa-kpi--accent">
+          <p class="sa-kpi__label">{{ 'q.analysis.kpi.submittedInPeriod' | t }}</p>
+          <p class="sa-kpi__value">{{ d.overview.submittedResponsesInPeriod }}</p>
+        </article>
+        <article class="sa-kpi">
+          <p class="sa-kpi__label">{{ 'q.analysis.kpi.surveysWithActivity' | t }}</p>
+          <p class="sa-kpi__value">{{ d.overview.surveysWithSubmissionsInPeriod }}</p>
+        </article>
+        <article class="sa-kpi">
+          <p class="sa-kpi__label">{{ 'q.analysis.kpi.invited' | t }}</p>
+          <p class="sa-kpi__value">{{ d.overview.invitedParticipantsInScope }}</p>
+        </article>
+        <article class="sa-kpi">
+          <p class="sa-kpi__label">{{ 'q.analysis.kpi.inProgress' | t }}</p>
+          <p class="sa-kpi__value">{{ d.overview.inProgressResponsesOpen }}</p>
+        </article>
+        <article class="sa-kpi">
+          <p class="sa-kpi__label">{{ 'q.analysis.kpi.perDay' | t }}</p>
+          <p class="sa-kpi__value">{{ d.overview.submissionsPerDayInPeriod | number: '1.1-2' }}</p>
+        </article>
+        <article class="sa-kpi">
+          <p class="sa-kpi__label">{{ 'q.analysis.kpi.questions' | t }}</p>
+          <p class="sa-kpi__value">{{ d.overview.totalQuestionsInScope }}</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="sa-section sa-section--enter">
+      <div class="sa-section__head">
+        <span class="sa-section__eyebrow">{{ 'q.analysis.sectionMore' | t }}</span>
+      </div>
+      <div class="sa-chart-grid-triple">
+        <article class="sa-chart-card sa-chart-card--enter sa-chart-card--triple">
+          <h3 class="sa-chart-card__title">{{ 'q.analysis.chart.audienceScopeMix' | t }}</h3>
+          <div class="sa-chart-card__canvas sa-chart-card__canvas--triple-bar">
+            @if ((d.audienceScopeDistribution?.length ?? 0) > 0) {
+              <canvas baseChart [type]="'bar'" [data]="barAudienceData()" [options]="barAudienceOpts()"></canvas>
+            } @else {
+              <p class="sa-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+            }
+          </div>
+        </article>
+        <article class="sa-chart-card sa-chart-card--enter sa-chart-card--triple">
+          <h3 class="sa-chart-card__title">{{ 'q.analysis.chart.ratingBars' | t }}</h3>
+          <div class="sa-chart-card__canvas sa-chart-card__canvas--triple-bar">
+            @if ((d.ratingsDistribution?.length ?? 0) > 0) {
+              <canvas baseChart [type]="'bar'" [data]="barRatingsData()" [options]="barRatingsOpts()"></canvas>
+            } @else {
+              <p class="sa-chart-empty muted">{{ 'q.analysis.insight.noRatings' | t }}</p>
+            }
+          </div>
+        </article>
+        <article class="sa-chart-card sa-chart-card--enter sa-chart-card--triple">
+          <h3 class="sa-chart-card__title">{{ 'q.analysis.chart.submissionsByWeekday' | t }}</h3>
+          <div class="sa-chart-card__canvas sa-chart-card__canvas--triple-bar">
+            @if ((d.submissionsByDayOfWeek?.length ?? 0) > 0) {
+              <canvas baseChart [type]="'bar'" [data]="barWeekdayData()" [options]="barWeekdayOpts()"></canvas>
+            } @else {
+              <p class="sa-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+            }
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="sa-section">
+      <div class="sa-section__head">
+        <span class="sa-section__eyebrow">{{ 'q.analysis.sectionCharts' | t }}</span>
+      </div>
+      <div class="sa-chart-grid">
+        <article class="sa-chart-card sa-chart-card--top-bar sa-chart-card--enter">
+          <h3 class="sa-chart-card__title">{{ 'q.analysis.chart.topSurveys' | t }}</h3>
+          <div class="sa-chart-card__canvas sa-chart-card__canvas--bar">
+            @if (d.topSurveysBySubmissions.length) {
+              <canvas baseChart [type]="'bar'" [data]="barTopData()" [options]="barOpts()"></canvas>
+            } @else {
+              <p class="sa-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+            }
+          </div>
+        </article>
+        <article class="sa-chart-card sa-chart-card--line sa-chart-card--enter">
+          <h3 class="sa-chart-card__title">{{ 'q.analysis.chart.submissionsOverTime' | t }}</h3>
+          <div class="sa-chart-card__canvas">
+            <canvas baseChart [type]="'line'" [data]="lineData()" [options]="lineOpts()"></canvas>
+          </div>
+        </article>
+        <article class="sa-chart-card sa-chart-card--donut-survey sa-chart-card--enter">
+          <h3 class="sa-chart-card__title">{{ 'q.analysis.chart.surveyStatusMix' | t }}</h3>
+          <div class="sa-chart-card__canvas sa-chart-card__canvas--donut">
+            @if (d.surveyStatusDistribution.length) {
+              <canvas baseChart [type]="'doughnut'" [data]="doughnutSurveyData()" [options]="doughnutOpts()"></canvas>
+            } @else {
+              <p class="sa-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+            }
+          </div>
+        </article>
+        <article class="sa-chart-card sa-chart-card--insight-mix sa-chart-card--enter">
+          @if ((d.textAnswerKeywords?.length ?? 0) > 0) {
+            <h3 class="sa-chart-card__title">{{ 'q.analysis.chart.textKeywords' | t }}</h3>
+            <div class="sa-chart-card__canvas sa-chart-card__canvas--hbar">
+              <canvas baseChart [type]="'bar'" [data]="barKeywordsData()" [options]="barKeywordsOpts()"></canvas>
+            </div>
+            <p class="sa-insight-footnote">{{ 'q.analysis.insight.keywordsFootnote' | t }}</p>
+          } @else if ((d.questionTypeAnswerTotals?.length ?? 0) > 0) {
+            <h3 class="sa-chart-card__title">{{ 'q.analysis.chart.questionTypesMix' | t }}</h3>
+            <div class="sa-chart-card__canvas sa-chart-card__canvas--donut">
+              <canvas baseChart [type]="'doughnut'" [data]="doughnutCategoriesData()" [options]="doughnutCategoriesOpts()"></canvas>
+            </div>
+          } @else {
+            <h3 class="sa-chart-card__title">{{ 'q.analysis.chart.questionTypesMix' | t }}</h3>
+            <div class="sa-chart-card__canvas sa-chart-card__canvas--donut">
+              <p class="sa-chart-empty muted">{{ 'q.analysis.insight.noKeywordsNoCategories' | t }}</p>
+            </div>
+          }
+        </article>
+      </div>
+    </section>
+
+    <section class="sa-section sa-section--enter">
+      <div class="sa-section__head">
+        <span class="sa-section__eyebrow">{{ 'q.analysis.sectionTables' | t }}</span>
+      </div>
+      <div class="sa-table-wrap sa-panel sa-panel--table">
+        <table class="sa-table">
+          <thead>
+            <tr>
+              <th>{{ 'q.analysis.table.survey' | t }}</th>
+              <th>{{ 'q.analysis.table.status' | t }}</th>
+              <th class="sa-table__num">{{ 'q.analysis.table.submissions' | t }}</th>
+              <th>{{ 'q.analysis.table.action' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of d.topSurveysBySubmissions; track row.surveyId) {
+              <tr class="sa-table__row">
+                <td>{{ surveyTitle(row) }}</td>
+                <td><span class="sa-pill">{{ surveyStatusLabel(row.status) }}</span></td>
+                <td class="sa-table__num">{{ row.submissionsInPeriod }}</td>
+                <td>
+                  <a class="sa-link-pill" [routerLink]="['/surveys', row.surveyId]">{{ 'q.analysis.table.action' | t }}</a>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="sa-table__empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+    </div>
+    }
+  }
+</div>

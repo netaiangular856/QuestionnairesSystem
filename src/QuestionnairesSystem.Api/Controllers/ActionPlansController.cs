@@ -28,10 +28,10 @@ public sealed class ActionPlansController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = PermissionCodes.ActionPlanView)]
-    public async Task<IActionResult> List(CancellationToken cancellationToken)
+    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int pageSize = 12, CancellationToken cancellationToken = default)
     {
         var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
-        var result = await _svc.ListAsync(cancellationToken).ConfigureAwait(false);
+        var result = await _svc.ListPagedAsync(page, pageSize, cancellationToken).ConfigureAwait(false);
         return result.ToApiActionResult(this, traceId);
     }
 
@@ -50,6 +50,15 @@ public sealed class ActionPlansController : ControllerBase
     {
         var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
         var result = await _svc.UpdateAsync(actionPlanId, request, cancellationToken).ConfigureAwait(false);
+        return result.ToApiActionResult(this, traceId);
+    }
+
+    [HttpGet("{actionPlanId:guid}/initiatives")]
+    [Authorize(Policy = PermissionCodes.ActionPlanView)]
+    public async Task<IActionResult> ListInitiatives(Guid actionPlanId, CancellationToken cancellationToken)
+    {
+        var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+        var result = await _svc.ListInitiativesByActionPlanAsync(actionPlanId, cancellationToken).ConfigureAwait(false);
         return result.ToApiActionResult(this, traceId);
     }
 

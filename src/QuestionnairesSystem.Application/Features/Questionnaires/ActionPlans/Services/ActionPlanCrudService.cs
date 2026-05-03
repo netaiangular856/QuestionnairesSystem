@@ -6,6 +6,7 @@ using QuestionnairesSystem.Application.Features.Questionnaires.ActionPlans.Inter
 using QuestionnairesSystem.Domain.ActionPlans;
 using QuestionnairesSystem.Domain.Enums;
 using QuestionnairesSystem.Persistence;
+using QuestionnairesSystem.Shared.Api;
 using QuestionnairesSystem.Shared.Results;
 
 namespace QuestionnairesSystem.Application.Features.Questionnaires.ActionPlans.Services;
@@ -73,6 +74,29 @@ public sealed class ActionPlanCrudService : IActionPlanCrudService
         return Result<IReadOnlyList<ActionPlanDto>>.Ok(list);
     }
 
+    public async Task<Result<PagedResult<ActionPlanDto>>> ListPagedAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var baseQuery = _db.ActionPlans.AsNoTracking();
+        var totalCount = await baseQuery.CountAsync(cancellationToken).ConfigureAwait(false);
+        var items = await SelectActionPlanDto(
+                baseQuery
+                    .OrderByDescending(x => x.CreatedOnUtc)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var paged = new PagedResult<ActionPlanDto>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+        };
+        return Result<PagedResult<ActionPlanDto>>.Ok(paged);
+    }
+
     public async Task<Result<ActionPlanDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var dto = await SelectActionPlanDto(_db.ActionPlans.AsNoTracking().Where(x => x.Id == id))
@@ -115,6 +139,27 @@ public sealed class ActionPlanCrudService : IActionPlanCrudService
         return Result<ActionPlanDto>.Ok(updatedPlan);
     }
 
+    public async Task<Result<IReadOnlyList<InitiativeDto>>> ListInitiativesByActionPlanAsync(
+        Guid actionPlanId,
+        CancellationToken cancellationToken = default)
+    {
+        var exists = await _db.ActionPlans.AnyAsync(x => x.Id == actionPlanId, cancellationToken).ConfigureAwait(false);
+        if (!exists)
+        {
+            return Result<IReadOnlyList<InitiativeDto>>.Fail(
+                "Action plan was not found.",
+                QuestionnaireErrors.ActionPlanNotFound);
+        }
+
+        var list = await SelectInitiativeDto(
+                _db.Initiatives.AsNoTracking()
+                    .Where(x => x.ActionPlanId == actionPlanId)
+                    .OrderBy(x => x.TitleEn))
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return Result<IReadOnlyList<InitiativeDto>>.Ok(list);
+    }
+
     public async Task<Result<InitiativeDto>> AddInitiativeAsync(
         Guid actionPlanId,
         CreateInitiativeRequest request,
@@ -145,6 +190,69 @@ public sealed class ActionPlanCrudService : IActionPlanCrudService
             .FirstAsync(cancellationToken)
             .ConfigureAwait(false);
         return Result<InitiativeDto>.Ok(createdInit);
+    }
+
+    public async Task<Result<IReadOnlyList<InitiativeListItemDto>>> ListAllInitiativesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var list = await _db.Initiatives.AsNoTracking()
+            .OrderByDescending(i => i.CreatedOnUtc)
+            .Select(i => new InitiativeListItemDto
+            {
+                Id = i.Id,
+                ActionPlanId = i.ActionPlanId,
+                TitleAr = i.TitleAr,
+                TitleEn = i.TitleEn,
+                Status = i.Status,
+                OwnerDisplayName = i.OwnerUser == null
+                    ? null
+                    : (i.OwnerUser.NameAr ?? i.OwnerUser.NameEn ?? i.OwnerUser.UserName),
+                TargetDateUtc = i.TargetDateUtc,
+                ActionPlanTitleAr = i.ActionPlan.TitleAr,
+                ActionPlanTitleEn = i.ActionPlan.TitleEn,
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return Result<IReadOnlyList<InitiativeListItemDto>>.Ok(list);
+    }
+
+    public async Task<Result<PagedResult<InitiativeListItemDto>>> ListInitiativesPagedAsync(
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var baseQuery = _db.Initiatives.AsNoTracking();
+        var totalCount = await baseQuery.CountAsync(cancellationToken).ConfigureAwait(false);
+        var items = await baseQuery
+            .OrderByDescending(i => i.CreatedOnUtc)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(i => new InitiativeListItemDto
+            {
+                Id = i.Id,
+                ActionPlanId = i.ActionPlanId,
+                TitleAr = i.TitleAr,
+                TitleEn = i.TitleEn,
+                Status = i.Status,
+                OwnerDisplayName = i.OwnerUser == null
+                    ? null
+                    : (i.OwnerUser.NameAr ?? i.OwnerUser.NameEn ?? i.OwnerUser.UserName),
+                TargetDateUtc = i.TargetDateUtc,
+                ActionPlanTitleAr = i.ActionPlan.TitleAr,
+                ActionPlanTitleEn = i.ActionPlan.TitleEn,
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var paged = new PagedResult<InitiativeListItemDto>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+        };
+        return Result<PagedResult<InitiativeListItemDto>>.Ok(paged);
     }
 
     public async Task<Result<InitiativeDto>> GetInitiativeAsync(Guid initiativeId, CancellationToken cancellationToken = default)
@@ -259,6 +367,8 @@ public sealed class ActionPlanCrudService : IActionPlanCrudService
             ActionPlanId = i.ActionPlanId,
             TitleAr = i.TitleAr,
             TitleEn = i.TitleEn,
+            DescriptionAr = i.DescriptionAr,
+            DescriptionEn = i.DescriptionEn,
             Status = i.Status,
             OwnerUserId = i.OwnerUserId,
             OwnerDisplayName = i.OwnerUser == null

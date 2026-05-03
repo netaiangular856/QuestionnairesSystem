@@ -43,6 +43,28 @@ export class SurveyFillPageComponent implements OnInit {
 
   readonly QuestionType = QuestionType;
 
+  /** Calendar glyph for type="date" is often invisible with themed inputs / RTL — button opens native picker. */
+  openNativeDatePicker(ev: Event): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const btn = ev.currentTarget as HTMLElement | null;
+    const wrap = btn?.closest('.sv-datetime-wrap');
+    const input = wrap?.querySelector('input[type="date"]') as
+      | (HTMLInputElement & { showPicker?: () => void })
+      | undefined;
+    if (!input) return;
+    if (typeof input.showPicker === 'function') {
+      try {
+        void input.showPicker();
+        return;
+      } catch {
+        /* unsupported */
+      }
+    }
+    input.focus();
+    input.click();
+  }
+
   ngOnInit(): void {
     const surveyId = this.route.snapshot.paramMap.get('surveyId');
     const participantId = this.route.snapshot.paramMap.get('participantId');

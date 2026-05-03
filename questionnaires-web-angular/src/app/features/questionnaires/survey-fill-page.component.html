@@ -128,7 +128,17 @@
                         </div>
                       }
                       @case (QuestionType.Date) {
-                        <input type="date" [(ngModel)]="answers[q.id]" [name]="q.id">
+                        <div class="sv-datetime-wrap">
+                          <input type="date" [(ngModel)]="answers[q.id]" [name]="q.id" />
+                          <button
+                            type="button"
+                            class="sv-datetime-wrap__btn"
+                            (click)="openNativeDatePicker($event)"
+                            [attr.aria-label]="'q.fill.pickDate' | t"
+                          >
+                            <i class="pi pi-calendar" aria-hidden="true"></i>
+                          </button>
+                        </div>
                       }
                       @case (QuestionType.Number) {
                         <input type="number" [(ngModel)]="answers[q.id]" [name]="q.id">

@@ -1,35 +1,229 @@
-<div class="page-workspace">
-  <div class="page-head-row">
-    <section class="page-head">
-      <h1>{{ 'q.plans.title' | t }}</h1>
-      <p class="page-head__sub">{{ 'q.plans.subtitle' | t }}</p>
-    </section>
-  </div>
-
-  @if (busy()) {
-    <div class="card card--muted">{{ 'common.loading' | t }}</div>
-  } @else if (failed()) {
-    <div class="card card--muted">{{ 'q.plans.error' | t }}</div>
-  } @else {
-    <div class="plan-grid">
-      @for (p of items(); track p.id; let idx = $index) {
-        <article class="plan-card card" [ngClass]="planVariant(idx)">
-          <div class="plan-card__stripe" aria-hidden="true"></div>
-          <header>
-            <h3>{{ titleOf(p) }}</h3>
-            <span class="plan-status">{{ statusKey(p) | t }}</span>
-          </header>
-          @if (p.ownerDisplayName) {
-            <p class="plan-owner"><strong>{{ 'q.plans.owner' | t }}:</strong> {{ p.ownerDisplayName }}</p>
-          }
-          <p class="plan-dates">
-            {{ 'q.plans.period' | t }}:
-            {{ p.startDateUtc ? (p.startDateUtc | date: 'mediumDate') : '—' }}
-            —
-            {{ p.endDateUtc ? (p.endDateUtc | date: 'mediumDate') : '—' }}
-          </p>
-        </article>
+<div class="page-workspace recommendations-page action-plans-page">
+  <div class="rec-page">
+    <section class="rec-hero" aria-labelledby="apl-page-title">
+      <div class="rec-hero__left">
+        <div class="rec-hero__icon" aria-hidden="true"><i class="pi pi-list"></i></div>
+        <div class="rec-hero__body">
+          <p class="rec-hero__kicker">{{ 'q.plans.heroKicker' | t }}</p>
+          <h1 id="apl-page-title" class="rec-hero__title">{{ 'q.plans.title' | t }}</h1>
+          <p class="rec-hero__lead">{{ 'q.plans.subtitle' | t }}</p>
+        </div>
+      </div>
+      @if (!busy() && !failed() && canManage()) {
+        <div class="rec-hero__cta">
+          <a routerLink="/action-plans/new" class="btn-primary rec-hero__add rec-hero__add--compact">
+            <i class="pi pi-plus" aria-hidden="true"></i>
+            {{ 'q.plans.addPlan' | t }}
+          </a>
+        </div>
       }
-    </div>
-  }
+    </section>
+
+    @if (busy()) {
+      <div class="card rec-panel rec-panel--muted">
+        <div class="rec-loading">
+          <span class="rec-loading__dot" aria-hidden="true"></span>
+          {{ 'common.loading' | t }}
+        </div>
+      </div>
+    } @else if (failed()) {
+      <div class="card rec-panel rec-panel--error">
+        <p class="rec-panel__msg"><i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ 'q.plans.error' | t }}</p>
+      </div>
+    } @else {
+      <div class="rec-toolbar">
+        <div class="rec-summary" role="status">
+          <div class="rec-summary__pill">
+            <span class="rec-summary__num">{{ totalCount() }}</span>
+            <span class="rec-summary__lbl">{{ 'q.plans.totalLabel' | t }}</span>
+          </div>
+        </div>
+        <div class="rec-view-toggle" role="group" [attr.aria-label]="'q.rec.viewMode.aria' | t">
+          <button
+            type="button"
+            class="rec-view-toggle__btn"
+            [class.is-active]="viewMode() === 'cards'"
+            (click)="setViewMode('cards')"
+          >
+            <i class="pi pi-th-large" aria-hidden="true"></i>
+            {{ 'q.rec.viewMode.cards' | t }}
+          </button>
+          <button
+            type="button"
+            class="rec-view-toggle__btn"
+            [class.is-active]="viewMode() === 'table'"
+            (click)="setViewMode('table')"
+          >
+            <i class="pi pi-table" aria-hidden="true"></i>
+            {{ 'q.rec.viewMode.table' | t }}
+          </button>
+        </div>
+      </div>
+
+      @if (totalCount() === 0) {
+        <p class="rec-empty-block">{{ 'q.plans.empty' | t }}</p>
+      } @else if (viewMode() === 'cards') {
+        <div class="apl-grid" role="list">
+          @for (p of items(); track p.id) {
+            @if (p.id) {
+              <a
+                [routerLink]="['/action-plans', p.id]"
+                [class]="'apl-card apl-card--' + planStatusVariant(p)"
+                role="listitem"
+              >
+                <div class="apl-card__ribbon" aria-hidden="true"></div>
+                <div class="apl-card__glow" aria-hidden="true"></div>
+
+                <header class="apl-card__head">
+                  <div class="apl-card__badge" aria-hidden="true">
+                    <i class="pi pi-briefcase"></i>
+                  </div>
+                  <span [class]="'apl-chip apl-chip--' + planStatusVariant(p)">
+                    <span class="apl-chip__dot" aria-hidden="true"></span>
+                    {{ statusKey(p) | t }}
+                  </span>
+                </header>
+
+                <h2 class="apl-card__title" [title]="titleOf(p)">{{ titleOf(p) }}</h2>
+
+                <div class="apl-card__owner">
+                  <span class="apl-avatar" aria-hidden="true">
+                    @if (ownerInitial(p); as i) {
+                      {{ i }}
+                    } @else {
+                      <i class="pi pi-user"></i>
+                    }
+                  </span>
+                  <span class="apl-card__owner-text">{{ p.ownerDisplayName || ('q.plans.owner' | t) }}</span>
+                </div>
+
+                @if (hasPeriod(p) && planProgress(p) !== null) {
+                  <div class="apl-progress">
+                    <div class="apl-progress__bar" [attr.aria-label]="'q.plans.card.progress' | t">
+                      <span class="apl-progress__fill" [style.width.%]="planProgress(p)"></span>
+                    </div>
+                    <div class="apl-progress__labels">
+                      <span class="apl-progress__date">
+                        <i class="pi pi-play" aria-hidden="true"></i>
+                        {{ p.startDateUtc | date: 'mediumDate' : undefined : dateLocale() }}
+                      </span>
+                      <span class="apl-progress__pct">{{ planProgress(p) }}%</span>
+                      <span class="apl-progress__date apl-progress__date--end">
+                        {{ p.endDateUtc | date: 'mediumDate' : undefined : dateLocale() }}
+                        <i class="pi pi-flag" aria-hidden="true"></i>
+                      </span>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="apl-card__fallback">
+                    <i class="pi pi-calendar-clock" aria-hidden="true"></i>
+                    <span>{{ 'q.plans.card.noPeriod' | t }}</span>
+                  </div>
+                }
+
+                <footer class="apl-card__foot">
+                  <span class="apl-card__cta">
+                    <span>{{ 'q.plans.open' | t }}</span>
+                    <i class="pi pi-arrow-right" aria-hidden="true"></i>
+                  </span>
+                </footer>
+              </a>
+            } @else {
+              <div [class]="'apl-card apl-card--' + planStatusVariant(p) + ' is-disabled'" role="listitem">
+                <div class="apl-card__ribbon" aria-hidden="true"></div>
+                <header class="apl-card__head">
+                  <div class="apl-card__badge" aria-hidden="true"><i class="pi pi-briefcase"></i></div>
+                  <span [class]="'apl-chip apl-chip--' + planStatusVariant(p)">
+                    <span class="apl-chip__dot" aria-hidden="true"></span>
+                    {{ statusKey(p) | t }}
+                  </span>
+                </header>
+                <h2 class="apl-card__title">{{ titleOf(p) }}</h2>
+              </div>
+            }
+          }
+        </div>
+      } @else {
+        <section class="card rec-table-card" aria-labelledby="apl-table-heading">
+          <header class="rec-table-card__head">
+            <h2 id="apl-table-heading" class="rec-table-card__title">
+              <i class="pi pi-list" aria-hidden="true"></i>
+              {{ 'q.plans.tableHeading' | t }}
+            </h2>
+          </header>
+          <div class="rec-table-scroll">
+            <table class="data-table rec-data-table">
+              <thead>
+                <tr>
+                  <th scope="col">{{ 'q.rec.table.title' | t }}</th>
+                  <th scope="col">{{ 'q.plans.owner' | t }}</th>
+                  <th scope="col">{{ 'common.status' | t }}</th>
+                  <th scope="col">{{ 'q.plans.period' | t }}</th>
+                  <th scope="col" class="rec-col-actions">{{ 'q.rec.table.actions' | t }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of items(); track p.id) {
+                  <tr>
+                    <td class="rec-cell-title">
+                      <span class="rec-title-text">{{ titleOf(p) }}</span>
+                    </td>
+                    <td>{{ p.ownerDisplayName || '—' }}</td>
+                    <td>
+                      <span [class]="'rec-status rec-status--' + planStatusVariant(p)">{{ statusKey(p) | t }}</span>
+                    </td>
+                    <td class="rec-cell-date">
+                      {{ p.startDateUtc ? (p.startDateUtc | date: 'mediumDate' : undefined : dateLocale()) : '—' }}
+                      —
+                      {{ p.endDateUtc ? (p.endDateUtc | date: 'mediumDate' : undefined : dateLocale()) : '—' }}
+                    </td>
+                    <td class="rec-cell-actions">
+                      @if (p.id) {
+                        <a
+                          [routerLink]="['/action-plans', p.id]"
+                          class="rec-row-btn rec-row-btn--details"
+                          [title]="'q.plans.open' | t"
+                        >
+                          <i class="pi pi-arrow-right" aria-hidden="true"></i>
+                        </a>
+                      }
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="rec-empty">{{ 'q.plans.empty' | t }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+
+      @if (totalCount() > 0) {
+        <nav class="rec-pagination" [attr.aria-label]="'q.rec.pagination.aria' | t">
+          <div class="rec-pagination__size">
+            <label for="apl-page-size">{{ 'q.rec.pageSize' | t }}</label>
+            <select id="apl-page-size" [ngModel]="pageSize()" (ngModelChange)="setPageSize(+$event)">
+              <option [ngValue]="12">12</option>
+              <option [ngValue]="24">24</option>
+              <option [ngValue]="48">48</option>
+            </select>
+          </div>
+          <div class="rec-pagination__nav">
+            <button type="button" class="rec-pagination__btn" [disabled]="page() <= 1" (click)="goPrevPage()">
+              {{ 'common.previous' | t }}
+            </button>
+            <span class="rec-pagination__info">
+              {{ 'common.page' | t }} {{ page() }} / {{ totalPages() }}
+              <span class="rec-pagination__total rec-pagination__meta-sub">({{ totalCount() }})</span>
+            </span>
+            <button type="button" class="rec-pagination__btn" [disabled]="page() >= totalPages()" (click)="goNextPage()">
+              {{ 'common.next' | t }}
+            </button>
+          </div>
+        </nav>
+      }
+    }
+  </div>
 </div>

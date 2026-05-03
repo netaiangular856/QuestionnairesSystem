@@ -215,11 +215,39 @@ export const routes: Routes = [
           import('./features/questionnaires/recommendations-page.component').then((m) => m.RecommendationsPageComponent),
       },
       {
+        path: 'action-plans/new',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.ActionPlanManage] },
+        loadComponent: () =>
+          import('./features/questionnaires/action-plan-create-page.component').then((m) => m.ActionPlanCreatePageComponent),
+      },
+      {
+        path: 'action-plans/:planId',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.ActionPlanView] },
+        loadComponent: () =>
+          import('./features/questionnaires/action-plan-detail-page.component').then((m) => m.ActionPlanDetailPageComponent),
+      },
+      {
         path: 'action-plans',
         canActivate: [permissionGuard],
         data: { permissions: [PermissionCodes.ActionPlanView] },
         loadComponent: () =>
           import('./features/questionnaires/action-plans-page.component').then((m) => m.ActionPlansPageComponent),
+      },
+      {
+        path: 'initiatives',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.ActionPlanView] },
+        loadComponent: () =>
+          import('./features/questionnaires/initiatives-page.component').then((m) => m.InitiativesPageComponent),
+      },
+      {
+        path: 'initiatives/:initiativeId',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.ActionPlanView] },
+        loadComponent: () =>
+          import('./features/questionnaires/initiative-detail-page.component').then((m) => m.InitiativeDetailPageComponent),
       },
       {
         path: 'reports',
@@ -228,6 +256,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/questionnaires/reports-page.component').then((m) => m.ReportsPageComponent),
       },
+      {
+        path: 'survey-analysis',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.ReportView] },
+        loadComponent: () =>
+          import('./features/questionnaires/survey-analysis-page.component').then((m) => m.SurveyAnalysisPageComponent),
+      },
+      { path: 'survey-analytics-export', redirectTo: 'reports', pathMatch: 'full' },
     ],
   },
   { path: '**', redirectTo: 'home' },

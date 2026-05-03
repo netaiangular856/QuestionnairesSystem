@@ -28,10 +28,10 @@ public sealed class RecommendationsController : ControllerBase
 
     [HttpGet]
     [Authorize(Policy = PermissionCodes.RecommendationView)]
-    public async Task<IActionResult> List(CancellationToken cancellationToken)
+    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int pageSize = 12, CancellationToken cancellationToken = default)
     {
         var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
-        var result = await _svc.ListAsync(cancellationToken).ConfigureAwait(false);
+        var result = await _svc.ListPagedAsync(page, pageSize, cancellationToken).ConfigureAwait(false);
         return result.ToApiActionResult(this, traceId);
     }
 

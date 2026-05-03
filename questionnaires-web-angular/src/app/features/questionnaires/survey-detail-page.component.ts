@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -10,11 +10,11 @@ import { ToastService } from '../../core/services/toast.service';
 import { SurveyQuestionsApiService } from '../../services/survey-questions-api.service';
 import { SurveysApiService } from '../../services/surveys-api.service';
 import {
+  QuestionAnalyticsDto,
   QuestionDto,
   QuestionType,
-  SurveyAnalyticsDto,
-  SurveyAnalyticsSummaryDto,
   SurveyAudienceScope,
+  SurveyComprehensiveAnalyticsDto,
   SurveyDetailDto,
   SurveyStatus,
   UpdateSurveyRequest,
@@ -23,11 +23,12 @@ import { PermissionCodes } from '../../shared/models/permission-codes';
 import { qAudienceKey, qLocalizedTitle, qSurveyStatusKey } from '../../shared/questionnaires/q-display';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { I18nService } from '../../shared/services/i18n.service';
+import { RecommendationCreatePanelComponent } from './recommendation-create-panel.component';
 
 @Component({
   selector: 'app-survey-detail-page',
   standalone: true,
-  imports: [RouterLink, TranslatePipe, FormsModule, DatePipe],
+  imports: [RouterLink, TranslatePipe, FormsModule, DatePipe, DecimalPipe, RecommendationCreatePanelComponent],
   templateUrl: './survey-detail-page.component.html',
   styleUrl: './survey-detail-page.component.scss',
 })
@@ -50,6 +51,7 @@ export class SurveyDetailPageComponent implements OnInit {
   readonly canResponses = this.auth.hasPermission(PermissionCodes.ResponseView);
   readonly canReport = this.auth.hasPermission(PermissionCodes.ReportView);
   readonly canViewQuestions = this.auth.hasPermission(PermissionCodes.QuestionView);
+  readonly canRecommendManage = this.auth.hasPermission(PermissionCodes.RecommendationManage);
 
   readonly SurveyStatus = SurveyStatus;
   readonly SurveyAudienceScope = SurveyAudienceScope;
@@ -73,9 +75,21 @@ export class SurveyDetailPageComponent implements OnInit {
 
   readonly questions = signal<QuestionDto[]>([]);
 
-  readonly analytics = signal<SurveyAnalyticsDto | null>(null);
-  readonly analyticsSummary = signal<SurveyAnalyticsSummaryDto | null>(null);
+  readonly comprehensiveAnalytics = signal<SurveyComprehensiveAnalyticsDto | null>(null);
   readonly analyticsBusy = signal(false);
+
+  /** Backend `QuestionType.ToString()` → i18n keys used elsewhere for labels. */
+  private readonly backendQuestionTypeKeys: Record<string, string> = {
+    ShortText: 'q.templates.qt.shortText',
+    LongText: 'q.templates.qt.longText',
+    SingleChoice: 'q.templates.qt.single',
+    MultipleChoice: 'q.templates.qt.multi',
+    Rating: 'q.templates.qt.rating',
+    Scale: 'q.templates.qt.scale',
+    YesNo: 'q.templates.qt.yesno',
+    Date: 'q.templates.qt.date',
+    Number: 'q.templates.qt.number',
+  };
 
   readonly actionBusy = signal(false);
 
@@ -86,6 +100,8 @@ export class SurveyDetailPageComponent implements OnInit {
 
   readonly patchOpen = signal(false);
   patchStatus: SurveyStatus = SurveyStatus.Draft;
+
+  readonly recommendationModalOpen = signal(false);
 
   ngOnInit(): void {
     this.route.paramMap
@@ -100,8 +116,7 @@ export class SurveyDetailPageComponent implements OnInit {
   private loadSurvey(id: string): void {
     this.busy.set(true);
     this.failed.set(false);
-    this.analytics.set(null);
-    this.analyticsSummary.set(null);
+    this.comprehensiveAnalytics.set(null);
     this.questions.set([]);
     forkJoin({
       survey: this.surveysApi.getById(id),
@@ -127,22 +142,19 @@ export class SurveyDetailPageComponent implements OnInit {
 
   private loadAnalytics(surveyId: string): void {
     this.analyticsBusy.set(true);
-    forkJoin({
-      main: this.surveysApi.getAnalytics(surveyId).pipe(catchError(() => of(null as SurveyAnalyticsDto | null))),
-      summary: this.surveysApi
-        .getAnalyticsSummary(surveyId)
-        .pipe(catchError(() => of(null as SurveyAnalyticsSummaryDto | null))),
-    }).subscribe({
-      next: ({ main, summary }) => {
-        this.analytics.set(main);
-        this.analyticsSummary.set(summary);
-        this.analyticsBusy.set(false);
-      },
-      error: () => {
-        this.analyticsBusy.set(false);
-        this.toast.show(this.i18n.t('q.detail.analytics.error'), 'error');
-      },
-    });
+    this.surveysApi
+      .getComprehensiveAnalytics(surveyId)
+      .pipe(catchError(() => of(null as SurveyComprehensiveAnalyticsDto | null)))
+      .subscribe({
+        next: (data) => {
+          this.comprehensiveAnalytics.set(data);
+          this.analyticsBusy.set(false);
+        },
+        error: () => {
+          this.analyticsBusy.set(false);
+          this.toast.show(this.i18n.t('q.detail.analytics.error'), 'error');
+        },
+      });
   }
 
   private currentId(): string | null {
@@ -178,33 +190,109 @@ export class SurveyDetailPageComponent implements OnInit {
     return this.questionTypeLabels.find((x) => x.value === q.type)?.labelKey ?? 'q.templates.qt.shortText';
   }
 
-  /** Stacked strip: submitted (of total responses) */
-  mixSubmittedPct(an: SurveyAnalyticsDto): number {
-    const t = an.totalResponses;
-    if (t <= 0) return 0;
-    return Math.min(100, (100 * an.submittedResponses) / t);
+  /** Approximate share of answer cells filled vs full matrix (submitted × questions). */
+  fillRatePercent(ca: SurveyComprehensiveAnalyticsDto): number {
+    const sub = ca.overview.submittedResponses;
+    const nq = ca.overview.totalQuestions;
+    if (sub <= 0 || nq <= 0) return 0;
+    const sumCells = ca.questions.reduce((acc, q) => acc + q.totalAnswers, 0);
+    const denom = sub * nq;
+    return denom <= 0 ? 0 : Math.min(100, Math.round((100 * sumCells) / denom));
   }
 
-  mixInProgressPct(an: SurveyAnalyticsDto): number {
-    const t = an.totalResponses;
-    if (t <= 0) return 0;
-    return Math.min(100, (100 * an.inProgressResponses) / t);
+  last30DaysTotal(ca: SurveyComprehensiveAnalyticsDto): number {
+    return ca.responseTimeline.reduce((a, t) => a + t.responseCount, 0);
   }
 
-  mixOtherPct(an: SurveyAnalyticsDto): number {
-    const t = an.totalResponses;
-    if (t <= 0) return 0;
-    const other = Math.max(0, t - an.submittedResponses - an.inProgressResponses);
-    return (100 * other) / t;
+  /**
+   * Line + area geometry for submission activity (time series — avoids column/bar semantics).
+   */
+  timelineLineGeometry(ca: SurveyComprehensiveAnalyticsDto): {
+    gradientId: string;
+    areaPath: string;
+    linePoints: string;
+    dots: { cx: number; cy: number; count: number; iso: string }[];
+    axisDates: { iso: string }[];
+  } | null {
+    const tl = ca.responseTimeline;
+    if (tl.length === 0) return null;
+
+    const gradientId = `tlg-${ca.surveyId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+    const n = tl.length;
+    const max = Math.max(1, ...tl.map((t) => t.responseCount));
+
+    const W = 100;
+    const H = 44;
+    const padL = 4;
+    const padR = 4;
+    const padT = 6;
+    const padB = 2;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    const xAt = (i: number) => padL + (n <= 1 ? plotW / 2 : (i / (n - 1)) * plotW);
+    const yAt = (c: number) => padT + plotH - (c / max) * plotH;
+
+    const dots = tl.map((t, i) => ({
+      cx: xAt(i),
+      cy: yAt(t.responseCount),
+      count: t.responseCount,
+      iso: t.date,
+    }));
+
+    const linePoints = dots.map((d) => `${d.cx.toFixed(3)},${d.cy.toFixed(3)}`).join(' ');
+    const yBottom = padT + plotH;
+    const areaPath =
+      `M ${dots[0].cx} ${yBottom} ` + dots.map((d) => `L ${d.cx} ${d.cy}`).join(' ') + ` L ${dots[dots.length - 1].cx} ${yBottom} Z`;
+
+    const axisDates: { iso: string }[] = [{ iso: tl[0].date }];
+    if (n >= 4) axisDates.push({ iso: tl[Math.floor((n - 1) / 2)].date });
+    if (n >= 2) axisDates.push({ iso: tl[n - 1].date });
+
+    const seen = new Set<string>();
+    const axisUnique = axisDates.filter((d) => {
+      if (seen.has(d.iso)) return false;
+      seen.add(d.iso);
+      return true;
+    });
+
+    return {
+      gradientId,
+      areaPath,
+      linePoints,
+      dots,
+      axisDates: axisUnique,
+    };
   }
 
-  /** Pie chart fill (no numeric labels in UI; proportions only). */
-  pieGradient(an: SurveyAnalyticsDto): string {
-    const s = this.mixSubmittedPct(an);
-    const p = this.mixInProgressPct(an);
-    const a = s * 3.6;
-    const b = (s + p) * 3.6;
-    return `conic-gradient(#166534 0deg ${a}deg, #ca8a04 ${a}deg ${b}deg, #78716c ${b}deg 360deg)`;
+  topQuestions(ca: SurveyComprehensiveAnalyticsDto, limit = 5): QuestionAnalyticsDto[] {
+    return [...ca.questions].sort((a, b) => b.totalAnswers - a.totalAnswers).slice(0, limit);
+  }
+
+  /** Top questions plus share of all recorded answers (clearer than raw counts alone). */
+  topQuestionsWithShare(
+    ca: SurveyComprehensiveAnalyticsDto,
+    limit = 5,
+  ): { question: QuestionAnalyticsDto; shareOfAllAnswers: number }[] {
+    const tops = this.topQuestions(ca, limit);
+    const total = ca.questions.reduce((a, q) => a + q.totalAnswers, 0);
+    if (total <= 0) return tops.map((q) => ({ question: q, shareOfAllAnswers: 0 }));
+    return tops.map((q) => ({
+      question: q,
+      shareOfAllAnswers: Math.min(100, Math.round((100 * q.totalAnswers) / total)),
+    }));
+  }
+
+  insightQuestionTitle(q: QuestionAnalyticsDto): string {
+    return qLocalizedTitle(this.i18n.lang(), q.titleAr, q.titleEn);
+  }
+
+  insightQuestionTypeKey(q: QuestionAnalyticsDto): string {
+    return this.backendQuestionTypeKeys[q.questionType] ?? 'q.templates.qt.shortText';
+  }
+
+  categoryTypeLabelKey(name: string): string {
+    return this.backendQuestionTypeKeys[name] ?? 'q.detail.table.typeCol';
   }
 
   showSubmit(s: SurveyDetailDto): boolean {
@@ -342,6 +430,18 @@ export class SurveyDetailPageComponent implements OnInit {
         this.toast.show(this.i18n.t('q.detail.toast.transitionFailed'), 'error');
       },
     });
+  }
+
+  openRecommendationModal(): void {
+    this.recommendationModalOpen.set(true);
+  }
+
+  closeRecommendationModal(): void {
+    this.recommendationModalOpen.set(false);
+  }
+
+  onRecommendationCreatedFromModal(): void {
+    this.recommendationModalOpen.set(false);
   }
 
   /** In-page jumps (TOC). Plain `href="#id"` can break SPA routing or hash handling; scroll + fragment keeps URLs shareable. */

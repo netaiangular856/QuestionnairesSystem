@@ -1038,6 +1038,10 @@ namespace QuestionnairesSystem.Persistence.Migrations
 
                     b.HasIndex("SurveyId");
 
+                    b.HasIndex("Status", "SubmittedAtUtc");
+
+                    b.HasIndex("SurveyId", "Status", "SubmittedAtUtc");
+
                     b.ToTable("SurveyResponses", (string)null);
                 });
 

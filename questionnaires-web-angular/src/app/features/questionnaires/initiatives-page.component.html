@@ -1,0 +1,204 @@
+<div class="page-workspace recommendations-page initiatives-page">
+  <div class="rec-page">
+    <section class="rec-hero" aria-labelledby="init-page-title">
+      <div class="rec-hero__left">
+        <div class="rec-hero__icon" aria-hidden="true"><i class="pi pi-bolt"></i></div>
+        <div class="rec-hero__body">
+          <p class="rec-hero__kicker">{{ 'q.init.heroKicker' | t }}</p>
+          <h1 id="init-page-title" class="rec-hero__title">{{ 'q.init.title' | t }}</h1>
+          <p class="rec-hero__lead">{{ 'q.init.subtitle' | t }}</p>
+        </div>
+      </div>
+    </section>
+
+    @if (busy()) {
+      <div class="card rec-panel rec-panel--muted">
+        <div class="rec-loading">
+          <span class="rec-loading__dot" aria-hidden="true"></span>
+          {{ 'common.loading' | t }}
+        </div>
+      </div>
+    } @else if (failed()) {
+      <div class="card rec-panel rec-panel--error">
+        <p class="rec-panel__msg"><i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ 'q.init.error' | t }}</p>
+      </div>
+    } @else {
+      <div class="rec-toolbar">
+        <div class="rec-summary" role="status">
+          <div class="rec-summary__pill">
+            <span class="rec-summary__num">{{ totalCount() }}</span>
+            <span class="rec-summary__lbl">{{ 'q.init.totalLabel' | t }}</span>
+          </div>
+        </div>
+        <div class="rec-view-toggle" role="group" [attr.aria-label]="'q.rec.viewMode.aria' | t">
+          <button
+            type="button"
+            class="rec-view-toggle__btn"
+            [class.is-active]="viewMode() === 'cards'"
+            (click)="setViewMode('cards')"
+          >
+            <i class="pi pi-th-large" aria-hidden="true"></i>
+            {{ 'q.rec.viewMode.cards' | t }}
+          </button>
+          <button
+            type="button"
+            class="rec-view-toggle__btn"
+            [class.is-active]="viewMode() === 'table'"
+            (click)="setViewMode('table')"
+          >
+            <i class="pi pi-table" aria-hidden="true"></i>
+            {{ 'q.rec.viewMode.table' | t }}
+          </button>
+        </div>
+      </div>
+
+      @if (totalCount() === 0) {
+        <p class="rec-empty-block">{{ 'q.init.empty' | t }}</p>
+      } @else if (viewMode() === 'cards') {
+        <div class="apl-grid" role="list">
+          @for (r of items(); track r.id) {
+            <a
+              [routerLink]="['/initiatives', r.id]"
+              [class]="'apl-card apl-card--init apl-card--' + statusVariant(r)"
+              role="listitem"
+            >
+              <div class="apl-card__ribbon" aria-hidden="true"></div>
+              <div class="apl-card__glow" aria-hidden="true"></div>
+
+              <header class="apl-card__head">
+                <div class="apl-card__badge apl-card__badge--init" aria-hidden="true">
+                  <i class="pi pi-bolt"></i>
+                </div>
+                <span [class]="'apl-chip apl-chip--' + statusVariant(r)">
+                  <span class="apl-chip__dot" aria-hidden="true"></span>
+                  {{ statusKey(r) | t }}
+                </span>
+              </header>
+
+              <h2 class="apl-card__title" [title]="titleOf(r)">{{ titleOf(r) }}</h2>
+
+              <div class="apl-card__plan" [title]="planTitleOf(r)">
+                <i class="pi pi-folder" aria-hidden="true"></i>
+                <span>{{ planTitleOf(r) }}</span>
+              </div>
+
+              <div class="apl-card__owner">
+                <span class="apl-avatar" aria-hidden="true">
+                  @if (ownerInitial(r); as i) {
+                    {{ i }}
+                  } @else {
+                    <i class="pi pi-user"></i>
+                  }
+                </span>
+                <span class="apl-card__owner-text">{{ r.ownerDisplayName || '—' }}</span>
+              </div>
+
+              <div [class]="'apl-target ' + targetToneClass(r)">
+                <i class="pi pi-calendar-clock" aria-hidden="true"></i>
+                <div class="apl-target__body">
+                  <span class="apl-target__text">{{ targetText(r) }}</span>
+                  @if (r.targetDateUtc) {
+                    <span class="apl-target__date">
+                      {{ r.targetDateUtc | date: 'mediumDate' : undefined : dateLocale() }}
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <footer class="apl-card__foot">
+                <span class="apl-card__cta">
+                  <span>{{ 'q.init.open' | t }}</span>
+                  <i class="pi pi-arrow-right" aria-hidden="true"></i>
+                </span>
+              </footer>
+            </a>
+          }
+        </div>
+      } @else {
+        <section class="card rec-table-card" aria-labelledby="init-table-heading">
+          <header class="rec-table-card__head">
+            <h2 id="init-table-heading" class="rec-table-card__title">
+              <i class="pi pi-bolt" aria-hidden="true"></i>
+              {{ 'q.init.tableHeading' | t }}
+            </h2>
+          </header>
+          <div class="rec-table-scroll">
+            <table class="data-table rec-data-table">
+              <thead>
+                <tr>
+                  <th scope="col">{{ 'q.rec.table.title' | t }}</th>
+                  <th scope="col">{{ 'q.init.tablePlan' | t }}</th>
+                  <th scope="col">{{ 'q.rec.table.assignee' | t }}</th>
+                  <th scope="col">{{ 'common.status' | t }}</th>
+                  <th scope="col">{{ 'q.plans.targetDate' | t }}</th>
+                  <th scope="col" class="rec-col-actions">{{ 'q.rec.table.actions' | t }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (r of items(); track r.id) {
+                  <tr>
+                    <td class="rec-cell-title">
+                      <span class="rec-title-text">{{ titleOf(r) }}</span>
+                    </td>
+                    <td>
+                      <a [routerLink]="['/action-plans', r.actionPlanId]" class="init-table-plan-link">{{ planTitleOf(r) }}</a>
+                    </td>
+                    <td>{{ r.ownerDisplayName || '—' }}</td>
+                    <td>
+                      <span [class]="'rec-status rec-status--' + statusVariant(r)">{{ statusKey(r) | t }}</span>
+                    </td>
+                    <td class="rec-cell-date">
+                      @if (r.targetDateUtc) {
+                        {{ r.targetDateUtc | date: 'mediumDate' : undefined : dateLocale() }}
+                      } @else {
+                        —
+                      }
+                    </td>
+                    <td class="rec-cell-actions">
+                      <a
+                        [routerLink]="['/initiatives', r.id]"
+                        class="rec-row-btn rec-row-btn--details"
+                        [title]="'q.init.open' | t"
+                      >
+                        <i class="pi pi-arrow-right" aria-hidden="true"></i>
+                      </a>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="rec-empty">{{ 'q.init.empty' | t }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+
+      @if (totalCount() > 0) {
+        <nav class="rec-pagination" [attr.aria-label]="'q.rec.pagination.aria' | t">
+          <div class="rec-pagination__size">
+            <label for="init-page-size">{{ 'q.rec.pageSize' | t }}</label>
+            <select id="init-page-size" [ngModel]="pageSize()" (ngModelChange)="setPageSize(+$event)">
+              <option [ngValue]="12">12</option>
+              <option [ngValue]="24">24</option>
+              <option [ngValue]="48">48</option>
+            </select>
+          </div>
+          <div class="rec-pagination__nav">
+            <button type="button" class="rec-pagination__btn" [disabled]="page() <= 1" (click)="goPrevPage()">
+              {{ 'common.previous' | t }}
+            </button>
+            <span class="rec-pagination__info">
+              {{ 'common.page' | t }} {{ page() }} / {{ totalPages() }}
+              <span class="rec-pagination__total rec-pagination__meta-sub">({{ totalCount() }})</span>
+            </span>
+            <button type="button" class="rec-pagination__btn" [disabled]="page() >= totalPages()" (click)="goNextPage()">
+              {{ 'common.next' | t }}
+            </button>
+          </div>
+        </nav>
+      }
+    }
+  </div>
+</div>

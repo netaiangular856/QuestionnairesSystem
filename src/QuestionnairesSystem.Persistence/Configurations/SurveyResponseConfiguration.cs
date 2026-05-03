@@ -17,6 +17,10 @@ public sealed class SurveyResponseConfiguration : IEntityTypeConfiguration<Surve
         builder.HasIndex(x => x.RespondentUserId);
         builder.HasIndex(x => x.Status);
 
+        /* Analytics filters: Status + SubmittedAtUtc (+ SurveyId for scoped reports) */
+        builder.HasIndex(e => new { e.Status, e.SubmittedAtUtc });
+        builder.HasIndex(e => new { e.SurveyId, e.Status, e.SubmittedAtUtc });
+
         builder.HasOne(x => x.Survey)
             .WithMany(x => x.Responses)
             .HasForeignKey(x => x.SurveyId)

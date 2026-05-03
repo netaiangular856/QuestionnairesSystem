@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using QuestionnairesSystem.Application.Common;
+using QuestionnairesSystem.Shared.Api;
 using QuestionnairesSystem.Application.Features.Questionnaires.Recommendations.DTOs;
 using QuestionnairesSystem.Application.Features.Questionnaires.Recommendations.Interfaces;
 using QuestionnairesSystem.Domain.Enums;
@@ -55,15 +56,28 @@ public sealed class RecommendationCrudService : IRecommendationCrudService
         return Result<RecommendationDto>.Ok(created);
     }
 
-    public async Task<Result<IReadOnlyList<RecommendationDto>>> ListAsync(CancellationToken cancellationToken = default)
+    public async Task<Result<PagedResult<RecommendationDto>>> ListPagedAsync(int page, int pageSize, CancellationToken cancellationToken = default)
     {
-        var list = await SelectRecommendationDto(
-                _db.Recommendations.AsNoTracking()
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var baseQuery = _db.Recommendations.AsNoTracking();
+        var totalCount = await baseQuery.CountAsync(cancellationToken).ConfigureAwait(false);
+        var items = await SelectRecommendationDto(
+                baseQuery
                     .OrderByDescending(r => r.Priority)
-                    .ThenBy(r => r.TitleEn))
+                    .ThenBy(r => r.TitleEn)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-        return Result<IReadOnlyList<RecommendationDto>>.Ok(list);
+        var paged = new PagedResult<RecommendationDto>
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+        };
+        return Result<PagedResult<RecommendationDto>>.Ok(paged);
     }
 
     public async Task<Result<RecommendationDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)

@@ -1,0 +1,443 @@
+<div class="page-workspace recommendations-page initiatives-page init-detail-page">
+  <div class="rec-page">
+    <section class="rec-hero init-detail__hero" aria-labelledby="init-detail-page-title">
+      <div class="rec-hero__left">
+        <div class="rec-hero__icon" aria-hidden="true"><i class="pi pi-bolt"></i></div>
+        <div class="rec-hero__body">
+          <p class="init-detail__crumbs muted">
+            <a routerLink="/initiatives">{{ 'nav.initiatives' | t }}</a>
+            <span aria-hidden="true"> · </span>
+            <a routerLink="/action-plans">{{ 'nav.actionPlans' | t }}</a>
+            @if (actionPlanId) {
+              <span aria-hidden="true"> · </span>
+              <a [routerLink]="['/action-plans', actionPlanId]">{{ planHeadline || ('nav.actionPlans' | t) }}</a>
+            }
+          </p>
+          @if (!detailBusy() && !loadFailed()) {
+            <p class="rec-hero__kicker">{{ 'q.init.heroKicker' | t }}</p>
+            <h1 id="init-detail-page-title" class="rec-hero__title">{{ headline() }}</h1>
+            <p class="rec-hero__lead init-detail__hero-lead">
+              <span [class]="'init-chip init-chip--hero init-chip--' + statusVariant()">
+                <span class="init-chip__dot" aria-hidden="true"></span>
+                {{ statusLabel() | t }}
+              </span>
+            </p>
+          } @else if (!loadFailed()) {
+            <p class="rec-hero__kicker">{{ 'common.loading' | t }}</p>
+            <h1 id="init-detail-page-title" class="rec-hero__title">{{ 'common.loading' | t }}</h1>
+          } @else {
+            <p class="rec-hero__kicker">{{ 'q.initiative.loadError' | t }}</p>
+            <h1 id="init-detail-page-title" class="rec-hero__title">{{ 'q.initiative.loadError' | t }}</h1>
+          }
+        </div>
+      </div>
+      @if (!detailBusy() && !loadFailed() && canManage()) {
+        <div class="rec-hero__cta">
+          <button type="button" class="btn-primary rec-hero__add rec-hero__add--compact" (click)="openEditModal()">
+            <i class="pi pi-pencil" aria-hidden="true"></i>
+            {{ 'common.edit' | t }}
+          </button>
+        </div>
+      }
+    </section>
+
+    @if (detailBusy()) {
+      <div class="card rec-panel rec-panel--muted">
+        <div class="rec-loading">
+          <span class="rec-loading__dot" aria-hidden="true"></span>
+          {{ 'common.loading' | t }}
+        </div>
+      </div>
+    } @else if (loadFailed()) {
+      <div class="card rec-panel rec-panel--error">
+        <p class="rec-panel__msg"><i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ 'q.initiative.loadError' | t }}</p>
+      </div>
+    } @else {
+      <!-- ============ DETAILS CARD ============ -->
+      <section [class]="'card init-hero init-hero--' + statusVariant()" aria-labelledby="init-detail-h">
+        <div class="init-hero__ribbon" aria-hidden="true"></div>
+        <div class="init-hero__glow" aria-hidden="true"></div>
+
+        <header class="init-hero__head">
+          <div class="init-hero__head-left">
+            <span [class]="'init-chip init-chip--' + statusVariant()">
+              <span class="init-chip__dot" aria-hidden="true"></span>
+              {{ statusLabel() | t }}
+            </span>
+            <h2 id="init-detail-h" class="init-hero__title init-hero__title--section">{{ 'q.initiative.detailsSection' | t }}</h2>
+          </div>
+        </header>
+
+        <div class="init-hero__grid">
+          <div class="init-hero__desc">
+            <h3 class="init-section-h">{{ 'q.initiative.descriptionSection' | t }}</h3>
+            @if (descDisplay()) {
+              <p class="init-hero__desc-text">{{ descDisplay() }}</p>
+            } @else {
+              <p class="init-hero__desc-text muted">{{ 'q.initiative.noDescription' | t }}</p>
+            }
+          </div>
+
+          <aside class="init-hero__meta">
+            <div class="init-meta-item">
+              <span class="init-meta-item__lbl">
+                <i class="pi pi-folder" aria-hidden="true"></i>
+                {{ 'q.init.tablePlan' | t }}
+              </span>
+              @if (actionPlanId) {
+                <a [routerLink]="['/action-plans', actionPlanId]" class="init-meta-item__val init-meta-item__val--link">
+                  {{ planHeadline || ('nav.actionPlans' | t) }}
+                </a>
+              } @else {
+                <span class="init-meta-item__val">—</span>
+              }
+            </div>
+
+            <div class="init-meta-item">
+              <span class="init-meta-item__lbl">
+                <i class="pi pi-user" aria-hidden="true"></i>
+                {{ 'q.initiative.owner' | t }}
+              </span>
+              <span class="init-meta-item__val init-meta-item__val--owner">
+                @if (ownerDisplayName()) {
+                  <span class="init-owner-chip">
+                    <span class="init-owner-chip__avatar" aria-hidden="true">
+                      @if (ownerInitial(); as i) {
+                        {{ i }}
+                      } @else {
+                        <i class="pi pi-user"></i>
+                      }
+                    </span>
+                    <span>{{ ownerDisplayName() }}</span>
+                  </span>
+                } @else {
+                  <span class="muted">—</span>
+                }
+              </span>
+            </div>
+
+            <div class="init-meta-item">
+              <span class="init-meta-item__lbl">
+                <i class="pi pi-flag" aria-hidden="true"></i>
+                {{ 'q.plans.targetDate' | t }}
+              </span>
+              @if (targetDate) {
+                <span class="init-meta-item__val">
+                  {{ targetDate }}
+                  @if (daysToTarget() !== null) {
+                    <span
+                      class="init-target-pill"
+                      [class.init-target-pill--overdue]="(daysToTarget() ?? 0) < 0"
+                      [class.init-target-pill--soon]="(daysToTarget() ?? 0) >= 0 && (daysToTarget() ?? 0) <= 7"
+                      [class.init-target-pill--ok]="(daysToTarget() ?? 0) > 7"
+                    >
+                      @if ((daysToTarget() ?? 0) < 0) {
+                        −{{ -(daysToTarget() ?? 0) }}d
+                      } @else if ((daysToTarget() ?? 0) === 0) {
+                        • today
+                      } @else {
+                        +{{ daysToTarget() }}d
+                      }
+                    </span>
+                  }
+                </span>
+              } @else {
+                <span class="init-meta-item__val muted">—</span>
+              }
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============ PROGRESS HERO ============ -->
+      <div class="init-progress-grid">
+        <section class="card init-progress-hero">
+          <header class="init-progress-hero__head">
+            <div>
+              <p class="init-section-kicker">{{ 'q.initiative.progressHeroTitle' | t }}</p>
+              <h2 class="init-progress-hero__title">{{ 'q.initiative.progressSection' | t }}</h2>
+            </div>
+            @if (canManage()) {
+              <button type="button" class="btn-primary init-progress-hero__add" (click)="openProgressModal()">
+                <i class="pi pi-plus" aria-hidden="true"></i>
+                {{ 'q.initiative.addProgress' | t }}
+              </button>
+            }
+          </header>
+
+          <div class="init-progress-hero__body">
+            <div class="init-ring-wrap">
+              <svg class="init-ring" viewBox="0 0 120 120" role="img" [attr.aria-label]="'q.initiative.latestProgress' | t">
+                <defs>
+                  <linearGradient id="initRingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="var(--init-ring-start)" />
+                    <stop offset="100%" stop-color="var(--init-ring-end)" />
+                  </linearGradient>
+                </defs>
+                <circle class="init-ring__track" cx="60" cy="60" r="52" fill="none" stroke-width="10" />
+                <circle
+                  class="init-ring__fill"
+                  cx="60"
+                  cy="60"
+                  r="52"
+                  fill="none"
+                  stroke-width="10"
+                  stroke-linecap="round"
+                  transform="rotate(-90 60 60)"
+                  [attr.stroke-dasharray]="ringCircumference"
+                  [attr.stroke-dashoffset]="ringDashOffset(latestProgressPercent())"
+                />
+              </svg>
+              <div class="init-ring__label">
+                @if (latestProgressPercent() !== null) {
+                  <span class="init-ring__pct">{{ latestProgressPercent() }}<small>%</small></span>
+                  <span class="init-ring__sub">{{ 'q.initiative.latestProgress' | t }}</span>
+                } @else {
+                  <span class="init-ring__pct init-ring__pct--none">—</span>
+                  <span class="init-ring__sub">{{ 'q.initiative.noProgressYet' | t }}</span>
+                }
+              </div>
+            </div>
+
+            <div class="init-stats">
+              <div class="init-stat">
+                <span class="init-stat__icon" aria-hidden="true"><i class="pi pi-list"></i></span>
+                <div>
+                  <span class="init-stat__val">{{ progressRows().length }}</span>
+                  <span class="init-stat__lbl">{{ 'q.initiative.entriesCount' | t }}</span>
+                </div>
+              </div>
+              <div class="init-stat">
+                <span class="init-stat__icon" aria-hidden="true"><i class="pi pi-clock"></i></span>
+                <div>
+                  @if (lastUpdateIso()) {
+                    <span class="init-stat__val">{{ lastUpdateIso() | date: 'mediumDate' : undefined : dateLocale() }}</span>
+                  } @else {
+                    <span class="init-stat__val muted">—</span>
+                  }
+                  <span class="init-stat__lbl">{{ 'q.initiative.lastUpdate' | t }}</span>
+                </div>
+              </div>
+              <div class="init-stat">
+                <span class="init-stat__icon" aria-hidden="true">
+                  @if ((progressDelta() ?? 0) > 0) {
+                    <i class="pi pi-arrow-up"></i>
+                  } @else if ((progressDelta() ?? 0) < 0) {
+                    <i class="pi pi-arrow-down"></i>
+                  } @else {
+                    <i class="pi pi-minus"></i>
+                  }
+                </span>
+                <div>
+                  @if (progressDelta() !== null) {
+                    <span
+                      class="init-stat__val"
+                      [class.init-stat__val--up]="(progressDelta() ?? 0) > 0"
+                      [class.init-stat__val--down]="(progressDelta() ?? 0) < 0"
+                    >
+                      {{ (progressDelta() ?? 0) > 0 ? '+' : '' }}{{ progressDelta() }}%
+                    </span>
+                  } @else {
+                    <span class="init-stat__val muted">—</span>
+                  }
+                  <span class="init-stat__lbl">{{ 'q.initiative.trend' | t }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card init-timeline-card">
+          <header class="init-timeline-card__head">
+            <div class="init-timeline-card__titles">
+              <p class="init-section-kicker init-section-kicker--inline">{{ 'q.initiative.progressHeroTitle' | t }}</p>
+              <h2 class="init-section-h">{{ 'q.initiative.progressSection' | t }}</h2>
+            </div>
+            <span class="init-timeline-card__count">{{ progressRows().length }}</span>
+          </header>
+          @if (sortedProgress().length === 0) {
+            <div class="init-empty">
+              <i class="pi pi-inbox" aria-hidden="true"></i>
+              <p>{{ 'q.initiative.noProgressYet' | t }}</p>
+            </div>
+          } @else {
+            <ol class="init-timeline">
+              @for (row of sortedProgress(); track row.id) {
+                <li class="init-timeline__row">
+                  <span class="init-timeline__dot" aria-hidden="true">
+                    @if (row.progressPercent != null) {
+                      <span class="init-timeline__dot-pct">{{ row.progressPercent }}</span>
+                    } @else {
+                      <i class="pi pi-circle-fill"></i>
+                    }
+                  </span>
+                  <div class="init-timeline__card">
+                    <header class="init-timeline__head">
+                      <time class="init-timeline__date" [attr.datetime]="row.recordedAtUtc">
+                        {{ row.recordedAtUtc | date: 'medium' : undefined : dateLocale() }}
+                      </time>
+                      @if (row.recordedByDisplayName) {
+                        <span class="init-timeline__author">
+                          <i class="pi pi-user" aria-hidden="true"></i>
+                          {{ row.recordedByDisplayName }}
+                        </span>
+                      }
+                    </header>
+                    @if (row.progressPercent != null) {
+                      <div class="init-timeline__bar" [attr.aria-label]="row.progressPercent + '%'">
+                        <span class="init-timeline__bar-fill" [style.width.%]="row.progressPercent"></span>
+                      </div>
+                    }
+                    @if (row.notes) {
+                      <p class="init-timeline__notes">{{ row.notes }}</p>
+                    }
+                  </div>
+                </li>
+              }
+            </ol>
+          }
+        </section>
+      </div>
+
+      <!-- ============ EDIT MODAL ============ -->
+      @if (editModalOpen() && canManage()) {
+        <div class="modal-backdrop" (click)="!saveBusy() && closeEditModal()"></div>
+        <div
+          class="rec-modal-panel rec-modal-panel--wide card init-modal init-modal--edit"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="init-edit-title"
+        >
+          <header class="rec-modal-panel__head">
+            <h2 id="init-edit-title">{{ 'q.initiative.editModalTitle' | t }}</h2>
+            <button type="button" class="rec-modal-panel__close" [disabled]="saveBusy()" (click)="closeEditModal()">
+              {{ 'common.close' | t }}
+            </button>
+          </header>
+          <div class="rec-modal-panel__body">
+            <div class="stack-form init-modal-form">
+              <div class="stack-form__grid">
+                <label class="stack-form__field">
+                  <span>{{ 'q.plans.titleAr' | t }}</span>
+                  <input type="text" [(ngModel)]="titleAr" name="titleAr" maxlength="500" autocomplete="off" />
+                </label>
+                <label class="stack-form__field">
+                  <span>{{ 'q.plans.titleEn' | t }}</span>
+                  <input type="text" [(ngModel)]="titleEn" name="titleEn" maxlength="500" autocomplete="off" />
+                </label>
+              </div>
+              <label class="stack-form__field">
+                <span>{{ 'q.initiative.descAr' | t }}</span>
+                <textarea [(ngModel)]="descriptionAr" name="descriptionAr" rows="3" maxlength="4000"></textarea>
+              </label>
+              <label class="stack-form__field">
+                <span>{{ 'q.initiative.descEn' | t }}</span>
+                <textarea [(ngModel)]="descriptionEn" name="descriptionEn" rows="3" maxlength="4000"></textarea>
+              </label>
+              <div class="stack-form__grid">
+                <label class="stack-form__field">
+                  <span>{{ 'q.initiative.status' | t }}</span>
+                  <select [(ngModel)]="status" name="status">
+                    <option [ngValue]="InitiativeStatus.Planned">{{ 'q.initiativeStatus.planned' | t }}</option>
+                    <option [ngValue]="InitiativeStatus.InProgress">{{ 'q.initiativeStatus.inProgress' | t }}</option>
+                    <option [ngValue]="InitiativeStatus.Completed">{{ 'q.initiativeStatus.completed' | t }}</option>
+                    <option [ngValue]="InitiativeStatus.AtRisk">{{ 'q.initiativeStatus.atRisk' | t }}</option>
+                    <option [ngValue]="InitiativeStatus.Cancelled">{{ 'q.initiativeStatus.cancelled' | t }}</option>
+                  </select>
+                </label>
+                <label class="stack-form__field">
+                  <span>{{ 'q.initiative.owner' | t }}</span>
+                  <select [(ngModel)]="ownerUserId" name="ownerUserId">
+                    <option [ngValue]="null">{{ 'q.initiative.ownerNone' | t }}</option>
+                    @for (u of users(); track u.id) {
+                      <option [ngValue]="u.id">{{ userLabel(u) }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+              <label class="stack-form__field">
+                <span>{{ 'q.plans.targetDate' | t }}</span>
+                <input type="date" [(ngModel)]="targetDate" name="targetDate" />
+              </label>
+            </div>
+          </div>
+          <footer class="rec-modal-panel__foot">
+            <button type="button" class="btn-ghost" [disabled]="saveBusy()" (click)="closeEditModal()">
+              {{ 'common.cancel' | t }}
+            </button>
+            <button type="button" class="btn-primary" [disabled]="saveBusy()" (click)="save()">
+              @if (saveBusy()) {
+                {{ 'common.loading' | t }}
+              } @else {
+                {{ 'q.initiative.save' | t }}
+              }
+            </button>
+          </footer>
+        </div>
+      }
+
+      <!-- ============ ADD PROGRESS MODAL ============ -->
+      @if (progressModalOpen() && canManage()) {
+        <div class="modal-backdrop" (click)="!progressBusy() && closeProgressModal()"></div>
+        <div class="rec-modal-panel card init-modal init-modal--progress" role="dialog" aria-modal="true" aria-labelledby="init-progress-title">
+          <header class="rec-modal-panel__head">
+            <h2 id="init-progress-title">{{ 'q.initiative.progressModalTitle' | t }}</h2>
+            <button type="button" class="rec-modal-panel__close" [disabled]="progressBusy()" (click)="closeProgressModal()">
+              {{ 'common.close' | t }}
+            </button>
+          </header>
+          <div class="rec-modal-panel__body">
+            <div class="stack-form init-modal-form">
+              <label class="stack-form__field">
+                <span>{{ 'q.initiative.percent' | t }}</span>
+                <div class="init-pct-input">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    [(ngModel)]="progressPercent"
+                    name="progressPercentRange"
+                    class="init-pct-input__range"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    [(ngModel)]="progressPercent"
+                    name="progressPercent"
+                    class="init-pct-input__num"
+                  />
+                  <span class="init-pct-input__suffix">%</span>
+                </div>
+              </label>
+              <label class="stack-form__field">
+                <span>{{ 'q.initiative.notes' | t }}</span>
+                <textarea
+                  [(ngModel)]="progressNotes"
+                  name="progressNotes"
+                  rows="3"
+                  maxlength="4000"
+                  autocomplete="off"
+                ></textarea>
+              </label>
+            </div>
+          </div>
+          <footer class="rec-modal-panel__foot">
+            <button type="button" class="btn-ghost" [disabled]="progressBusy()" (click)="closeProgressModal()">
+              {{ 'common.cancel' | t }}
+            </button>
+            <button type="button" class="btn-primary" [disabled]="progressBusy()" (click)="submitProgress()">
+              @if (progressBusy()) {
+                {{ 'common.loading' | t }}
+              } @else {
+                {{ 'q.initiative.submitProgress' | t }}
+              }
+            </button>
+          </footer>
+        </div>
+      }
+    }
+  </div>
+</div>

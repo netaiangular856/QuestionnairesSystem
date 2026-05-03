@@ -129,6 +129,289 @@
   color: #9a3412;
 }
 
+.analytics-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.analytics-kpi {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-card);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.analytics-kpi__label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #78716c;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.analytics-kpi__value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+}
+
+.analytics-kpi__hint {
+  font-size: 0.7rem;
+  line-height: 1.35;
+  margin-top: 0.15rem;
+}
+
+.analytics-invited-line {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+}
+
+/* Stack blocks vertically so the activity chart never sits beside a tall list
+   (that layout left a huge empty band under the chart in the same grid row). */
+.analytics-insight-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.analytics-insight-card {
+  padding: 1rem 1.1rem;
+}
+
+.analytics-insight-card > .analytics-chart-card__title {
+  margin-bottom: 0.5rem;
+}
+
+/* Time-series activity: line + area (not column bars) */
+.analytics-timeline-line-wrap {
+  width: 100%;
+}
+
+.analytics-timeline-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 6.5rem;
+  min-height: 0;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(238, 242, 255, 0.35) 0%, var(--color-card) 55%);
+  border: 1px solid var(--color-border);
+}
+
+.analytics-timeline-dot {
+  pointer-events: auto;
+}
+
+.analytics-timeline-axis {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-top: 0.3rem;
+  padding: 0 0.15rem;
+}
+
+.analytics-timeline-axis__tick {
+  font-size: 0.72rem;
+  color: #78716c;
+  white-space: nowrap;
+}
+
+.analytics-topq {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.analytics-topq__item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.analytics-topq__item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.analytics-topq__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.analytics-topq__title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.analytics-topq__type {
+  font-size: 0.75rem;
+}
+
+.analytics-topq__nums {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  flex-shrink: 0;
+}
+
+.analytics-topq__count {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #4338ca;
+}
+
+.analytics-topq__share {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.analytics-topq__meter {
+  width: 100%;
+  height: 0.28rem;
+  margin-top: 0.35rem;
+  border-radius: 3px;
+  background: #e7e5e4;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.analytics-topq__meter-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #4f46e5, #818cf8);
+  transition: width 0.2s ease;
+}
+
+.analytics-mix-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+
+.analytics-mix-pair .analytics-mix-card {
+  margin-bottom: 0;
+}
+
+.analytics-focus-card {
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.analytics-focus-card__lead {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.analytics-mix-card {
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.analytics-type-mix,
+.analytics-rating-mix {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.analytics-type-mix__row {
+  display: grid;
+  grid-template-columns: minmax(4rem, 1.1fr) minmax(5rem, 3fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.86rem;
+}
+
+.analytics-type-mix__label {
+  font-weight: 600;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.analytics-type-mix__track {
+  height: 0.55rem;
+  border-radius: 4px;
+  background: #e7e5e4;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.analytics-type-mix__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0f766e, #2dd4bf);
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
+
+.analytics-type-mix__pct {
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #44403c;
+  white-space: nowrap;
+}
+
+.analytics-rating-mix__row {
+  display: grid;
+  grid-template-columns: 2rem minmax(5rem, 3fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.86rem;
+}
+
+.analytics-rating-mix__label {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.analytics-rating-mix__track {
+  height: 0.55rem;
+  border-radius: 4px;
+  background: #e7e5e4;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.analytics-rating-mix__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4f46e5, #818cf8);
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
+
+.analytics-rating-mix__meta {
+  font-size: 0.76rem;
+  color: #57534e;
+  white-space: nowrap;
+}
+
 .analytics-chart-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -426,6 +709,14 @@
   box-shadow: var(--shadow-lg);
 }
 
+.modal-panel--wide {
+  width: min(720px, 94vw);
+}
+
+.modal-panel__body--form {
+  padding: 1rem 1.15rem 1.25rem;
+}
+
 .modal-panel__head {
   display: flex;
   align-items: center;
@@ -699,6 +990,25 @@
   z-index: 1;
 }
 
+.survey-detail-hero__top--stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.85rem;
+}
+
+.survey-detail-hero__top--stacked .survey-detail-hero__lead {
+  flex: none;
+}
+
+.survey-detail-hero__toolbar--full {
+  width: 100%;
+}
+
+.survey-detail-hero__top--stacked .survey-detail-hero__actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
 .survey-detail-hero__lead {
   flex: 1 1 240px;
   min-width: 0;
@@ -782,6 +1092,13 @@
   cursor: pointer;
 }
 
+.survey-detail-page .survey-detail-hero__toolbar .detail-actions--compact .action-btn {
+  min-height: 2rem;
+  padding: 0.32rem 0.75rem;
+  font-size: 0.8125rem;
+  gap: 0.35rem;
+}
+
 .survey-detail-page .survey-detail-hero__toolbar .action-btn:hover:not(:disabled),
 .survey-detail-page .survey-detail-workflow .action-btn:hover:not(:disabled) {
   transform: translateY(-1px);
@@ -821,6 +1138,21 @@
 }
 .survey-detail-page .survey-detail-hero__toolbar .action-btn--ghost:hover {
   background: #f1f5f9;
+}
+
+/* Recommendations CTA (hero toolbar) */
+.survey-detail-page .survey-detail-hero__toolbar .action-btn--primary {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent-strong);
+}
+
+.survey-detail-page .survey-detail-hero__toolbar .action-btn--primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.survey-detail-page .survey-detail-hero__toolbar a.action-btn {
+  text-decoration: none;
 }
 
 /* Delete: Subtle Rose */

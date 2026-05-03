@@ -8,6 +8,8 @@ public sealed class InitiativeDto
     public Guid ActionPlanId { get; init; }
     public string TitleAr { get; init; } = string.Empty;
     public string TitleEn { get; init; } = string.Empty;
+    public string? DescriptionAr { get; init; }
+    public string? DescriptionEn { get; init; }
     public InitiativeStatus Status { get; init; }
     public Guid? OwnerUserId { get; init; }
 

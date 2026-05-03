@@ -1,0 +1,318 @@
+<div class="page-workspace recommendations-page action-plans-page apl-detail-page">
+  <div class="rec-page">
+    <section class="rec-hero apl-detail__hero" aria-labelledby="apl-detail-title">
+      <div class="rec-hero__left">
+        <div class="rec-hero__icon" aria-hidden="true"><i class="pi pi-sitemap"></i></div>
+        <div class="rec-hero__body">
+          <p class="apl-detail__crumbs muted">
+            <a routerLink="/initiatives">{{ 'nav.initiatives' | t }}</a>
+            <span aria-hidden="true"> · </span>
+            <a routerLink="/action-plans">{{ 'nav.actionPlans' | t }}</a>
+          </p>
+          @if (loadFailed()) {
+            <p class="rec-hero__kicker">{{ 'q.plans.heroKicker' | t }}</p>
+            <h1 id="apl-detail-title" class="rec-hero__title">{{ 'q.plans.loadError' | t }}</h1>
+          } @else if (detailBusy()) {
+            <p class="rec-hero__kicker">{{ 'common.loading' | t }}</p>
+            <h1 id="apl-detail-title" class="rec-hero__title">{{ 'common.loading' | t }}</h1>
+          } @else {
+            <p class="rec-hero__kicker">{{ 'q.plans.heroKicker' | t }}</p>
+            <h1 id="apl-detail-title" class="rec-hero__title">{{ headline() }}</h1>
+            <p class="rec-hero__lead apl-detail__hero-meta">
+              <span class="apl-detail__badge">{{ planStatusLabel() | t }}</span>
+            </p>
+          }
+        </div>
+      </div>
+      @if (!detailBusy() && !loadFailed() && canManage()) {
+        <div class="rec-hero__cta">
+          <button type="button" class="btn-primary rec-hero__add rec-hero__add--compact" (click)="openEditPlanModal()">
+            <i class="pi pi-pencil" aria-hidden="true"></i>
+            {{ 'common.edit' | t }}
+          </button>
+        </div>
+      }
+    </section>
+
+    @if (detailBusy()) {
+      <div class="card rec-panel rec-panel--muted">
+        <div class="rec-loading">
+          <span class="rec-loading__dot" aria-hidden="true"></span>
+          {{ 'common.loading' | t }}
+        </div>
+      </div>
+    } @else if (loadFailed()) {
+      <div class="card rec-panel rec-panel--error">
+        <p class="rec-panel__msg"><i class="pi pi-exclamation-circle" aria-hidden="true"></i> {{ 'q.plans.loadError' | t }}</p>
+      </div>
+    } @else {
+      <div class="apl-detail__grid">
+      <section class="card apl-detail__summary">
+        <h2 class="apl-detail__card-title">
+          <span class="apl-detail__title-icon" aria-hidden="true"><i class="pi pi-th-large"></i></span>
+          <span class="apl-detail__title-text">{{ 'q.plans.detailSection' | t }}</span>
+        </h2>
+        <div class="rec-detail-kv apl-detail__kv">
+          <div class="rec-detail-kv__row">
+            <span class="rec-detail-kv__k">{{ 'q.plans.titleAr' | t }}</span>
+            <span class="rec-detail-kv__v">{{ (titleAr ?? '').trim() || '—' }}</span>
+          </div>
+          <div class="rec-detail-kv__row">
+            <span class="rec-detail-kv__k">{{ 'q.plans.titleEn' | t }}</span>
+            <span class="rec-detail-kv__v">{{ (titleEn ?? '').trim() || '—' }}</span>
+          </div>
+          @if ((descriptionAr ?? '').trim()) {
+            <div class="rec-detail-kv__row rec-detail-kv__row--block">
+              <span class="rec-detail-kv__k">{{ 'q.plans.descAr' | t }}</span>
+              <span class="rec-detail-kv__v rec-detail-kv__v--multiline">{{ descriptionAr }}</span>
+            </div>
+          }
+          @if ((descriptionEn ?? '').trim()) {
+            <div class="rec-detail-kv__row rec-detail-kv__row--block">
+              <span class="rec-detail-kv__k">{{ 'q.plans.descEn' | t }}</span>
+              <span class="rec-detail-kv__v rec-detail-kv__v--multiline">{{ descriptionEn }}</span>
+            </div>
+          }
+          <div class="rec-detail-kv__row">
+            <span class="rec-detail-kv__k">{{ 'q.plans.survey' | t }}</span>
+            <span class="rec-detail-kv__v">{{ surveyDisplay() }}</span>
+          </div>
+          <div class="rec-detail-kv__row">
+            <span class="rec-detail-kv__k">{{ 'q.plans.owner' | t }}</span>
+            <span class="rec-detail-kv__v">{{ ownerDisplay() }}</span>
+          </div>
+          <div class="rec-detail-kv__row">
+            <span class="rec-detail-kv__k">{{ 'common.status' | t }}</span>
+            <span class="rec-detail-kv__v">{{ planStatusLabel() | t }}</span>
+          </div>
+          <div class="rec-detail-kv__row">
+            <span class="rec-detail-kv__k">{{ 'q.plans.period' | t }}</span>
+            <span class="rec-detail-kv__v">
+              {{ dateLabel(startDate) }}
+              <span class="apl-detail__dash" aria-hidden="true"> — </span>
+              {{ dateLabel(endDate) }}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card apl-detail__initiatives">
+        <div class="apl-detail__section-head">
+          <h2 class="apl-detail__card-title apl-detail__card-title--inline">
+            <span class="apl-detail__title-icon apl-detail__title-icon--indigo" aria-hidden="true"><i class="pi pi-flag"></i></span>
+            <span class="apl-detail__title-text">{{ 'q.plans.initiatives' | t }}</span>
+          </h2>
+          @if (canManage()) {
+            <button type="button" class="btn-primary apl-detail__toolbar-btn" (click)="openAddInitModal()">
+              <i class="pi pi-plus" aria-hidden="true"></i>
+              {{ 'q.plans.addInitiative' | t }}
+            </button>
+          }
+        </div>
+        @if (initiatives().length === 0) {
+          <p class="muted apl-detail__empty">{{ 'q.plans.noInitiatives' | t }}</p>
+        }
+        <ul class="plan-detail__init-list">
+          @for (i of initiatives(); track i.id) {
+            <li>
+              <a [routerLink]="['/initiatives', i.id]" class="plan-detail__init-link">
+                <span class="plan-detail__init-title">{{ initiativeTitle(i) }}</span>
+                <span class="plan-detail__init-meta">{{ initiativeStatusKey(i) | t }}</span>
+                @if (i.targetDateUtc) {
+                  <span class="plan-detail__init-meta">{{ i.targetDateUtc | date: 'mediumDate' }}</span>
+                }
+              </a>
+            </li>
+          }
+        </ul>
+      </section>
+      </div>
+    }
+
+    @if (editPlanModalOpen()) {
+      <div class="modal-backdrop" (click)="!saveBusy() && closeEditPlanModal()"></div>
+      <div class="rec-modal-panel rec-modal-panel--wide card apl-detail__modal" role="dialog" aria-modal="true" aria-labelledby="apl-edit-modal-title">
+        <header class="rec-modal-panel__head">
+          <h2 id="apl-edit-modal-title">{{ 'q.plans.editModalTitle' | t }}</h2>
+          <button type="button" class="rec-modal-panel__close" [disabled]="saveBusy()" (click)="closeEditPlanModal()">{{ 'common.close' | t }}</button>
+        </header>
+        <div class="rec-modal-panel__body">
+          <div class="stack-form apl-detail__modal-form">
+            <div class="stack-form__grid">
+              <label class="stack-form__field">
+                <span>{{ 'q.plans.titleAr' | t }}</span>
+                <input type="text" [(ngModel)]="titleAr" name="aplEditTitleAr" maxlength="500" autocomplete="off" />
+              </label>
+              <label class="stack-form__field">
+                <span>{{ 'q.plans.titleEn' | t }}</span>
+                <input type="text" [(ngModel)]="titleEn" name="aplEditTitleEn" maxlength="500" autocomplete="off" />
+              </label>
+            </div>
+            <label class="stack-form__field">
+              <span>{{ 'q.plans.descAr' | t }}</span>
+              <textarea [(ngModel)]="descriptionAr" name="aplEditDescAr" rows="2" maxlength="4000"></textarea>
+            </label>
+            <label class="stack-form__field">
+              <span>{{ 'q.plans.descEn' | t }}</span>
+              <textarea [(ngModel)]="descriptionEn" name="aplEditDescEn" rows="2" maxlength="4000"></textarea>
+            </label>
+            <div class="stack-form__grid">
+              <label class="stack-form__field">
+                <span>{{ 'q.plans.survey' | t }}</span>
+                <select [(ngModel)]="surveyId" name="aplEditSurveyId">
+                  <option [ngValue]="null">{{ 'q.plans.surveyNone' | t }}</option>
+                  @for (s of surveys(); track s.id) {
+                    <option [ngValue]="s.id">{{ surveyLabel(s) }}</option>
+                  }
+                </select>
+              </label>
+              <label class="stack-form__field">
+                <span>{{ 'q.plans.owner' | t }}</span>
+                <select [(ngModel)]="ownerUserId" name="aplEditOwnerId">
+                  <option [ngValue]="null">{{ 'q.plans.surveyNone' | t }}</option>
+                  @for (u of users(); track u.id) {
+                    <option [ngValue]="u.id">{{ userLabel(u) }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+            <label class="stack-form__field">
+              <span>{{ 'common.status' | t }}</span>
+              <select [(ngModel)]="status" name="aplEditStatus">
+                <option [ngValue]="ActionPlanStatus.Draft">{{ 'q.planStatus.draft' | t }}</option>
+                <option [ngValue]="ActionPlanStatus.Active">{{ 'q.planStatus.active' | t }}</option>
+                <option [ngValue]="ActionPlanStatus.Completed">{{ 'q.planStatus.completed' | t }}</option>
+                <option [ngValue]="ActionPlanStatus.Cancelled">{{ 'q.planStatus.cancelled' | t }}</option>
+              </select>
+            </label>
+            <div class="stack-form__grid">
+              <label class="stack-form__field">
+                <span>{{ 'q.plans.start' | t }}</span>
+                <div class="apl-create__date">
+                  <input
+                    #editStartIn
+                    type="date"
+                    class="apl-create__date-input"
+                    [(ngModel)]="startDate"
+                    name="aplEditStart"
+                  />
+                  <button
+                    type="button"
+                    class="apl-create__date-btn"
+                    (click)="openDatePicker(editStartIn)"
+                    [attr.aria-label]="'q.plans.pickStartDate' | t"
+                  >
+                    <i class="pi pi-calendar" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </label>
+              <label class="stack-form__field">
+                <span>{{ 'q.plans.end' | t }}</span>
+                <div class="apl-create__date">
+                  <input
+                    #editEndIn
+                    type="date"
+                    class="apl-create__date-input"
+                    [(ngModel)]="endDate"
+                    name="aplEditEnd"
+                  />
+                  <button
+                    type="button"
+                    class="apl-create__date-btn"
+                    (click)="openDatePicker(editEndIn)"
+                    [attr.aria-label]="'q.plans.pickEndDate' | t"
+                  >
+                    <i class="pi pi-calendar" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+        <footer class="rec-modal-panel__foot apl-detail__modal-foot">
+          <button type="button" class="btn-ghost" [disabled]="saveBusy()" (click)="closeEditPlanModal()">{{ 'common.cancel' | t }}</button>
+          <button type="button" class="btn-primary" (click)="savePlan()" [disabled]="saveBusy()">
+            @if (saveBusy()) {
+              {{ 'common.loading' | t }}
+            } @else {
+              {{ 'q.plans.save' | t }}
+            }
+          </button>
+        </footer>
+      </div>
+    }
+
+    @if (addInitModalOpen()) {
+      <div class="modal-backdrop" (click)="!addInitBusy() && closeAddInitModal()"></div>
+      <div class="rec-modal-panel rec-modal-panel--wide card apl-detail__modal" role="dialog" aria-modal="true" aria-labelledby="apl-add-init-title">
+        <header class="rec-modal-panel__head">
+          <h2 id="apl-add-init-title">{{ 'q.plans.addInitModalTitle' | t }}</h2>
+          <button type="button" class="rec-modal-panel__close" [disabled]="addInitBusy()" (click)="closeAddInitModal()">{{ 'common.close' | t }}</button>
+        </header>
+        <div class="rec-modal-panel__body">
+          <div class="stack-form apl-detail__modal-form">
+            <div class="stack-form__grid">
+              <label class="stack-form__field">
+                <span>{{ 'q.plans.titleAr' | t }}</span>
+                <input type="text" [(ngModel)]="initTitleAr" name="aplInitTitleAr" maxlength="500" autocomplete="off" />
+              </label>
+              <label class="stack-form__field">
+                <span>{{ 'q.plans.titleEn' | t }}</span>
+                <input type="text" [(ngModel)]="initTitleEn" name="aplInitTitleEn" maxlength="500" autocomplete="off" />
+              </label>
+            </div>
+            <label class="stack-form__field">
+              <span>{{ 'q.initiative.descAr' | t }}</span>
+              <textarea [(ngModel)]="initDescriptionAr" name="aplInitDescAr" rows="2" maxlength="4000"></textarea>
+            </label>
+            <label class="stack-form__field">
+              <span>{{ 'q.initiative.descEn' | t }}</span>
+              <textarea [(ngModel)]="initDescriptionEn" name="aplInitDescEn" rows="2" maxlength="4000"></textarea>
+            </label>
+            <div class="stack-form__grid">
+              <label class="stack-form__field">
+                <span>{{ 'q.initiative.owner' | t }}</span>
+                <select [(ngModel)]="initOwnerUserId" name="aplInitOwner">
+                  <option [ngValue]="null">{{ 'q.initiative.ownerNone' | t }}</option>
+                  @for (u of users(); track u.id) {
+                    <option [ngValue]="u.id">{{ userLabel(u) }}</option>
+                  }
+                </select>
+              </label>
+              <label class="stack-form__field">
+                <span>{{ 'q.plans.targetDate' | t }}</span>
+                <div class="apl-create__date">
+                  <input
+                    #initTargetIn
+                    type="date"
+                    class="apl-create__date-input"
+                    [(ngModel)]="initTargetDate"
+                    name="aplInitTarget"
+                  />
+                  <button
+                    type="button"
+                    class="apl-create__date-btn"
+                    (click)="openDatePicker(initTargetIn)"
+                    [attr.aria-label]="'q.plans.pickTargetDate' | t"
+                  >
+                    <i class="pi pi-calendar" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+        <footer class="rec-modal-panel__foot apl-detail__modal-foot">
+          <button type="button" class="btn-ghost" [disabled]="addInitBusy()" (click)="closeAddInitModal()">{{ 'common.cancel' | t }}</button>
+          <button type="button" class="btn-primary" (click)="addInitiative()" [disabled]="addInitBusy()">
+            @if (addInitBusy()) {
+              {{ 'common.loading' | t }}
+            } @else {
+              {{ 'q.plans.addInitiative' | t }}
+            }
+          </button>
+        </footer>
+      </div>
+    }
+  </div>
+</div>

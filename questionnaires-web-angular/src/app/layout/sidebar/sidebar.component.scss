@@ -5,6 +5,8 @@
   top: 0;
   align-self: flex-start;
   height: 100vh;
+  max-height: 100vh;
+  min-height: 0;
   z-index: 40;
   transition: width 0.3s ease;
   width: 240px;
@@ -14,6 +16,7 @@
 .sidebar {
   width: 100%;
   height: 100%;
+  min-height: 0;
   background: var(--color-card);
   color: var(--color-text);
   display: flex;
@@ -112,8 +115,19 @@
 
 .sidebar__nav {
   flex: 1;
-  overflow-y: hidden;
+  min-height: 0;
+  overflow-y: auto;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* إخفاء شريط التمرير مع الإبقاء على التمرير (عجلة / لمس) */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar__nav::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .nav-group {
@@ -161,16 +175,18 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 260px;
-  overflow: hidden;
+  /* كان 260px يقطع العناصر السفلية عند كثرة الروابط؛ القائمة الكاملة تُعرض والتمرير على sidebar__nav */
+  max-height: 2400px;
+  overflow: visible;
   transition:
-    max-height 0.3s ease,
+    max-height 0.35s ease,
     opacity 0.3s ease;
 }
 
 .nav-group__list.is-collapsed {
   max-height: 0;
   opacity: 0;
+  overflow: hidden;
 }
 
 .nav-group a {
@@ -216,6 +232,12 @@
 .nav-group a:hover svg,
 .nav-group a.is-active svg {
   fill: var(--color-accent);
+}
+
+.nav-item__label {
+  min-width: 0;
+  flex: 1;
+  line-height: 1.35;
 }
 
 .sidebar--collapsed .nav-item__label {

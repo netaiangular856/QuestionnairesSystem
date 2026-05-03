@@ -5,8 +5,6 @@ using QuestionnairesSystem.Api.Extensions;
 using QuestionnairesSystem.Application.Features.Identity;
 using QuestionnairesSystem.Application.Features.Questionnaires.ActionPlans.DTOs;
 using QuestionnairesSystem.Application.Features.Questionnaires.ActionPlans.Interfaces;
-using QuestionnairesSystem.Shared.Api;
-
 namespace QuestionnairesSystem.Api.Controllers;
 
 [ApiController]
@@ -16,6 +14,15 @@ public sealed class InitiativesController : ControllerBase
     private readonly IActionPlanCrudService _svc;
 
     public InitiativesController(IActionPlanCrudService svc) => _svc = svc;
+
+    [HttpGet]
+    [Authorize(Policy = PermissionCodes.ActionPlanView)]
+    public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int pageSize = 12, CancellationToken cancellationToken = default)
+    {
+        var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+        var result = await _svc.ListInitiativesPagedAsync(page, pageSize, cancellationToken).ConfigureAwait(false);
+        return result.ToApiActionResult(this, traceId);
+    }
 
     [HttpGet("{initiativeId:guid}")]
     [Authorize(Policy = PermissionCodes.ActionPlanView)]

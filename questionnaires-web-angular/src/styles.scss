@@ -1766,3 +1766,30 @@ a.action-btn {
   text-decoration: none;
   box-sizing: border-box;
 }
+
+/* p-dropdown overlay uses appendTo="body" — scope light panel so it matches app forms (Prime Aura dark scheme) */
+.p-select-overlay.rec-assignee-overlay {
+  background: var(--color-card, #fff);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.p-select-overlay.rec-assignee-overlay .p-select-filter {
+  background: var(--color-card, #fff);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.p-select-overlay.rec-assignee-overlay .p-select-option {
+  color: var(--color-text);
+}
+
+.p-select-overlay.rec-assignee-overlay .p-select-option:not(.p-select-option-selected):not(.p-disabled).p-focus {
+  background: var(--color-bg-soft);
+  color: var(--color-text);
+}
+
+.p-select-overlay.rec-assignee-overlay .p-select-option.p-select-option-selected {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-strong);
+}

@@ -9,6 +9,8 @@ public sealed class SurveyComprehensiveAnalyticsDto
     public IReadOnlyList<QuestionAnalyticsDto> Questions { get; init; } = Array.Empty<QuestionAnalyticsDto>();
     public IReadOnlyList<CategoryAnalyticsDto> Categories { get; init; } = Array.Empty<CategoryAnalyticsDto>();
     public IReadOnlyList<RatingAnalyticsDto> Ratings { get; init; } = Array.Empty<RatingAnalyticsDto>();
+    /// <summary>Top repeated tokens from ShortText/LongText answers (frequency only).</summary>
+    public IReadOnlyList<KeywordCountDto> TextAnswerKeywords { get; init; } = Array.Empty<KeywordCountDto>();
 }
 
 public sealed class SurveyOverviewAnalytics
@@ -41,7 +43,10 @@ public sealed class QuestionAnalyticsDto
 
 public sealed class AnswerDistributionDto
 {
+    /// <summary>Legacy display text (defaults to English label when choice labels exist).</summary>
     public string OptionText { get; init; } = string.Empty;
+    public string OptionTextAr { get; init; } = string.Empty;
+    public string OptionTextEn { get; init; } = string.Empty;
     public int Count { get; init; }
     public double Percentage { get; init; }
 }

@@ -102,6 +102,23 @@ export class SurveyCreateWizardPageComponent implements OnInit {
     }
   }
 
+  /** Visible calendar button — native picker glyph is often invisible with themed inputs / RTL. */
+  openDateTimePicker(input: HTMLInputElement, ev: Event): void {
+    ev.preventDefault();
+    ev.stopPropagation();
+    const el = input as HTMLInputElement & { showPicker?: () => void };
+    if (typeof el.showPicker === 'function') {
+      try {
+        void el.showPicker();
+        return;
+      } catch {
+        /* Unsupported context */
+      }
+    }
+    el.focus();
+    el.click();
+  }
+
   prev(): void {
     const s = this.step();
     if (s <= 0) {
@@ -184,12 +201,36 @@ export class SurveyCreateWizardPageComponent implements OnInit {
     return this.questionTypes.find((x) => x.value === t)?.labelKey ?? 'q.templates.qt.shortText';
   }
 
+  onQuestionTypeChange(q: CreateSurveyQuestionItem): void {
+    if (q.type === QuestionType.SingleChoice || q.type === QuestionType.MultipleChoice) {
+      if (!q.choiceOptions?.length) {
+        q.choiceOptions = [
+          { labelAr: '', labelEn: '' },
+          { labelAr: '', labelEn: '' },
+        ];
+      }
+    } else {
+      q.choiceOptions = undefined;
+    }
+  }
+
+  addChoiceOption(q: CreateSurveyQuestionItem): void {
+    q.choiceOptions = [...(q.choiceOptions ?? []), { labelAr: '', labelEn: '' }];
+  }
+
+  removeChoiceOption(q: CreateSurveyQuestionItem, index: number): void {
+    const rows = q.choiceOptions ?? [];
+    if (rows.length <= 2) return;
+    q.choiceOptions = rows.filter((_, i) => i !== index);
+  }
+
   submit(): void {
     if (!this.titleAr.trim() || !this.titleEn.trim()) {
       this.toast.show(this.i18n.t('q.surveys.wizard.toast.titlesRequired'), 'error');
       return;
     }
     if (this.sourceMode === 'blank') {
+      if (!this.validateChoiceQuestions(this.questions)) return;
       const qs = this.normalizeList(this.questions);
       if (qs.length === 0) {
         this.toast.show(this.i18n.t('q.surveys.wizard.toast.questionsRequired'), 'error');
@@ -207,6 +248,7 @@ export class SurveyCreateWizardPageComponent implements OnInit {
       this.toast.show(this.i18n.t('q.surveys.wizard.toast.pickTemplate'), 'error');
       return;
     }
+    if (this.extraQuestions.length > 0 && !this.validateChoiceQuestions(this.extraQuestions)) return;
     const extras = this.normalizeList(this.extraQuestions);
     this.postCreate({
       ...this.buildBaseBody(),
@@ -238,6 +280,32 @@ export class SurveyCreateWizardPageComponent implements OnInit {
     return d.toISOString();
   }
 
+  private validateChoiceQuestions(rows: CreateSurveyQuestionItem[]): boolean {
+    for (const q of rows) {
+      if (q.type !== QuestionType.SingleChoice && q.type !== QuestionType.MultipleChoice) continue;
+      const json = this.serializeChoiceOptions(q);
+      if (!json) {
+        this.toast.show(this.i18n.t('q.surveys.wizard.toast.choiceOptionsRequired'), 'error');
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /** Builds JSON array expected by fill page: `{ value, labelAr, labelEn }[]`. */
+  private serializeChoiceOptions(q: CreateSurveyQuestionItem): string | null {
+    if (q.type !== QuestionType.SingleChoice && q.type !== QuestionType.MultipleChoice) return null;
+    const rows = q.choiceOptions ?? [];
+    const payload = rows
+      .map((r, i) => ({
+        value: `opt_${i + 1}`,
+        labelAr: (r.labelAr ?? '').trim(),
+        labelEn: (r.labelEn ?? '').trim(),
+      }))
+      .filter((r) => r.labelAr.length > 0 && r.labelEn.length > 0);
+    return payload.length >= 2 ? JSON.stringify(payload) : null;
+  }
+
   private normalizeList(rows: CreateSurveyQuestionItem[]): CreateSurveyQuestionItem[] {
     return rows
       .map((q) => ({
@@ -247,7 +315,7 @@ export class SurveyCreateWizardPageComponent implements OnInit {
         isRequired: false,
         helpTextAr: null as string | null,
         helpTextEn: null as string | null,
-        optionsJson: null as string | null,
+        optionsJson: this.serializeChoiceOptions(q),
         displayOrder: null as number | null,
       }))
       .filter((q) => q.titleAr.length > 0 && q.titleEn.length > 0);

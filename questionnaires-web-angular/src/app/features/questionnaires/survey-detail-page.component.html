@@ -31,6 +31,17 @@
               <span class="survey-detail-toc__label">{{ 'q.detail.toc.jumpOverview' | t }}</span>
             </button>
           }
+          @if (canRecommendManage) {
+            <button type="button" class="survey-detail-toc__item" (click)="openRecommendationModal()">
+              <span class="survey-detail-toc__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 3v3M12 18v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M3 12h3M18 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" stroke-linecap="round" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </span>
+              <span class="survey-detail-toc__label">{{ 'q.detail.toc.jumpRecommendations' | t }}</span>
+            </button>
+          }
           @if (canViewQuestions) {
             <button type="button" class="survey-detail-toc__item" (click)="jumpToSection('survey-questions')">
               <span class="survey-detail-toc__icon" aria-hidden="true">
@@ -58,7 +69,36 @@
         <header id="survey-header" class="survey-detail-hero">
           <div class="survey-detail-hero__mesh" aria-hidden="true"></div>
           <div class="survey-detail-hero__accent" aria-hidden="true"></div>
-          <div class="survey-detail-hero__top">
+          <div class="survey-detail-hero__top survey-detail-hero__top--stacked">
+            @if (canManage || canRecommendManage) {
+              <div class="survey-detail-hero__toolbar survey-detail-hero__toolbar--full">
+                <div class="survey-detail-hero__actions detail-actions detail-actions--compact">
+                  @if (canRecommendManage) {
+                    <button type="button" class="action-btn action-btn--primary" (click)="openRecommendationModal()">
+                      <i class="pi pi-plus" aria-hidden="true"></i>
+                      {{ 'q.rec.create.openModal' | t }}
+                    </button>
+                    <a [routerLink]="['/recommendations']" [queryParams]="{ surveyId: s.id }" class="action-btn action-btn--ghost survey-detail-hero__rec-list">
+                      {{ 'q.rec.create.openListShort' | t }}
+                    </a>
+                  }
+                  @if (canManage) {
+                    <button type="button" class="action-btn action-btn--edit" [disabled]="actionBusy()" (click)="openEdit()">
+                      {{ 'q.detail.actions.edit' | t }}
+                    </button>
+                    <button type="button" class="action-btn action-btn--info" [disabled]="actionBusy()" (click)="duplicate()">
+                      {{ 'q.detail.actions.duplicate' | t }}
+                    </button>
+                    <button type="button" class="action-btn action-btn--danger" [disabled]="actionBusy()" (click)="openDelete()">
+                      {{ 'q.detail.actions.delete' | t }}
+                    </button>
+                    <button type="button" class="action-btn action-btn--ghost" [disabled]="actionBusy()" (click)="openPatch()">
+                      {{ 'q.detail.actions.patchStatus' | t }}
+                    </button>
+                  }
+                </div>
+              </div>
+            }
             <div class="survey-detail-hero__lead">
               <p class="survey-detail-hero__eyebrow">{{ 'q.detail.hero.eyebrow' | t }}</p>
               <h1 class="survey-detail-hero__title">{{ titleOf(s) }}</h1>
@@ -67,24 +107,6 @@
                 <span class="survey-chip survey-chip--audience">{{ audienceKey(s) | t }}</span>
               </div>
             </div>
-            @if (canManage) {
-              <div class="survey-detail-hero__toolbar">
-                <div class="survey-detail-hero__actions detail-actions">
-                  <button type="button" class="action-btn action-btn--edit" [disabled]="actionBusy()" (click)="openEdit()">
-                    {{ 'q.detail.actions.edit' | t }}
-                  </button>
-                  <button type="button" class="action-btn action-btn--info" [disabled]="actionBusy()" (click)="duplicate()">
-                    {{ 'q.detail.actions.duplicate' | t }}
-                  </button>
-                  <button type="button" class="action-btn action-btn--danger" [disabled]="actionBusy()" (click)="openDelete()">
-                    {{ 'q.detail.actions.delete' | t }}
-                  </button>
-                  <button type="button" class="action-btn action-btn--ghost" [disabled]="actionBusy()" (click)="openPatch()">
-                    {{ 'q.detail.actions.patchStatus' | t }}
-                  </button>
-                </div>
-              </div>
-            }
           </div>
 
           <div class="survey-detail-kpis">
@@ -244,74 +266,151 @@
             @if (analyticsBusy()) {
               <div class="card card--muted">{{ 'q.detail.analytics.loading' | t }}</div>
             } @else {
-              @if (analytics(); as an) {
-                <div class="analytics-chart-row">
-                  <div class="card analytics-chart-card">
-                    <h3 class="analytics-chart-card__title">{{ 'q.detail.analytics.totals' | t }}</h3>
-                    @if (an.totalResponses > 0) {
-                      <div class="analytics-pie-block">
-                        <div class="chart-pie-ring" role="img" [attr.aria-label]="'q.detail.analytics.totals' | t">
-                          <div class="chart-pie" [style.background]="pieGradient(an)"></div>
-                          <div class="chart-pie__hole"></div>
-                        </div>
-                        <ul class="chart-cat-labels">
-                          <li>
-                            <span class="chart-cat-labels__swatch chart-cat-labels__swatch--submitted"></span>
-                            {{ 'q.detail.analytics.submitted' | t }}
-                          </li>
-                          <li>
-                            <span class="chart-cat-labels__swatch chart-cat-labels__swatch--progress"></span>
-                            {{ 'q.detail.analytics.inProgress' | t }}
-                          </li>
-                          <li>
-                            <span class="chart-cat-labels__swatch chart-cat-labels__swatch--other"></span>
-                            {{ 'q.detail.analytics.otherResponses' | t }}
-                          </li>
-                        </ul>
-                      </div>
-                      <div class="chart-col-strip" aria-hidden="true">
-                        <div class="chart-col-strip__item">
-                          <div class="chart-col-strip__track">
-                            <div
-                              class="chart-col-strip__fill chart-col-strip__fill--submitted"
-                              [style.height.%]="mixSubmittedPct(an)"
-                            ></div>
-                          </div>
-                        </div>
-                        <div class="chart-col-strip__item">
-                          <div class="chart-col-strip__track">
-                            <div
-                              class="chart-col-strip__fill chart-col-strip__fill--progress"
-                              [style.height.%]="mixInProgressPct(an)"
-                            ></div>
-                          </div>
-                        </div>
-                        <div class="chart-col-strip__item">
-                          <div class="chart-col-strip__track">
-                            <div
-                              class="chart-col-strip__fill chart-col-strip__fill--other"
-                              [style.height.%]="mixOtherPct(an)"
-                            ></div>
-                          </div>
+              @if (comprehensiveAnalytics(); as ca) {
+                <div class="analytics-kpi-grid" role="group" [attr.aria-label]="'q.detail.analytics.sectionOverview' | t">
+                  <div class="analytics-kpi">
+                    <span class="analytics-kpi__label">{{ 'q.detail.analytics.kpiSubmitted' | t }}</span>
+                    <span class="analytics-kpi__value">{{ ca.overview.submittedResponses }}</span>
+                  </div>
+                  <div class="analytics-kpi">
+                    <span class="analytics-kpi__label">{{ 'q.detail.analytics.kpiInProgress' | t }}</span>
+                    <span class="analytics-kpi__value">{{ ca.overview.inProgressResponses }}</span>
+                  </div>
+                  <div class="analytics-kpi">
+                    <span class="analytics-kpi__label">{{ 'q.detail.analytics.kpiFillRate' | t }}</span>
+                    <span class="analytics-kpi__value">{{ fillRatePercent(ca) }}%</span>
+                    <span class="analytics-kpi__hint muted">{{ 'q.detail.analytics.kpiFillRateHint' | t }}</span>
+                  </div>
+                  <div class="analytics-kpi">
+                    <span class="analytics-kpi__label">{{ 'q.detail.analytics.kpiLast30d' | t }}</span>
+                    <span class="analytics-kpi__value">{{ last30DaysTotal(ca) }}</span>
+                  </div>
+                </div>
+
+                @if (ca.overview.totalParticipants > 0) {
+                  <p class="analytics-invited-line muted">
+                    {{ ca.overview.totalParticipants }} {{ 'q.detail.analytics.invited' | t }} —
+                    {{ 'q.detail.analytics.completionRate' | t }}:
+                    {{ ca.overview.completionRate | number: '1.0-1' }}%
+                  </p>
+                }
+
+                <div class="analytics-insight-row">
+                  <div class="card analytics-insight-card">
+                    <h3 class="analytics-chart-card__title">{{ 'q.detail.analytics.sectionActivity' | t }}</h3>
+                    @if (timelineLineGeometry(ca); as g) {
+                      <div class="analytics-timeline-line-wrap" dir="ltr">
+                        <svg
+                          class="analytics-timeline-svg"
+                          viewBox="0 0 100 44"
+                          preserveAspectRatio="xMidYMid meet"
+                          role="img"
+                          [attr.aria-label]="'q.detail.analytics.sectionActivity' | t"
+                        >
+                          <defs>
+                            <linearGradient [attr.id]="g.gradientId" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stop-color="#6366f1" stop-opacity="0.32" />
+                              <stop offset="100%" stop-color="#6366f1" stop-opacity="0.04" />
+                            </linearGradient>
+                          </defs>
+                          <path [attr.d]="g.areaPath" [attr.fill]="'url(#' + g.gradientId + ')'" />
+                          <polyline
+                            [attr.points]="g.linePoints"
+                            fill="none"
+                            stroke="#4f46e5"
+                            stroke-width="0.85"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            vector-effect="non-scaling-stroke"
+                          />
+                          @for (d of g.dots; track d.iso) {
+                            <circle
+                              [attr.cx]="d.cx"
+                              [attr.cy]="d.cy"
+                              r="1.35"
+                              fill="#4f46e5"
+                              class="analytics-timeline-dot"
+                              [attr.title]="d.iso + ': ' + d.count"
+                              [attr.aria-label]="d.iso + ': ' + d.count"
+                            />
+                          }
+                        </svg>
+                        <div class="analytics-timeline-axis">
+                          @for (dt of g.axisDates; track dt.iso) {
+                            <time class="analytics-timeline-axis__tick" [attr.datetime]="dt.iso">{{
+                              dt.iso | date: 'mediumDate'
+                            }}</time>
+                          }
                         </div>
                       </div>
                     } @else {
-                      <p class="analytics-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+                      <p class="analytics-empty muted">{{ 'q.detail.analytics.emptyTimeline' | t }}</p>
                     }
                   </div>
-                  @if (analyticsSummary(); as sm) {
-                    <div class="card analytics-chart-card analytics-chart-card--summary">
-                      <h3 class="analytics-chart-card__title">{{ 'q.detail.analytics.summaryTitle' | t }}</h3>
-                      <div
-                        class="chart-rate chart-rate--plain"
-                        role="img"
-                        [attr.aria-label]="'q.detail.analytics.summaryTitle' | t"
-                      >
-                        <div class="chart-rate__track">
-                          <div class="chart-rate__fill" [style.width.%]="sm.completionRate"></div>
-                        </div>
+                </div>
+
+                @if (ca.categories.length > 0 || ca.ratings.length > 0) {
+                  <div class="analytics-mix-pair">
+                    @if (ca.categories.length > 0) {
+                      <div class="card analytics-mix-card">
+                        <h3 class="analytics-chart-card__title">{{ 'q.detail.analytics.sectionTypeMix' | t }}</h3>
+                        <ul class="analytics-type-mix">
+                          @for (c of ca.categories; track c.categoryName) {
+                            <li class="analytics-type-mix__row">
+                              <span class="analytics-type-mix__label">{{ categoryTypeLabelKey(c.categoryName) | t }}</span>
+                              <div class="analytics-type-mix__track">
+                                <div class="analytics-type-mix__fill" [style.width.%]="c.percentage"></div>
+                              </div>
+                              <span class="analytics-type-mix__pct">{{ c.percentage | number: '1.0-0' }}%</span>
+                            </li>
+                          }
+                        </ul>
                       </div>
-                    </div>
+                    }
+                    @if (ca.ratings.length > 0) {
+                      <div class="card analytics-mix-card">
+                        <h3 class="analytics-chart-card__title">{{ 'q.detail.analytics.sectionRatingMix' | t }}</h3>
+                        <ul class="analytics-rating-mix">
+                          @for (r of ca.ratings; track r.rating) {
+                            <li class="analytics-rating-mix__row">
+                              <span class="analytics-rating-mix__label">{{ r.rating }}</span>
+                              <div class="analytics-rating-mix__track">
+                                <div class="analytics-rating-mix__fill" [style.width.%]="r.percentage"></div>
+                              </div>
+                              <span class="analytics-rating-mix__meta">{{ r.count }} ({{ r.percentage | number: '1.0-0' }}%)</span>
+                            </li>
+                          }
+                        </ul>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <div class="card analytics-focus-card">
+                  <h3 class="analytics-chart-card__title">{{ 'q.detail.analytics.sectionAnswerFocus' | t }}</h3>
+                  <p class="analytics-focus-card__lead muted">{{ 'q.detail.analytics.sectionAnswerFocusHint' | t }}</p>
+                  @if (topQuestionsWithShare(ca); as focusRows) {
+                    @if (focusRows.length > 0) {
+                      <ul class="analytics-topq">
+                        @for (row of focusRows; track row.question.questionId) {
+                          <li class="analytics-topq__item">
+                            <div class="analytics-topq__main">
+                              <span class="analytics-topq__title">{{ insightQuestionTitle(row.question) }}</span>
+                              <span class="analytics-topq__type muted">{{ insightQuestionTypeKey(row.question) | t }}</span>
+                              <div class="analytics-topq__meter" aria-hidden="true">
+                                <div class="analytics-topq__meter-fill" [style.width.%]="row.shareOfAllAnswers"></div>
+                              </div>
+                            </div>
+                            <div class="analytics-topq__nums">
+                              <span class="analytics-topq__count">{{ row.question.totalAnswers }}</span>
+                              <span class="analytics-topq__share muted">{{ row.shareOfAllAnswers }}%</span>
+                            </div>
+                          </li>
+                        }
+                      </ul>
+                    } @else {
+                      <p class="analytics-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+                    }
                   }
                 </div>
 
@@ -414,6 +513,24 @@
           {{ 'q.detail.actions.applyPatch' | t }}
         </button>
       </footer>
+    </div>
+  }
+
+  @if (recommendationModalOpen() && survey()) {
+    @let recSurvey = survey()!;
+    <div class="modal-backdrop" (click)="closeRecommendationModal()"></div>
+    <div class="modal-panel modal-panel--wide card" role="dialog" aria-modal="true" aria-labelledby="rec-modal-title">
+      <header class="modal-panel__head">
+        <h2 id="rec-modal-title">{{ 'q.rec.create.modalTitle' | t }}</h2>
+        <button type="button" class="modal-close" (click)="closeRecommendationModal()">{{ 'common.close' | t }}</button>
+      </header>
+      <div class="modal-panel__body modal-panel__body--form">
+        <app-recommendation-create-panel
+          [lockedSurveyId]="recSurvey.id"
+          [lockedSurveyLabel]="titleOf(recSurvey)"
+          (created)="onRecommendationCreatedFromModal()"
+        />
+      </div>
     </div>
   }
 </div>

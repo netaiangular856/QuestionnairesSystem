@@ -10,4 +10,16 @@ public interface IQuestionnaireReportService
     Task<Result<SurveyReportDto>> GetSurveyReportAsync(Guid surveyId, CancellationToken cancellationToken = default);
     Task<Result<byte[]>> ExportPdfAsync(CancellationToken cancellationToken = default);
     Task<Result<byte[]>> ExportExcelAsync(CancellationToken cancellationToken = default);
+
+    Task<Result<CrossSurveyAnalyticsDto>> GetCrossSurveyAnalyticsAsync(
+        CrossSurveyAnalyticsFilterRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<byte[]>> ExportCrossSurveyAnalyticsPdfAsync(
+        CrossSurveyAnalyticsFilterRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<byte[]>> ExportCrossSurveyAnalyticsExcelAsync(
+        CrossSurveyAnalyticsFilterRequest request,
+        CancellationToken cancellationToken = default);
 }

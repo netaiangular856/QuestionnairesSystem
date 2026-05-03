@@ -1,43 +1,296 @@
-<div class="page-workspace">
-  <div class="page-head-row">
-    <section class="page-head">
-      <h1>{{ 'q.reports.title' | t }}</h1>
-      <p class="page-head__sub">{{ 'q.reports.subtitle' | t }}</p>
-    </section>
-  </div>
+<div class="page-workspace reports-dashboard">
+<div class="rp-page">
+  <header class="rp-hero" role="banner">
+    <div class="rp-hero__icon" aria-hidden="true"><i class="pi pi-chart-bar"></i></div>
+    <div class="rp-hero__text">
+      <p class="rp-hero__kicker">{{ 'q.reports.heroKicker' | t }}</p>
+      <h1 class="rp-hero__title">{{ 'q.reports.title' | t }}</h1>
+      <p class="rp-hero__lead">{{ 'q.reports.subtitle' | t }}</p>
+    </div>
+  </header>
+
+  <section class="rp-panel rp-filters" aria-labelledby="rp-filters-heading">
+    <div class="rp-filters__top">
+      <div class="rp-panel__head rp-filters__intro">
+        <span class="rp-panel__icon" aria-hidden="true"><i class="pi pi-filter"></i></span>
+        <div>
+          <h2 id="rp-filters-heading" class="rp-panel__title">{{ 'q.reports.filtersSection' | t }}</h2>
+          <p class="rp-panel__hint muted">{{ 'q.reports.filtersHint' | t }}</p>
+        </div>
+      </div>
+      <div class="rp-filters__exports-inline" role="group" [attr.aria-label]="'q.reports.exportSection' | t">
+        @if (canExport) {
+          <button
+            type="button"
+            class="rp-btn rp-btn--primary rp-btn--compact"
+            (click)="exportPdf()"
+            [disabled]="exportingPdf() || exportingExcel()"
+          >
+            <i class="pi pi-file-pdf" aria-hidden="true"></i>
+            @if (exportingPdf()) {
+              {{ 'q.analyticsExport.exportingPdf' | t }}
+            } @else {
+              {{ 'q.analyticsExport.exportPdf' | t }}
+            }
+          </button>
+          <button
+            type="button"
+            class="rp-btn rp-btn--secondary rp-btn--compact"
+            (click)="exportExcel()"
+            [disabled]="exportingPdf() || exportingExcel()"
+          >
+            <i class="pi pi-table" aria-hidden="true"></i>
+            @if (exportingExcel()) {
+              {{ 'q.analyticsExport.exportingExcel' | t }}
+            } @else {
+              {{ 'q.analyticsExport.exportExcel' | t }}
+            }
+          </button>
+        } @else {
+          <p class="muted rp-filters__exports-lock"><i class="pi pi-lock" aria-hidden="true"></i> {{ 'q.analyticsExport.noExportPermission' | t }}</p>
+        }
+      </div>
+    </div>
+    @if (exportError()) {
+      <p class="rp-filters__export-err" role="alert">{{ 'q.analyticsExport.exportFailed' | t }}</p>
+    }
+    <div class="rp-filters__grid">
+      <label class="rp-field">
+        <span class="rp-field__label">{{ 'q.analysis.filterSurvey' | t }}</span>
+        <span class="rp-field__control">
+          <i class="pi pi-list rp-field__glyph" aria-hidden="true"></i>
+          <select class="rp-input rp-input--select" [(ngModel)]="selectedSurveyId">
+            <option value="">{{ 'q.analysis.filterSurveyAll' | t }}</option>
+            @for (s of surveyList(); track s.id) {
+              <option [value]="s.id">{{ s.name }}</option>
+            }
+          </select>
+        </span>
+      </label>
+      <label class="rp-field">
+        <span class="rp-field__label">{{ 'q.analysis.filterFrom' | t }}</span>
+        <span class="rp-field__control">
+          <i class="pi pi-calendar rp-field__glyph" aria-hidden="true"></i>
+          <input class="rp-input" type="date" [(ngModel)]="fromDate" />
+        </span>
+      </label>
+      <label class="rp-field">
+        <span class="rp-field__label">{{ 'q.analysis.filterTo' | t }}</span>
+        <span class="rp-field__control">
+          <i class="pi pi-calendar rp-field__glyph" aria-hidden="true"></i>
+          <input class="rp-input" type="date" [(ngModel)]="toDate" />
+        </span>
+      </label>
+      <div class="rp-filters__actions">
+        <button type="button" class="rp-btn rp-btn--primary" (click)="applyFilters()" [disabled]="busy()">
+          <i class="pi pi-check" aria-hidden="true"></i>
+          {{ 'q.analysis.apply' | t }}
+        </button>
+        <button type="button" class="rp-btn rp-btn--ghost" (click)="resetFilters()" [disabled]="busy()">
+          <i class="pi pi-refresh" aria-hidden="true"></i>
+          {{ 'q.analysis.reset' | t }}
+        </button>
+      </div>
+    </div>
+  </section>
 
   @if (busy()) {
-    <div class="card card--muted">{{ 'common.loading' | t }}</div>
+    <div class="rp-state rp-state--loading rp-panel" role="status" aria-live="polite">
+      <span class="rp-spinner" aria-hidden="true"></span>
+      <span class="rp-state__text">{{ 'q.analysis.loading' | t }}</span>
+    </div>
   } @else if (failed()) {
-    <div class="card card--muted">{{ 'q.reports.error' | t }}</div>
+    <div class="rp-state rp-state--err rp-panel" role="alert">
+      <i class="pi pi-times-circle rp-state__icon" aria-hidden="true"></i>
+      <span class="rp-state__text">{{ 'q.reports.error' | t }}</span>
+    </div>
   } @else {
     @if (data(); as d) {
-    <div class="stat-grid">
-      <div class="stat-plate card stat-plate--t0">
-        <span class="stat-plate__label">{{ 'q.reports.totalSurveys' | t }}</span>
-        <span class="stat-plate__value">{{ d.totalSurveys }}</span>
-      </div>
-      <div class="stat-plate card stat-plate--t1">
-        <span class="stat-plate__label">{{ 'q.reports.published' | t }}</span>
-        <span class="stat-plate__value">{{ d.publishedSurveys }}</span>
-      </div>
-      <div class="stat-plate card stat-plate--t2">
-        <span class="stat-plate__label">{{ 'q.reports.responses' | t }}</span>
-        <span class="stat-plate__value">{{ d.totalResponses }}</span>
-      </div>
-      <div class="stat-plate card stat-plate--t3">
-        <span class="stat-plate__label">{{ 'q.reports.openPlans' | t }}</span>
-        <span class="stat-plate__value">{{ d.openActionPlans }}</span>
-      </div>
-    </div>
+      <div class="rp-main">
+        <section class="rp-section" aria-labelledby="rp-kpi-heading">
+          <div class="rp-section__head">
+            <span class="rp-section__eyebrow" id="rp-kpi-heading">{{ 'q.analysis.sectionOverview' | t }}</span>
+          </div>
+          <div class="rp-kpi-grid">
+            <article class="rp-kpi">
+              <i class="pi pi-folder rp-kpi__ico" aria-hidden="true"></i>
+              <p class="rp-kpi__label">{{ 'q.analysis.kpi.surveysInScope' | t }}</p>
+              <p class="rp-kpi__value">{{ d.overview.surveysInScope }}</p>
+            </article>
+            <article class="rp-kpi">
+              <i class="pi pi-megaphone rp-kpi__ico" aria-hidden="true"></i>
+              <p class="rp-kpi__label">{{ 'q.analysis.kpi.published' | t }}</p>
+              <p class="rp-kpi__value">{{ d.overview.publishedSurveys }}</p>
+            </article>
+            <article class="rp-kpi rp-kpi--accent">
+              <i class="pi pi-send rp-kpi__ico" aria-hidden="true"></i>
+              <p class="rp-kpi__label">{{ 'q.analysis.kpi.submittedInPeriod' | t }}</p>
+              <p class="rp-kpi__value">{{ d.overview.submittedResponsesInPeriod }}</p>
+            </article>
+            <article class="rp-kpi">
+              <i class="pi pi-chart-line rp-kpi__ico" aria-hidden="true"></i>
+              <p class="rp-kpi__label">{{ 'q.analysis.kpi.surveysWithActivity' | t }}</p>
+              <p class="rp-kpi__value">{{ d.overview.surveysWithSubmissionsInPeriod }}</p>
+            </article>
+            <article class="rp-kpi">
+              <i class="pi pi-users rp-kpi__ico" aria-hidden="true"></i>
+              <p class="rp-kpi__label">{{ 'q.analysis.kpi.invited' | t }}</p>
+              <p class="rp-kpi__value">{{ d.overview.invitedParticipantsInScope }}</p>
+            </article>
+            <article class="rp-kpi">
+              <i class="pi pi-spinner rp-kpi__ico" aria-hidden="true"></i>
+              <p class="rp-kpi__label">{{ 'q.analysis.kpi.inProgress' | t }}</p>
+              <p class="rp-kpi__value">{{ d.overview.inProgressResponsesOpen }}</p>
+            </article>
+            <article class="rp-kpi">
+              <i class="pi pi-bolt rp-kpi__ico" aria-hidden="true"></i>
+              <p class="rp-kpi__label">{{ 'q.analysis.kpi.perDay' | t }}</p>
+              <p class="rp-kpi__value">{{ d.overview.submissionsPerDayInPeriod | number: '1.1-2' }}</p>
+            </article>
+            <article class="rp-kpi">
+              <i class="pi pi-question-circle rp-kpi__ico" aria-hidden="true"></i>
+              <p class="rp-kpi__label">{{ 'q.analysis.kpi.questions' | t }}</p>
+              <p class="rp-kpi__value">{{ d.overview.totalQuestionsInScope }}</p>
+            </article>
+          </div>
+        </section>
 
-    <div class="card table-card exports-card">
-      <h2 class="exports-card__title">{{ 'q.reports.exports' | t }}</h2>
-      <p class="exports-card__hint">{{ 'q.reports.exportHint' | t }}</p>
-      @if (canExport) {
-        <p class="exports-card__ok">PDF / Excel — {{ 'permission.REPORT_EXPORT' | t }}</p>
-      }
-    </div>
+        <section class="rp-section" aria-labelledby="rp-more-heading">
+          <div class="rp-section__head">
+            <span class="rp-section__eyebrow" id="rp-more-heading">{{ 'q.analysis.sectionMore' | t }}</span>
+          </div>
+          <div class="rp-chart-grid-triple">
+            <article class="rp-chart-card rp-chart-card--triple">
+              <h3 class="rp-chart-card__title">{{ 'q.analysis.chart.audienceScopeMix' | t }}</h3>
+              <div class="rp-chart-card__canvas rp-chart-card__canvas--triple-bar">
+                @if ((d.audienceScopeDistribution?.length ?? 0) > 0) {
+                  <canvas baseChart [type]="'bar'" [data]="barAudienceData()" [options]="barAudienceOpts()"></canvas>
+                } @else {
+                  <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+                }
+              </div>
+            </article>
+            <article class="rp-chart-card rp-chart-card--triple">
+              <h3 class="rp-chart-card__title">{{ 'q.analysis.chart.ratingBars' | t }}</h3>
+              <div class="rp-chart-card__canvas rp-chart-card__canvas--triple-bar">
+                @if ((d.ratingsDistribution?.length ?? 0) > 0) {
+                  <canvas baseChart [type]="'bar'" [data]="barRatingsData()" [options]="barRatingsOpts()"></canvas>
+                } @else {
+                  <p class="rp-chart-empty muted">{{ 'q.analysis.insight.noRatings' | t }}</p>
+                }
+              </div>
+            </article>
+            <article class="rp-chart-card rp-chart-card--triple">
+              <h3 class="rp-chart-card__title">{{ 'q.analysis.chart.submissionsByWeekday' | t }}</h3>
+              <div class="rp-chart-card__canvas rp-chart-card__canvas--triple-bar">
+                @if ((d.submissionsByDayOfWeek?.length ?? 0) > 0) {
+                  <canvas baseChart [type]="'bar'" [data]="barWeekdayData()" [options]="barWeekdayOpts()"></canvas>
+                } @else {
+                  <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+                }
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="rp-section" aria-labelledby="rp-charts-heading">
+          <div class="rp-section__head">
+            <span class="rp-section__eyebrow" id="rp-charts-heading">{{ 'q.analysis.sectionCharts' | t }}</span>
+          </div>
+          <div class="rp-chart-grid">
+            <article class="rp-chart-card rp-chart-card--top-bar">
+              <h3 class="rp-chart-card__title">{{ 'q.analysis.chart.topSurveys' | t }}</h3>
+              <div class="rp-chart-card__canvas rp-chart-card__canvas--bar">
+                @if (d.topSurveysBySubmissions.length) {
+                  <canvas baseChart [type]="'bar'" [data]="barTopData()" [options]="barOpts()"></canvas>
+                } @else {
+                  <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+                }
+              </div>
+            </article>
+            <article class="rp-chart-card rp-chart-card--line">
+              <h3 class="rp-chart-card__title">{{ 'q.analysis.chart.submissionsOverTime' | t }}</h3>
+              <div class="rp-chart-card__canvas">
+                <canvas baseChart [type]="'line'" [data]="lineData()" [options]="lineOpts()"></canvas>
+              </div>
+            </article>
+            <article class="rp-chart-card rp-chart-card--donut-survey">
+              <h3 class="rp-chart-card__title">{{ 'q.analysis.chart.surveyStatusMix' | t }}</h3>
+              <div class="rp-chart-card__canvas rp-chart-card__canvas--donut">
+                @if (d.surveyStatusDistribution.length) {
+                  <canvas baseChart [type]="'doughnut'" [data]="doughnutSurveyData()" [options]="doughnutOpts()"></canvas>
+                } @else {
+                  <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+                }
+              </div>
+            </article>
+            <article class="rp-chart-card rp-chart-card--donut-response">
+              <h3 class="rp-chart-card__title">{{ 'q.analysis.chart.responseStatusMix' | t }}</h3>
+              <div class="rp-chart-card__canvas rp-chart-card__canvas--donut">
+                @if (d.responseStatusDistribution.length > 0) {
+                  <canvas baseChart [type]="'doughnut'" [data]="doughnutResponseData()" [options]="doughnutResponseOpts()"></canvas>
+                } @else {
+                  <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+                }
+              </div>
+            </article>
+            <article class="rp-chart-card rp-chart-card--insight-mix">
+              @if ((d.textAnswerKeywords?.length ?? 0) > 0) {
+                <h3 class="rp-chart-card__title">{{ 'q.analysis.chart.textKeywords' | t }}</h3>
+                <div class="rp-chart-card__canvas rp-chart-card__canvas--hbar">
+                  <canvas baseChart [type]="'bar'" [data]="barKeywordsData()" [options]="barKeywordsOpts()"></canvas>
+                </div>
+                <p class="rp-insight-footnote">{{ 'q.analysis.insight.keywordsFootnote' | t }}</p>
+              } @else if ((d.questionTypeAnswerTotals?.length ?? 0) > 0) {
+                <h3 class="rp-chart-card__title">{{ 'q.analysis.chart.questionTypesMix' | t }}</h3>
+                <div class="rp-chart-card__canvas rp-chart-card__canvas--donut">
+                  <canvas baseChart [type]="'doughnut'" [data]="doughnutCategoriesData()" [options]="doughnutCategoriesOpts()"></canvas>
+                </div>
+              } @else {
+                <h3 class="rp-chart-card__title">{{ 'q.analysis.chart.questionTypesMix' | t }}</h3>
+                <div class="rp-chart-card__canvas rp-chart-card__canvas--donut">
+                  <p class="rp-chart-empty muted">{{ 'q.analysis.insight.noKeywordsNoCategories' | t }}</p>
+                </div>
+              }
+            </article>
+          </div>
+        </section>
+
+        <section class="rp-section" aria-labelledby="rp-table-heading">
+          <div class="rp-section__head">
+            <span class="rp-section__eyebrow" id="rp-table-heading">{{ 'q.analysis.sectionTables' | t }}</span>
+          </div>
+          <div class="rp-table-wrap rp-panel rp-panel--table">
+            <table class="rp-table">
+              <thead>
+                <tr>
+                  <th>{{ 'q.analysis.table.survey' | t }}</th>
+                  <th>{{ 'q.analysis.table.status' | t }}</th>
+                  <th class="rp-table__num">{{ 'q.analysis.table.submissions' | t }}</th>
+                  <th>{{ 'q.analysis.table.action' | t }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of d.topSurveysBySubmissions; track row.surveyId) {
+                  <tr class="rp-table__row">
+                    <td>{{ surveyTitle(row) }}</td>
+                    <td><span class="rp-pill">{{ surveyStatusLabel(row.status) }}</span></td>
+                    <td class="rp-table__num">{{ row.submissionsInPeriod }}</td>
+                    <td>
+                      <a class="rp-link-pill" [routerLink]="['/surveys', row.surveyId]">{{ 'q.analysis.table.action' | t }}</a>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="4" class="rp-table__empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     }
   }
+</div>
 </div>

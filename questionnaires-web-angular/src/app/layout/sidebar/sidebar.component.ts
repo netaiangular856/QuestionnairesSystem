@@ -10,7 +10,7 @@ interface NavItem {
   path: string;
   labelKey: string;
   permissions: readonly string[];
-  icon: 'home' | 'users' | 'roles' | 'audit' | 'bell' | 'survey' | 'template' | 'recommend' | 'plan' | 'report';
+  icon: 'home' | 'users' | 'roles' | 'audit' | 'bell' | 'survey' | 'template' | 'recommend' | 'plan' | 'report' | 'chart';
 }
 
 interface NavGroup {
@@ -59,7 +59,19 @@ export class SidebarComponent {
           icon: 'recommend',
         },
         { path: '/action-plans', labelKey: 'nav.actionPlans', permissions: [PermissionCodes.ActionPlanView], icon: 'plan' },
+        {
+          path: '/initiatives',
+          labelKey: 'nav.initiatives',
+          permissions: [PermissionCodes.ActionPlanView],
+          icon: 'recommend',
+        },
         { path: '/reports', labelKey: 'nav.reports', permissions: [PermissionCodes.ReportView], icon: 'report' },
+        {
+          path: '/survey-analysis',
+          labelKey: 'nav.surveyAnalysis',
+          permissions: [PermissionCodes.ReportView],
+          icon: 'chart',
+        },
       ],
     },
     {
@@ -120,6 +132,7 @@ export class SidebarComponent {
         'm12 3 1.8 3.6 4 .6-2.9 2.8.7 4L12 14.9 8.4 14.1l.7-4L6.2 7.2l4-.6L12 3Zm-7 14v2h14v-2H5Zm2 4h10v-2H7v2Z',
       plan: 'M5 3h14v2H5V3Zm0 6h8v2H5V9Zm0 6h5v2H5v-2Zm12-4h-5v8h5v-8Zm-2 2v4h-1v-4h1Z',
       report: 'M4 19V5h2v14H4Zm4 0V9h2v10H8Zm4 0v-6h2v6h-4Zm4 0V7h2v12h-2Z',
+      chart: 'M4 20h16v-2H4v2Zm3-4h2v-8H7v8Zm5 0h2V8h-2v8Zm5 0h2v-5h-2v5Z',
     };
     return map[icon];
   }

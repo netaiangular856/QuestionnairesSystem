@@ -48,6 +48,7 @@ builder.Services.AddAuthorization(options =>
         {
             var user = context.User;
             return user.HasClaim(QuestionnairesClaimTypes.Permission, PermissionCodes.LookupView)
+                || user.HasClaim(QuestionnairesClaimTypes.Permission, PermissionCodes.ReportView)
                 || user.HasClaim(QuestionnairesClaimTypes.Permission, PermissionCodes.UserManage)
                 || user.HasClaim(QuestionnairesClaimTypes.Permission, PermissionCodes.RecommendationView)
                 || user.HasClaim(QuestionnairesClaimTypes.Permission, PermissionCodes.RecommendationManage)

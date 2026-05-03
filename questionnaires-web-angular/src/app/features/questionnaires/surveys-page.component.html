@@ -19,7 +19,7 @@
     </section>
   </div>
 
-  <div class="toolbar toolbar--split card card--interactive">
+  <div class="toolbar toolbar--split card card--interactive surveys-toolbar">
     <div class="toolbar__left">
       <input
         class="toolbar__search"
@@ -30,22 +30,24 @@
       />
       <button type="button" class="btn-primary" (click)="page = 1; load()">{{ 'common.search' | t }}</button>
     </div>
-    <div class="view-toggle" role="group" [attr.aria-label]="'q.surveys.view.label' | t">
+    <div class="rec-view-toggle" role="group" [attr.aria-label]="'q.surveys.view.label' | t">
       <button
         type="button"
-        class="view-toggle__btn"
-        [class.view-toggle__btn--active]="viewMode() === 'table'"
-        (click)="setViewMode('table')"
+        class="rec-view-toggle__btn"
+        [class.is-active]="viewMode() === 'cards'"
+        (click)="setViewMode('cards')"
       >
-        {{ 'q.surveys.view.table' | t }}
+        <i class="pi pi-th-large" aria-hidden="true"></i>
+        {{ 'q.surveys.view.cards' | t }}
       </button>
       <button
         type="button"
-        class="view-toggle__btn"
-        [class.view-toggle__btn--active]="viewMode() === 'cards'"
-        (click)="setViewMode('cards')"
+        class="rec-view-toggle__btn"
+        [class.is-active]="viewMode() === 'table'"
+        (click)="setViewMode('table')"
       >
-        {{ 'q.surveys.view.cards' | t }}
+        <i class="pi pi-table" aria-hidden="true"></i>
+        {{ 'q.surveys.view.table' | t }}
       </button>
     </div>
   </div>
@@ -179,31 +181,42 @@
           </div>
         </div>
       } @else {
-        <div class="surveys-card-grid">
+        <div class="surveys-card-grid" role="list">
           @for (row of res.items; track row.id) {
-            <article class="card survey-card card--interactive" [routerLink]="['/surveys', row.id]">
-              <h2 class="survey-card__title">{{ titleOf(row) }}</h2>
-              <div class="survey-card__pills">
-                <span class="q-pill q-pill--neutral">{{ statusKey(row) | t }}</span>
-                <span class="q-pill">v{{ row.version }}</span>
+            <article
+              [class]="'rec-card card--interactive survey-rec-card ' + surveyCardClass(row)"
+              [routerLink]="['/surveys', row.id]"
+              role="listitem"
+            >
+              <div class="rec-card__glow" aria-hidden="true"></div>
+              <header class="rec-card__head">
+                <h2 class="rec-card__title">{{ titleOf(row) }}</h2>
+                <span [class]="'rec-card__status rec-status rec-status--' + surveyStatusVariant(row)">{{
+                  statusKey(row) | t
+                }}</span>
+              </header>
+              <p class="rec-card__assignee">
+                <i class="pi pi-user" aria-hidden="true"></i>
+                {{ row.ownerDisplayName || '—' }}
+              </p>
+              <p class="rec-card__survey">
+                <i class="pi pi-code" aria-hidden="true"></i>
+                v{{ row.version }}
+              </p>
+              <div class="rec-card__meta survey-rec-card__meta">
+                <span class="rec-card__due" [attr.title]="'q.surveys.table.questions' | t"
+                  ><i class="pi pi-list" aria-hidden="true"></i> {{ row.questionCount }}</span
+                >
+                <span class="rec-card__due" [attr.title]="'q.surveys.table.responses' | t"
+                  ><i class="pi pi-users" aria-hidden="true"></i> {{ row.responseCount }}</span
+                >
+                <span class="rec-card__due" [attr.title]="'q.surveys.table.published' | t"
+                  ><i class="pi pi-calendar" aria-hidden="true"></i>
+                  {{ row.publishedAtUtc ? (row.publishedAtUtc | date: 'short') : '—' }}</span
+                >
               </div>
-              <p class="survey-card__owner muted">{{ row.ownerDisplayName || '—' }}</p>
-              <dl class="survey-card__stats">
-                <div>
-                  <dt>{{ 'q.surveys.table.questions' | t }}</dt>
-                  <dd>{{ row.questionCount }}</dd>
-                </div>
-                <div>
-                  <dt>{{ 'q.surveys.table.responses' | t }}</dt>
-                  <dd>{{ row.responseCount }}</dd>
-                </div>
-                <div>
-                  <dt>{{ 'q.surveys.table.published' | t }}</dt>
-                  <dd>{{ row.publishedAtUtc ? (row.publishedAtUtc | date: 'short') : '—' }}</dd>
-                </div>
-              </dl>
               @if (canManage) {
-                <footer class="survey-card__actions" (click)="$event.preventDefault(); $event.stopPropagation()">
+                <footer class="rec-card__actions survey-rec-card__actions" (click)="$event.preventDefault(); $event.stopPropagation()">
                   <div class="survey-row-actions">
                     <a class="action-btn action-btn--info" [routerLink]="['/surveys', row.id]">{{ 'q.surveys.open' | t }}</a>
                     <button
@@ -305,15 +318,15 @@
 
   @if (deleteOpen()) {
     <div class="modal-backdrop" (click)="deleteOpen.set(false)"></div>
-    <div class="modal-panel card" role="dialog" aria-modal="true">
-      <header class="modal-panel__head">
+    <div class="rec-modal-panel card surveys-modal" role="dialog" aria-modal="true">
+      <header class="rec-modal-panel__head">
         <h2>{{ 'q.detail.delete.title' | t }}</h2>
-        <button type="button" class="modal-close" (click)="deleteOpen.set(false)">{{ 'common.close' | t }}</button>
+        <button type="button" class="rec-modal-panel__close" (click)="deleteOpen.set(false)">{{ 'common.close' | t }}</button>
       </header>
-      <div class="modal-panel__body">
-        <p>{{ 'q.detail.delete.confirm' | t }}</p>
+      <div class="rec-modal-panel__body">
+        <p class="surveys-modal__lead">{{ 'q.detail.delete.confirm' | t }}</p>
       </div>
-      <footer class="modal-panel__foot">
+      <footer class="rec-modal-panel__foot">
         <button type="button" class="btn-ghost" (click)="deleteOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
         <button type="button" class="btn-danger" [disabled]="mutationBusy()" (click)="confirmDelete()">
           {{ 'q.detail.actions.delete' | t }}
@@ -324,18 +337,18 @@
 
   @if (rejectOpen()) {
     <div class="modal-backdrop" (click)="rejectOpen.set(false)"></div>
-    <div class="modal-panel card" role="dialog" aria-modal="true">
-      <header class="modal-panel__head">
+    <div class="rec-modal-panel rec-modal-panel--wide card surveys-modal" role="dialog" aria-modal="true">
+      <header class="rec-modal-panel__head">
         <h2>{{ 'q.detail.reject.title' | t }}</h2>
-        <button type="button" class="modal-close" (click)="rejectOpen.set(false)">{{ 'common.close' | t }}</button>
+        <button type="button" class="rec-modal-panel__close" (click)="rejectOpen.set(false)">{{ 'common.close' | t }}</button>
       </header>
-      <div class="modal-panel__body">
-        <label class="field">
+      <div class="rec-modal-panel__body">
+        <label class="surveys-modal__field">
           <span>{{ 'q.detail.reject.reason' | t }}</span>
           <textarea rows="3" [(ngModel)]="rejectReason"></textarea>
         </label>
       </div>
-      <footer class="modal-panel__foot">
+      <footer class="rec-modal-panel__foot">
         <button type="button" class="btn-ghost" (click)="rejectOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
         <button type="button" class="btn-warn" [disabled]="mutationBusy()" (click)="submitReject()">
           {{ 'q.detail.actions.reject' | t }}
@@ -346,13 +359,13 @@
 
   @if (patchOpen()) {
     <div class="modal-backdrop" (click)="patchOpen.set(false)"></div>
-    <div class="modal-panel card" role="dialog" aria-modal="true">
-      <header class="modal-panel__head">
+    <div class="rec-modal-panel rec-modal-panel--wide card surveys-modal" role="dialog" aria-modal="true">
+      <header class="rec-modal-panel__head">
         <h2>{{ 'q.detail.actions.patchStatus' | t }}</h2>
-        <button type="button" class="modal-close" (click)="patchOpen.set(false)">{{ 'common.close' | t }}</button>
+        <button type="button" class="rec-modal-panel__close" (click)="patchOpen.set(false)">{{ 'common.close' | t }}</button>
       </header>
-      <div class="modal-panel__body">
-        <label class="field">
+      <div class="rec-modal-panel__body">
+        <label class="surveys-modal__field">
           <span>{{ 'q.surveys.table.status' | t }}</span>
           <select [(ngModel)]="patchStatus">
             <option [ngValue]="SurveyStatus.Draft">{{ 'q.surveyStatus.draft' | t }}</option>
@@ -363,9 +376,9 @@
             <option [ngValue]="SurveyStatus.Rejected">{{ 'q.surveyStatus.rejected' | t }}</option>
           </select>
         </label>
-        <p class="field-hint muted">{{ 'q.detail.patchHint' | t }}</p>
+        <p class="surveys-modal__hint muted">{{ 'q.detail.patchHint' | t }}</p>
       </div>
-      <footer class="modal-panel__foot">
+      <footer class="rec-modal-panel__foot">
         <button type="button" class="btn-ghost" (click)="patchOpen.set(false)">{{ 'users.actions.cancel' | t }}</button>
         <button type="button" class="btn-primary" [disabled]="mutationBusy()" (click)="applyPatch()">
           {{ 'q.detail.actions.applyPatch' | t }}

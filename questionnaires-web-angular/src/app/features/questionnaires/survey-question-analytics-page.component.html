@@ -1,126 +1,286 @@
-﻿<div class="page-workspace">
-  <a [routerLink]="['/surveys', surveyId]" class="back-link">← {{ "q.subpages.back" | t }}</a>
-  <h1 class="page-title">{{ "q.subpages.questionAnalyticsTitle" | t }}</h1>
-
-  @if (busy()) {
-    <div class="card card--muted">{{ "common.loading" | t }}</div>
-  } @else if (failed()) {
-    <div class="card card--muted">{{ "q.detail.analytics.error" | t }}</div>
-  } @else {
-    @if (analytics(); as data) {
-      <!-- Main Analytics Grid -->
-      <div class="analytics-main-grid">
-        <!-- Overview Stats Section -->
-        <div class="overview-section">
-          <div class="section-header">
-            <h2>{{ 'q.detail.section.overview' | t }}</h2>
-          </div>
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-icon">👥</div>
-              <div class="stat-content">
-                <h3>{{ 'q.detail.analytics.participantsCount' | t }}</h3>
-                <p class="stat-number">{{ data.overview.totalParticipants }}</p>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">✅</div>
-              <div class="stat-content">
-                <h3>{{ 'q.detail.analytics.submitted' | t }}</h3>
-                <p class="stat-number">{{ data.overview.submittedResponses }}</p>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">📊</div>
-              <div class="stat-content">
-                <h3>{{ 'q.detail.analytics.completionRate' | t }}</h3>
-                <p class="stat-number">{{ data.overview.completionRate | number:"1.1-1" }}%</p>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">❓</div>
-              <div class="stat-content">
-                <h3>{{ 'q.detail.analytics.questionsCount' | t }}</h3>
-                <p class="stat-number">{{ data.overview.totalQuestions }}</p>
-              </div>
-            </div>
-          </div>
+﻿<div class="page-workspace qa-dashboard">
+  <div class="qa-layout">
+    <header class="qa-page-head qa-span-12">
+      <a [routerLink]="['/surveys', surveyId]" class="qa-back">
+        <i class="pi pi-arrow-left qa-back__icon" aria-hidden="true"></i>
+        <span>{{ "q.subpages.back" | t }}</span>
+      </a>
+      <div class="qa-page-head__main">
+        <div class="qa-page-head__titles">
+          <h1 class="qa-page-head__title">{{ "q.subpages.questionAnalyticsTitle" | t }}</h1>
+          <p class="qa-page-head__lead">{{ "q.subpages.questionAnalyticsLead" | t }}</p>
         </div>
+      </div>
+    </header>
 
-        <!-- Charts Section -->
-        <div class="charts-section">
-          <div class="section-header">
-            <h2>{{ 'q.detail.analytics.title' | t }}</h2>
+    @if (busy()) {
+      <div class="card card--muted qa-state qa-state--loading qa-span-12">
+        <i class="pi pi-spinner pi-spin qa-state__icon" aria-hidden="true"></i>
+        <span>{{ "common.loading" | t }}</span>
+      </div>
+    } @else if (failed()) {
+      <div class="card card--muted qa-state qa-state--error qa-span-12">
+        <i class="pi pi-exclamation-circle qa-state__icon" aria-hidden="true"></i>
+        <span>{{ "q.detail.analytics.error" | t }}</span>
+      </div>
+    } @else {
+      @if (analytics(); as data) {
+        <!-- Overview KPIs — 12-column grid -->
+        <section class="qa-section qa-section--overview qa-span-12" aria-labelledby="qa-overview-heading">
+          <div class="qa-section__head">
+            <span class="qa-section__eyebrow">{{ "q.detail.section.overview" | t }}</span>
+            <h2 id="qa-overview-heading" class="qa-section__title">{{ "q.detail.analytics.sectionOverview" | t }}</h2>
           </div>
-          <div class="charts-grid">
-            <!-- Response Timeline Chart -->
-            <div class="chart-container">
-              <h3>📈 {{ 'q.detail.analytics.totalResponses' | t }}</h3>
-              <div class="chart-wrapper">
-                <canvas baseChart [data]="timelineChartData()" [options]="chartOptions"></canvas>
+          <div class="qa-kpi-grid">
+            <article class="qa-kpi qa-kpi--participants qa-kpi--col">
+              <div class="qa-kpi__icon-wrap" aria-hidden="true">
+                <i class="pi pi-id-card qa-kpi__icon"></i>
               </div>
-            </div>
-
-            <!-- Category Distribution Chart -->
-            <div class="chart-container">
-              <h3>🍩 {{ 'q.detail.analytics.otherResponses' | t }}</h3>
-              <div class="chart-wrapper">
-                <canvas baseChart [data]="categoryChartData()" [options]="chartOptions"></canvas>
+              <div class="qa-kpi__body">
+                <p class="qa-kpi__label">{{ "q.detail.analytics.participantsCount" | t }}</p>
+                <p class="qa-kpi__value">{{ data.overview.totalParticipants }}</p>
               </div>
-            </div>
+            </article>
+            <article class="qa-kpi qa-kpi--submitted qa-kpi--col">
+              <div class="qa-kpi__icon-wrap" aria-hidden="true">
+                <i class="pi pi-check-circle qa-kpi__icon"></i>
+              </div>
+              <div class="qa-kpi__body">
+                <p class="qa-kpi__label">{{ "q.detail.analytics.submitted" | t }}</p>
+                <p class="qa-kpi__value">{{ data.overview.submittedResponses }}</p>
+              </div>
+            </article>
+            <article class="qa-kpi qa-kpi--rate qa-kpi--col">
+              <div class="qa-kpi__icon-wrap" aria-hidden="true">
+                <i class="pi pi-percentage qa-kpi__icon"></i>
+              </div>
+              <div class="qa-kpi__body">
+                <p class="qa-kpi__label">{{ "q.detail.analytics.completionRate" | t }}</p>
+                <p class="qa-kpi__value">{{ data.overview.completionRate | number: "1.1-1" }}%</p>
+              </div>
+            </article>
+            <article class="qa-kpi qa-kpi--questions qa-kpi--col">
+              <div class="qa-kpi__icon-wrap" aria-hidden="true">
+                <i class="pi pi-list qa-kpi__icon"></i>
+              </div>
+              <div class="qa-kpi__body">
+                <p class="qa-kpi__label">{{ "q.detail.analytics.questionsCount" | t }}</p>
+                <p class="qa-kpi__value">{{ data.overview.totalQuestions }}</p>
+              </div>
+            </article>
+          </div>
+        </section>
 
-            <!-- Rating Distribution Chart -->
-            @if (ratingChartData().datasets.length > 0) {
-              <div class="chart-container">
-                <h3>⭐ {{ 'q.detail.analytics.title' | t }}</h3>
-                <div class="chart-wrapper">
-                  <canvas baseChart [data]="ratingChartData()" [options]="chartOptions"></canvas>
+        <!-- Charts — responsive 12-column placements -->
+        <section class="qa-section qa-section--charts qa-span-12" aria-labelledby="qa-charts-heading">
+          <div class="qa-section__head">
+            <span class="qa-section__eyebrow">{{ "q.detail.analytics.title" | t }}</span>
+            <h2 id="qa-charts-heading" class="qa-section__title">{{ "q.detail.analytics.sectionCharts" | t }}</h2>
+          </div>
+
+          <div class="qa-chart-grid">
+            <article class="qa-chart-card qa-chart-card--line">
+              <header class="qa-chart-card__head">
+                <span class="qa-chart-card__icon" aria-hidden="true">
+                  <i class="pi pi-chart-line"></i>
+                </span>
+                <h3 class="qa-chart-card__title">{{ "q.detail.analytics.chartResponsesOverTime" | t }}</h3>
+              </header>
+              <div class="qa-chart-card__canvas qa-chart-card__canvas--tall">
+                <canvas baseChart [type]="'line'" [data]="timelineChartData()" [options]="lineChartOptions()"></canvas>
+              </div>
+            </article>
+
+            <article class="qa-chart-card qa-chart-card--category">
+              <header class="qa-chart-card__head">
+                <span class="qa-chart-card__icon" aria-hidden="true">
+                  <i class="pi pi-th-large"></i>
+                </span>
+                <h3 class="qa-chart-card__title">{{ "q.detail.analytics.chartCategoryBreakdown" | t }}</h3>
+              </header>
+              <div class="qa-chart-card__canvas qa-chart-card__canvas--donut">
+                <canvas baseChart [type]="'doughnut'" [data]="categoryChartData()" [options]="radialChartOptions()"></canvas>
+              </div>
+            </article>
+
+            @if (showRatingSection()) {
+              <article class="qa-chart-card qa-chart-card--rating">
+                <header class="qa-chart-card__head">
+                  <span class="qa-chart-card__icon" aria-hidden="true">
+                    <i class="pi pi-star"></i>
+                  </span>
+                  <h3 class="qa-chart-card__title">{{ "q.detail.analytics.chartRatingBreakdown" | t }}</h3>
+                </header>
+                <div class="qa-chart-card__canvas qa-chart-card__canvas--donut">
+                  <canvas baseChart [type]="'doughnut'" [data]="ratingChartData()" [options]="radialChartOptions()"></canvas>
                 </div>
-              </div>
+              </article>
             }
 
-            <!-- Top Questions Chart -->
-            <div class="chart-container">
-              <h3>📊 {{ 'q.detail.analytics.perQuestion' | t }}</h3>
-              <div class="chart-wrapper">
-                <canvas baseChart [data]="questionChartData()" [options]="chartOptions"></canvas>
+            <article
+              class="qa-chart-card qa-chart-card--topq"
+              [class.qa-chart-card--topq-wide]="!showRatingSection()">
+              <header class="qa-chart-card__head">
+                <span class="qa-chart-card__icon" aria-hidden="true">
+                  <i class="pi pi-chart-bar"></i>
+                </span>
+                <h3 class="qa-chart-card__title">{{ "q.detail.analytics.chartAnswersByQuestion" | t }}</h3>
+              </header>
+              <div class="qa-chart-card__canvas qa-chart-card__canvas--hbar">
+                <canvas baseChart [type]="'bar'" [data]="questionChartData()" [options]="columnChartOptions()"></canvas>
               </div>
-            </div>
+            </article>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <!-- Detailed Question Analytics -->
-      <div class="questions-analytics">
-        <h2>{{ 'q.detail.analytics.perQuestion' | t }}</h2>
-        <div class="questions-grid">
-          @for (question of data.questions; track question.questionId) {
-            <div class="question-card card">
-              <h3>{{ getQuestionTitle(question) }}</h3>
-              <p class="question-type">{{ getQuestionTypeLabel(question.questionType) }}</p>
-              <p class="answer-count">{{ question.totalAnswers }} {{ 'q.detail.analytics.answers' | t }}</p>
-              
-              @if (question.averageRating) {
-                <div class="rating-info">
-                  <span>{{ 'q.detail.analytics.completionRate' | t }}: {{ question.averageRating | number:"1.1-1" }}</span>
-                  <span>Min: {{ question.minRating | number:"1.0-1" }}</span>
-                  <span>Max: {{ question.maxRating | number:"1.0-1" }}</span>
+        <!-- Questions -->
+        <section class="qa-section qa-section--questions qa-span-12" aria-labelledby="qa-questions-heading">
+          <div class="qa-section__head qa-section__head--borderless">
+            <span class="qa-section__eyebrow">{{ "q.detail.analytics.perQuestion" | t }}</span>
+            <h2 id="qa-questions-heading" class="qa-section__title">{{ "q.detail.analytics.sectionQuestionDetail" | t }}</h2>
+          </div>
+
+          <div class="qa-question-grid">
+            @for (question of data.questions; track question.questionId) {
+              @let spec = getQuestionSpec(question.questionId);
+              <article class="qa-question-card">
+                <div class="qa-question-card__top">
+                  <div class="qa-question-card__titles">
+                    <h3 class="qa-question-card__title">{{ getQuestionTitle(question) }}</h3>
+                    <span class="qa-pill">{{ getQuestionTypeLabel(question.questionType) }}</span>
+                  </div>
+                  <div class="qa-stat-pill" [attr.aria-label]="('q.detail.analytics.answers' | t)">
+                    <span class="qa-stat-pill__value">{{ question.totalAnswers }}</span>
+                    <span class="qa-stat-pill__label">{{ "q.detail.analytics.answers" | t }}</span>
+                  </div>
                 </div>
-              }
 
-              <!-- Chart for each question -->
-              <div class="question-chart">
-                <canvas 
-                  baseChart 
-                  [data]="getQuestionChart(question.questionId)" 
-                  [type]="getQuestionChartType(question.questionType)"
-                  [options]="chartOptions">
-                </canvas>
-              </div>
-            </div>
-          }
-        </div>
-      </div>
+                @if (question.averageRating !== undefined && question.averageRating !== null) {
+                  <div class="qa-rating-strip">
+                    <div class="qa-rating-strip__item qa-rating-strip__item--accent">
+                      <span class="qa-rating-strip__label">{{ "q.detail.analytics.averageRating" | t }}</span>
+                      <span class="qa-rating-strip__value">{{ question.averageRating | number: "1.1-1" }}</span>
+                    </div>
+                    <div class="qa-rating-strip__item">
+                      <span class="qa-rating-strip__label">{{ "q.detail.analytics.minRating" | t }}</span>
+                      <span class="qa-rating-strip__value">{{ question.minRating | number: "1.0-1" }}</span>
+                    </div>
+                    <div class="qa-rating-strip__item">
+                      <span class="qa-rating-strip__label">{{ "q.detail.analytics.maxRating" | t }}</span>
+                      <span class="qa-rating-strip__value">{{ question.maxRating | number: "1.0-1" }}</span>
+                    </div>
+                  </div>
+                }
+
+                @if (spec) {
+                  <div class="qa-question-card__chart" [class.qa-question-card__chart--donut]="spec.chartType === 'doughnut'">
+                    <canvas
+                      baseChart
+                      [type]="spec.chartType"
+                      [data]="spec.data"
+                      [options]="optionsForQuestionSpec(spec)">
+                    </canvas>
+                  </div>
+                } @else if (question.questionType === "ShortText") {
+                  <div class="qa-text-responses qa-text-responses--short">
+                    <div class="qa-text-responses__head">
+                      <span class="qa-text-responses__icon" aria-hidden="true">
+                        <i class="pi pi-pencil"></i>
+                      </span>
+                      <div class="qa-text-responses__intro">
+                        <p class="qa-text-responses__label">{{ "q.detail.analytics.textShortHeadline" | t }}</p>
+                        <p class="qa-text-responses__sublabel">{{ "q.detail.analytics.textShortSub" | t }}</p>
+                      </div>
+                    </div>
+                    <div class="qa-text-responses__main">
+                      <div class="qa-text-responses__left">
+                        <div class="qa-text-responses__count-row">
+                          <span class="qa-text-responses__count">{{ question.totalAnswers }}</span>
+                          <span class="qa-text-responses__count-unit">{{ "q.detail.analytics.answers" | t }}</span>
+                        </div>
+                        <div class="qa-text-responses__mock-lines" aria-hidden="true">
+                          <span></span><span></span><span></span>
+                        </div>
+                      </div>
+                      @if (data.overview.submittedResponses > 0) {
+                        <div
+                          class="qa-text-responses__ring"
+                          [style.--qa-pct]="answerSharePercent(question, data.overview)">
+                          <div class="qa-text-responses__ring-inner">
+                            <span class="qa-text-responses__ring-value">
+                              {{ answerSharePercent(question, data.overview) | number: "1.0-0" }}%
+                            </span>
+                            <span class="qa-text-responses__ring-cap">{{ "q.detail.analytics.textShareRingCaption" | t }}</span>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                } @else if (question.questionType === "LongText") {
+                  <div class="qa-text-responses qa-text-responses--long">
+                    <div class="qa-text-responses__head">
+                      <span class="qa-text-responses__icon" aria-hidden="true">
+                        <i class="pi pi-align-justify"></i>
+                      </span>
+                      <div class="qa-text-responses__intro">
+                        <p class="qa-text-responses__label">{{ "q.detail.analytics.textLongHeadline" | t }}</p>
+                        <p class="qa-text-responses__sublabel">{{ "q.detail.analytics.textLongSub" | t }}</p>
+                      </div>
+                    </div>
+                    <div class="qa-text-responses__main qa-text-responses__main--long">
+                      <div class="qa-text-responses__paper">
+                        <div class="qa-text-responses__count-row qa-text-responses__count-row--inline">
+                          <span class="qa-text-responses__count qa-text-responses__count--compact">{{ question.totalAnswers }}</span>
+                          <span class="qa-text-responses__count-unit">{{ "q.detail.analytics.totalRecordedAnswers" | t }}</span>
+                        </div>
+                        <div class="qa-text-responses__mock-lines qa-text-responses__mock-lines--long" aria-hidden="true">
+                          <span></span><span></span><span></span><span></span><span></span>
+                        </div>
+                      </div>
+                      @if (data.overview.submittedResponses > 0) {
+                        <div
+                          class="qa-text-responses__ring qa-text-responses__ring--large"
+                          [style.--qa-pct]="answerSharePercent(question, data.overview)">
+                          <div class="qa-text-responses__ring-inner">
+                            <span class="qa-text-responses__ring-value">
+                              {{ answerSharePercent(question, data.overview) | number: "1.0-0" }}%
+                            </span>
+                            <span class="qa-text-responses__ring-cap">{{ "q.detail.analytics.textShareRingCaption" | t }}</span>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                } @else {
+                  <div class="qa-question-kpi">
+                    <div class="qa-question-kpi__hero">
+                      <span class="qa-question-kpi__number">{{ question.totalAnswers }}</span>
+                      <p class="qa-question-kpi__caption">{{ "q.detail.analytics.totalRecordedAnswers" | t }}</p>
+                    </div>
+                    @if (data.overview.submittedResponses > 0 && question.totalAnswers > 0) {
+                      <div class="qa-question-kpi__meter-wrap">
+                        <div class="qa-question-kpi__meter" role="presentation">
+                          <div
+                            class="qa-question-kpi__meter-fill"
+                            [style.width.%]="answerSharePercent(question, data.overview)"></div>
+                        </div>
+                        <p class="qa-question-kpi__meter-label">
+                          {{ "q.detail.analytics.shareOfSubmitted" | t }}
+                          <strong>{{ answerSharePercent(question, data.overview) | number: "1.0-1" }}%</strong>
+                        </p>
+                      </div>
+                    }
+                    <p class="qa-question-kpi__hint">
+                      <i class="pi pi-info-circle qa-question-kpi__hint-icon" aria-hidden="true"></i>
+                      {{ "q.detail.analytics.openEndedKpiHint" | t }}
+                    </p>
+                  </div>
+                }
+              </article>
+            }
+          </div>
+        </section>
+      }
     }
-  }
+  </div>
 </div>

@@ -109,6 +109,37 @@ export class SurveysPageComponent implements OnInit {
     return qSurveyStatusKey(row.status);
   }
 
+  /** Matches `.rec-card--*` accents from recommendations */
+  surveyCardClass(row: SurveyListItemDto): string {
+    switch (row.status) {
+      case SurveyStatus.Published:
+        return 'rec-card--implemented';
+      case SurveyStatus.Closed:
+      case SurveyStatus.Rejected:
+        return 'rec-card--dismissed';
+      case SurveyStatus.PendingApproval:
+      case SurveyStatus.Approved:
+        return 'rec-card--active';
+      default:
+        return 'rec-card--draft';
+    }
+  }
+
+  surveyStatusVariant(row: SurveyListItemDto): string {
+    switch (row.status) {
+      case SurveyStatus.Published:
+        return 'implemented';
+      case SurveyStatus.Closed:
+      case SurveyStatus.Rejected:
+        return 'dismissed';
+      case SurveyStatus.PendingApproval:
+      case SurveyStatus.Approved:
+        return 'active';
+      default:
+        return 'draft';
+    }
+  }
+
   setViewMode(mode: SurveyViewMode): void {
     this.viewMode.set(mode);
   }

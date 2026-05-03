@@ -23,11 +23,22 @@ export enum RecommendationStatus {
   Dismissed = 4,
 }
 
+/** UI tier for create/edit forms (maps to numeric priority). */
+export type RecommendationPriorityTier = 'low' | 'medium' | 'high';
+
 export enum ActionPlanStatus {
   Draft = 1,
   Active = 2,
   Completed = 3,
   Cancelled = 4,
+}
+
+export enum InitiativeStatus {
+  Planned = 1,
+  InProgress = 2,
+  Completed = 3,
+  AtRisk = 4,
+  Cancelled = 5,
 }
 
 export enum ParticipantStatus {
@@ -41,6 +52,13 @@ export enum ResponseStatus {
   InProgress = 1,
   Submitted = 2,
   Invalid = 3,
+}
+
+/** Matches backend LookupItemDto — used by /api/lookups/*. */
+export interface LookupItemDto {
+  id: string;
+  name: string;
+  email: string | null;
 }
 
 export interface SurveyListItemDto {
@@ -95,6 +113,8 @@ export interface CreateSurveyQuestionItem {
   isRequired: boolean;
   optionsJson?: string | null;
   displayOrder?: number | null;
+  /** Client-only drafts for single/multi choice; mapped to optionsJson on save. */
+  choiceOptions?: { labelAr: string; labelEn: string }[] | null;
 }
 
 export interface CreateSurveyRequest {
@@ -253,6 +273,31 @@ export interface RecommendationDto {
   dueDateUtc: string | null;
 }
 
+/** POST /api/recommendations */
+export interface CreateRecommendationRequest {
+  surveyId: string | null;
+  titleAr: string;
+  titleEn: string;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
+  priority: number;
+  assignedToUserId?: string | null;
+  dueDateUtc?: string | null;
+}
+
+/** PUT /api/recommendations/{id} */
+export interface UpdateRecommendationRequest {
+  titleAr: string;
+  titleEn: string;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
+  priority: number;
+  status: RecommendationStatus;
+  assignedToUserId?: string | null;
+  dueDateUtc?: string | null;
+  surveyId: string | null;
+}
+
 export interface ActionPlanDto {
   id: string;
   titleAr: string;
@@ -267,11 +312,183 @@ export interface ActionPlanDto {
   endDateUtc: string | null;
 }
 
+/** Row from GET /api/initiatives */
+export interface InitiativeListItemDto {
+  id: string;
+  actionPlanId: string;
+  titleAr: string;
+  titleEn: string;
+  status: InitiativeStatus;
+  ownerDisplayName: string | null;
+  targetDateUtc: string | null;
+  actionPlanTitleAr: string;
+  actionPlanTitleEn: string;
+}
+
+export interface InitiativeDto {
+  id: string;
+  actionPlanId: string;
+  titleAr: string;
+  titleEn: string;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
+  status: InitiativeStatus;
+  ownerUserId: string | null;
+  ownerDisplayName: string | null;
+  targetDateUtc: string | null;
+}
+
+export interface InitiativeProgressDto {
+  id: string;
+  initiativeId: string;
+  progressPercent: number | null;
+  notes: string | null;
+  recordedAtUtc: string;
+  recordedByDisplayName: string | null;
+}
+
+/** POST /api/action-plans */
+export interface CreateActionPlanRequest {
+  titleAr: string;
+  titleEn: string;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
+  surveyId?: string | null;
+  ownerUserId?: string | null;
+  startDateUtc?: string | null;
+  endDateUtc?: string | null;
+}
+
+/** PUT /api/action-plans/{id} */
+export interface UpdateActionPlanRequest {
+  titleAr: string;
+  titleEn: string;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
+  surveyId?: string | null;
+  ownerUserId?: string | null;
+  status: ActionPlanStatus;
+  startDateUtc?: string | null;
+  endDateUtc?: string | null;
+}
+
+/** POST /api/action-plans/{id}/initiatives */
+export interface CreateInitiativeRequest {
+  titleAr: string;
+  titleEn: string;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
+  ownerUserId?: string | null;
+  targetDateUtc?: string | null;
+}
+
+/** PUT /api/initiatives/{id} */
+export interface UpdateInitiativeRequest {
+  titleAr: string;
+  titleEn: string;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
+  status: InitiativeStatus;
+  ownerUserId?: string | null;
+  targetDateUtc?: string | null;
+}
+
+/** POST /api/initiatives/{id}/progress */
+export interface AddInitiativeProgressRequest {
+  progressPercent?: number | null;
+  notes?: string | null;
+}
+
 export interface DashboardReportDto {
   totalSurveys: number;
   publishedSurveys: number;
   totalResponses: number;
   openActionPlans: number;
+}
+
+/** Workspace-wide survey analytics (filtered by date and/or survey). */
+export interface CrossSurveyAnalyticsFilterRequest {
+  surveyId?: string | null;
+  fromUtc?: string | null;
+  toUtc?: string | null;
+  /** PDF/Excel language: ar | en */
+  lang?: string | null;
+  /** When true, API includes every answer row (large payload). Exports set this server-side. */
+  includeAnswerDetails?: boolean;
+}
+
+export interface CrossSurveyAnalyticsDto {
+  appliedFilter: CrossSurveyAnalyticsFilterSnapshotDto;
+  overview: CrossSurveyOverviewDto;
+  surveyStatusDistribution: NamedCountDto[];
+  responseStatusDistribution: NamedCountDto[];
+  /** Rich analytics — present when API is updated. */
+  audienceScopeDistribution?: NamedCountDto[];
+  participantStatusDistribution?: NamedCountDto[];
+  submissionsByDayOfWeek?: NamedCountDto[];
+  submissionsByDay: TimelinePointDto[];
+  topSurveysBySubmissions: TopSurveyRowDto[];
+  /** Rating/scale answers aggregated for the same submitted-response scope as the filter. */
+  ratingsDistribution?: RatingAnalyticsDto[];
+  /** Answer counts per question type (submitted responses in scope). */
+  questionTypeAnswerTotals?: NamedCountDto[];
+  /** Frequent tokens from ShortText/LongText (same scope). */
+  textAnswerKeywords?: KeywordCountDto[];
+  /** Flat rows: one per question answer in submitted responses (only when includeAnswerDetails). */
+  answerDetails?: CrossSurveyAnswerDetailRowDto[];
+}
+
+/** One answer cell for full-data export / optional JSON analytics payload. */
+export interface CrossSurveyAnswerDetailRowDto {
+  surveyTitleAr: string;
+  surveyTitleEn: string;
+  submittedAtUtc: string | null;
+  respondentDisplayName: string | null;
+  questionTitleAr: string;
+  questionTitleEn: string;
+  questionTypeKey: string;
+  answerTextAr: string;
+  answerTextEn: string;
+}
+
+export interface CrossSurveyAnalyticsFilterSnapshotDto {
+  surveyId: string | null;
+  fromUtc: string | null;
+  toUtc: string | null;
+  surveyTitleAr?: string | null;
+  surveyTitleEn?: string | null;
+}
+
+export interface CrossSurveyOverviewDto {
+  surveysInScope: number;
+  publishedSurveys: number;
+  submittedResponsesInPeriod: number;
+  surveysWithSubmissionsInPeriod: number;
+  invitedParticipantsInScope: number;
+  inProgressResponsesOpen: number;
+  submissionsPerDayInPeriod: number;
+  totalQuestionsInScope: number;
+  completedParticipantsInScope?: number;
+  declinedParticipantsInScope?: number;
+  averageMinutesToSubmitInPeriod?: number;
+}
+
+export interface NamedCountDto {
+  key: string;
+  count: number;
+}
+
+export interface TimelinePointDto {
+  date: string;
+  count: number;
+}
+
+export interface TopSurveyRowDto {
+  surveyId: string;
+  titleAr: string;
+  titleEn: string;
+  status: string;
+  submissionsInPeriod: number;
 }
 
 export interface ParticipantDto {
@@ -331,6 +548,11 @@ export interface CreateResponseRequest {
   answers?: AnswerUpsertDto[] | null;
 }
 
+export interface KeywordCountDto {
+  keyword: string;
+  count: number;
+}
+
 export interface SurveyComprehensiveAnalyticsDto {
   surveyId: string;
   surveyTitle: string;
@@ -339,6 +561,7 @@ export interface SurveyComprehensiveAnalyticsDto {
   questions: QuestionAnalyticsDto[];
   categories: CategoryAnalyticsDto[];
   ratings: RatingAnalyticsDto[];
+  textAnswerKeywords?: KeywordCountDto[];
 }
 
 export interface SurveyOverviewAnalytics {
@@ -368,6 +591,9 @@ export interface QuestionAnalyticsDto {
 
 export interface AnswerDistributionDto {
   optionText: string;
+  /** Localized label (API). When set, use with optionTextEn for the active UI language. */
+  optionTextAr?: string;
+  optionTextEn?: string;
   count: number;
   percentage: number;
 }

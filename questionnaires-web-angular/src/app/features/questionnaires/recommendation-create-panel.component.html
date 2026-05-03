@@ -1,0 +1,157 @@
+<div class="rec-create">
+  @if (!lockedSurveyId) {
+    <div class="rec-create__field">
+      <label class="rec-create__label" for="rec-survey">{{ 'q.rec.create.survey' | t }}</label>
+      @if (surveysBusy()) {
+        <p class="rec-create__hint muted">{{ 'common.loading' | t }}</p>
+      } @else if (surveysFailed()) {
+        <p class="rec-create__hint rec-create__hint--err">{{ 'q.rec.create.surveyLoadError' | t }}</p>
+      } @else {
+        <select
+          id="rec-survey"
+          class="rec-create__select"
+          [class.rec-create__select--invalid]="surveyErr"
+          name="surveyId"
+          [(ngModel)]="selectedSurveyId"
+          (ngModelChange)="surveyErr = ''"
+        >
+          <option [ngValue]="null">{{ 'q.rec.create.surveyPlaceholder' | t }}</option>
+          @for (s of surveys(); track s.id) {
+            <option [ngValue]="s.id">{{ surveyLabel(s) }}</option>
+          }
+        </select>
+      }
+      @if (surveyErr) {
+        <p class="rec-create__hint rec-create__hint--err">{{ surveyErr }}</p>
+      }
+    </div>
+  } @else {
+    <div class="rec-create__locked-pill" role="status">
+      <i class="pi pi-link" aria-hidden="true"></i>
+      <span class="rec-create__locked-text">{{ 'q.rec.create.linkedSurvey' | t }}</span>
+      @if (lockedSurveyLabel) {
+        <strong class="rec-create__locked-title">{{ lockedSurveyLabel }}</strong>
+      }
+    </div>
+  }
+
+  <div class="rec-create__field">
+    <label class="rec-create__label" for="rec-assignee-dd">{{ 'q.rec.create.assignee' | t }}</label>
+    @if (usersBusy()) {
+      <p class="rec-create__hint muted">{{ 'common.loading' | t }}</p>
+    } @else {
+      <p-dropdown
+        inputId="rec-assignee-dd"
+        name="assigneePick"
+        [(ngModel)]="assigneePick"
+        [options]="assigneeDropdownOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [filter]="true"
+        filterBy="label"
+        [filterPlaceholder]="'q.rec.create.assigneeSearch' | t"
+        [resetFilterOnHide]="true"
+        appendTo="body"
+        [fluid]="true"
+        variant="outlined"
+        scrollHeight="14rem"
+        styleClass="rec-assignee-dropdown"
+        panelStyleClass="rec-assignee-overlay"
+        [attr.aria-filter-label]="'q.rec.create.assigneeSearch' | t"
+      >
+      </p-dropdown>
+    }
+    <p class="rec-create__field-hint muted">{{ 'q.rec.create.assigneeHint' | t }}</p>
+  </div>
+
+  <div class="rec-create__grid">
+    <div class="rec-create__field">
+      <label class="rec-create__label" for="rec-title-ar">{{ 'q.rec.create.titleAr' | t }}</label>
+      <input
+        id="rec-title-ar"
+        class="rec-create__input"
+        [class.rec-create__input--invalid]="titleArErr"
+        type="text"
+        name="titleAr"
+        [(ngModel)]="titleAr"
+        (ngModelChange)="titleArErr = ''"
+        maxlength="500"
+        autocomplete="off"
+      />
+      @if (titleArErr) {
+        <p class="rec-create__hint rec-create__hint--err">{{ titleArErr }}</p>
+      }
+    </div>
+    <div class="rec-create__field">
+      <label class="rec-create__label" for="rec-title-en">{{ 'q.rec.create.titleEn' | t }}</label>
+      <input
+        id="rec-title-en"
+        class="rec-create__input"
+        [class.rec-create__input--invalid]="titleEnErr"
+        type="text"
+        name="titleEn"
+        [(ngModel)]="titleEn"
+        (ngModelChange)="titleEnErr = ''"
+        maxlength="500"
+        autocomplete="off"
+      />
+      @if (titleEnErr) {
+        <p class="rec-create__hint rec-create__hint--err">{{ titleEnErr }}</p>
+      }
+    </div>
+  </div>
+
+  <div class="rec-create__grid">
+    <div class="rec-create__field">
+      <label class="rec-create__label" for="rec-desc-ar">{{ 'q.rec.create.descAr' | t }}</label>
+      <textarea id="rec-desc-ar" class="rec-create__textarea" name="descriptionAr" [(ngModel)]="descriptionAr" rows="2" maxlength="4000"></textarea>
+    </div>
+    <div class="rec-create__field">
+      <label class="rec-create__label" for="rec-desc-en">{{ 'q.rec.create.descEn' | t }}</label>
+      <textarea id="rec-desc-en" class="rec-create__textarea" name="descriptionEn" [(ngModel)]="descriptionEn" rows="2" maxlength="4000"></textarea>
+    </div>
+  </div>
+
+  <div class="rec-create__row">
+    <div class="rec-create__field rec-create__field--priority">
+      <label class="rec-create__label" for="rec-priority">{{ 'q.rec.create.priority' | t }}</label>
+      <select id="rec-priority" class="rec-create__select" name="priorityTier" [(ngModel)]="priorityTier">
+        <option [ngValue]="'low'">{{ 'q.rec.priorityTier.low' | t }}</option>
+        <option [ngValue]="'medium'">{{ 'q.rec.priorityTier.mid' | t }}</option>
+        <option [ngValue]="'high'">{{ 'q.rec.priorityTier.high' | t }}</option>
+      </select>
+    </div>
+    <div class="rec-create__field rec-create__field--grow">
+      <span class="rec-create__label" id="rec-due-label">{{ 'q.rec.create.due' | t }}</span>
+      <div class="rec-create__datetime">
+        <input
+          #dueInput
+          id="rec-due"
+          class="rec-create__input rec-create__input--datetime"
+          type="datetime-local"
+          name="dueLocal"
+          [(ngModel)]="dueDateLocal"
+          [attr.aria-labelledby]="'rec-due-label'"
+        />
+        <button
+          type="button"
+          class="rec-create__datetime-btn"
+          (click)="openDuePicker(dueInput)"
+          [attr.aria-label]="'q.rec.create.pickDue' | t"
+        >
+          <i class="pi pi-calendar" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="rec-create__actions">
+    <button type="button" class="btn-primary rec-create__submit" [disabled]="submitBusy()" (click)="submit()">
+      @if (submitBusy()) {
+        {{ 'common.loading' | t }}
+      } @else {
+        {{ 'q.rec.create.submit' | t }}
+      }
+    </button>
+  </div>
+</div>

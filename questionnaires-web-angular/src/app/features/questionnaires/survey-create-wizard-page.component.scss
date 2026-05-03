@@ -216,6 +216,59 @@
   font-size: 0.93rem;
 }
 
+.sv-datetime-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+
+.sv-datetime-wrap input[type='datetime-local'] {
+  width: 100%;
+  min-height: 2.375rem;
+  padding-inline-end: 2.75rem;
+  color-scheme: light;
+}
+
+.sv-datetime-wrap__btn {
+  position: absolute;
+  inset-inline-end: 0.3rem;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.15rem;
+  height: 2rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: rgba(13, 148, 136, 0.12);
+  color: var(--sv-accent-strong);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.sv-datetime-wrap__btn:hover {
+  background: rgba(13, 148, 136, 0.22);
+}
+
+.sv-datetime-wrap__btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-card), 0 0 0 4px rgba(13, 148, 136, 0.35);
+}
+
+.sv-datetime-wrap__btn .pi {
+  font-size: 1.05rem;
+}
+
+/* Native glyph often invisible next to themed fields; button above replaces it */
+.sv-datetime-wrap input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
 .sv-field input:focus,
 .sv-field textarea:focus,
 .sv-field select:focus {
@@ -435,4 +488,58 @@
 .btn-sm {
   padding: 0.3rem 0.55rem;
   font-size: 0.82rem;
+}
+
+.sv-choice-options {
+  margin-top: 0.35rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px dashed rgba(13, 148, 136, 0.35);
+  background: rgba(240, 253, 250, 0.45);
+}
+
+.sv-choice-options__title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #0f766e;
+}
+
+.sv-choice-options__hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.sv-choice-options__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 0.65rem 0.75rem;
+  align-items: end;
+  margin-bottom: 0.65rem;
+}
+
+@media (max-width: 640px) {
+  .sv-choice-options__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sv-choice-options__remove {
+  border: none;
+  background: transparent;
+  color: #b91c1c;
+  font-weight: 700;
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 0.35rem 0.25rem;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.sv-choice-options__remove:hover {
+  text-decoration: underline;
+}
+
+.sv-choice-options__add {
+  margin-top: 0.15rem;
 }

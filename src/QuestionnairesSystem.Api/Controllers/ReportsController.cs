@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuestionnairesSystem.Api.Extensions;
 using QuestionnairesSystem.Application.Features.Identity;
+using QuestionnairesSystem.Application.Features.Questionnaires.Reports.DTOs;
 using QuestionnairesSystem.Application.Features.Questionnaires.Reports.Interfaces;
 using QuestionnairesSystem.Shared.Api;
 
@@ -15,6 +16,55 @@ public sealed class ReportsController : ControllerBase
     private readonly IQuestionnaireReportService _reports;
 
     public ReportsController(IQuestionnaireReportService reports) => _reports = reports;
+
+    [HttpGet("survey-analytics/export/pdf")]
+    [Authorize(Policy = PermissionCodes.ReportExport)]
+    public async Task<IActionResult> ExportCrossSurveyAnalyticsPdf(
+        [FromQuery] CrossSurveyAnalyticsFilterRequest request,
+        CancellationToken cancellationToken)
+    {
+        var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+        var result = await _reports.ExportCrossSurveyAnalyticsPdfAsync(request, cancellationToken).ConfigureAwait(false);
+        if (!result.IsSuccess)
+        {
+            return result.ToApiActionResult(this, traceId);
+        }
+
+        var name = $"survey-analytics-{DateTime.UtcNow:yyyyMMdd-HHmmss}.pdf";
+        return File(result.Value!, "application/pdf", name);
+    }
+
+    [HttpGet("survey-analytics/export/excel")]
+    [Authorize(Policy = PermissionCodes.ReportExport)]
+    public async Task<IActionResult> ExportCrossSurveyAnalyticsExcel(
+        [FromQuery] CrossSurveyAnalyticsFilterRequest request,
+        CancellationToken cancellationToken)
+    {
+        var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+        var result = await _reports.ExportCrossSurveyAnalyticsExcelAsync(request, cancellationToken).ConfigureAwait(false);
+        if (!result.IsSuccess)
+        {
+            return result.ToApiActionResult(this, traceId);
+        }
+
+        var name = $"survey-analytics-{DateTime.UtcNow:yyyyMMdd-HHmmss}.xlsx";
+        return File(
+            result.Value!,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            name);
+    }
+
+    [HttpGet("survey-analytics")]
+    [Authorize(Policy = PermissionCodes.ReportView)]
+    [ProducesResponseType(typeof(ApiResponse<CrossSurveyAnalyticsDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CrossSurveyAnalytics(
+        [FromQuery] CrossSurveyAnalyticsFilterRequest request,
+        CancellationToken cancellationToken)
+    {
+        var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+        var result = await _reports.GetCrossSurveyAnalyticsAsync(request, cancellationToken).ConfigureAwait(false);
+        return result.ToApiActionResult(this, traceId);
+    }
 
     [HttpGet("dashboard")]
     [Authorize(Policy = PermissionCodes.ReportView)]

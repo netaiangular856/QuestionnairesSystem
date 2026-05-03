@@ -1,6 +1,7 @@
 import { AppLang } from '../i18n/translations';
 import {
   ActionPlanStatus,
+  InitiativeStatus,
   ParticipantStatus,
   RecommendationStatus,
   ResponseStatus,
@@ -73,6 +74,23 @@ export function qPlanStatusKey(status: ActionPlanStatus): string {
       return 'q.planStatus.cancelled';
     default:
       return 'q.planStatus.draft';
+  }
+}
+
+export function qInitiativeStatusKey(status: InitiativeStatus): string {
+  switch (status) {
+    case InitiativeStatus.Planned:
+      return 'q.initiativeStatus.planned';
+    case InitiativeStatus.InProgress:
+      return 'q.initiativeStatus.inProgress';
+    case InitiativeStatus.Completed:
+      return 'q.initiativeStatus.completed';
+    case InitiativeStatus.AtRisk:
+      return 'q.initiativeStatus.atRisk';
+    case InitiativeStatus.Cancelled:
+      return 'q.initiativeStatus.cancelled';
+    default:
+      return 'q.initiativeStatus.planned';
   }
 }
 
