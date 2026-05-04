@@ -50,13 +50,22 @@
             </label>
             <label class="field sv-field">
               <span>{{ 'q.surveys.form.audience' | t }}</span>
-              <select [(ngModel)]="audienceScope">
+              <select [(ngModel)]="audienceScope" (ngModelChange)="onAudienceScopeChange()">
                 <option [ngValue]="SurveyAudienceScope.Everyone">{{ 'q.audience.everyone' | t }}</option>
                 <option [ngValue]="SurveyAudienceScope.Guest">{{ 'q.audience.guest' | t }}</option>
                 <option [ngValue]="SurveyAudienceScope.SpecificUsers">{{ 'q.audience.specific' | t }}</option>
                 <option [ngValue]="SurveyAudienceScope.AllOrganizationMembers">{{ 'q.audience.org' | t }}</option>
               </select>
             </label>
+            @if (audienceScope === SurveyAudienceScope.SpecificUsers) {
+              <div class="field sv-field sv-field--full">
+                <span>{{ 'q.surveys.audience.selectedAria' | t }}</span>
+                <app-survey-audience-picker
+                  [(selection)]="audienceSelection"
+                  [disabled]="saveBusy()"
+                />
+              </div>
+            }
             <label class="field sv-field">
               <span>{{ 'q.surveys.wizard.opensAt' | t }}</span>
               <div class="sv-datetime-wrap">

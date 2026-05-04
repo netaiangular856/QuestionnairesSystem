@@ -26,28 +26,442 @@ public sealed class QuestionnaireReportService : IQuestionnaireReportService
         _surveys = surveys;
     }
 
-    public async Task<Result<DashboardReportDto>> GetDashboardAsync(CancellationToken cancellationToken = default)
+    public async Task<Result<DashboardReportDto>> GetDashboardAsync(
+        DashboardFilterRequest? filter = null,
+        CancellationToken cancellationToken = default)
     {
-        var totalSurveys = await _db.Surveys.CountAsync(cancellationToken).ConfigureAwait(false);
-        var published = await _db.Surveys.CountAsync(s => s.Status == SurveyStatus.Published, cancellationToken).ConfigureAwait(false);
-        var responses = await _db.SurveyResponses.CountAsync(r => r.Status == ResponseStatus.Submitted, cancellationToken)
+        if (!TryNormalizeDashboardFilter(filter, out var fromUtcEx, out var toExclusiveEx, out var filterError))
+            return Result<DashboardReportDto>.Fail(filterError!, QuestionnaireErrors.InvalidOperation);
+
+        var isFiltered = fromUtcEx.HasValue;
+        var f = fromUtcEx.GetValueOrDefault();
+        var t = toExclusiveEx.GetValueOrDefault();
+
+        var totalSurveys = isFiltered
+            ? await _db.Surveys.CountAsync(s => s.CreatedOnUtc >= f && s.CreatedOnUtc < t, cancellationToken).ConfigureAwait(false)
+            : await _db.Surveys.CountAsync(cancellationToken).ConfigureAwait(false);
+        var published = isFiltered
+            ? await _db.Surveys.CountAsync(
+                s => s.PublishedAtUtc != null && s.PublishedAtUtc >= f && s.PublishedAtUtc < t,
+                cancellationToken).ConfigureAwait(false)
+            : await _db.Surveys.CountAsync(s => s.Status == SurveyStatus.Published, cancellationToken).ConfigureAwait(false);
+        var responses = isFiltered
+            ? await _db.SurveyResponses.CountAsync(
+                r => r.Status == ResponseStatus.Submitted && r.SubmittedAtUtc != null && r.SubmittedAtUtc >= f &&
+                     r.SubmittedAtUtc < t,
+                cancellationToken).ConfigureAwait(false)
+            : await _db.SurveyResponses.CountAsync(r => r.Status == ResponseStatus.Submitted, cancellationToken)
+                .ConfigureAwait(false);
+        var openPlans = isFiltered
+            ? await _db.ActionPlans.CountAsync(
+                p => (p.Status == ActionPlanStatus.Draft || p.Status == ActionPlanStatus.Active) &&
+                     p.CreatedOnUtc >= f && p.CreatedOnUtc < t,
+                cancellationToken).ConfigureAwait(false)
+            : await _db.ActionPlans.CountAsync(
+                p => p.Status == ActionPlanStatus.Draft || p.Status == ActionPlanStatus.Active,
+                cancellationToken).ConfigureAwait(false);
+        var totalActionPlans = isFiltered
+            ? await _db.ActionPlans.CountAsync(p => p.CreatedOnUtc >= f && p.CreatedOnUtc < t, cancellationToken)
+                .ConfigureAwait(false)
+            : await _db.ActionPlans.CountAsync(cancellationToken).ConfigureAwait(false);
+
+        var totalUsers = isFiltered
+            ? await _db.Users.CountAsync(u => u.IsActive && u.CreatedOnUtc >= f && u.CreatedOnUtc < t, cancellationToken)
+                .ConfigureAwait(false)
+            : await _db.Users.CountAsync(u => u.IsActive, cancellationToken).ConfigureAwait(false);
+        var totalInactiveUsers = isFiltered
+            ? await _db.Users.CountAsync(u => !u.IsActive && u.CreatedOnUtc >= f && u.CreatedOnUtc < t, cancellationToken)
+                .ConfigureAwait(false)
+            : await _db.Users.CountAsync(u => !u.IsActive, cancellationToken).ConfigureAwait(false);
+        var totalDepartments = isFiltered
+            ? await _db.Departments.CountAsync(d => d.CreatedOnUtc >= f && d.CreatedOnUtc < t, cancellationToken)
+                .ConfigureAwait(false)
+            : await _db.Departments.CountAsync(cancellationToken).ConfigureAwait(false);
+        var totalEmployees = isFiltered
+            ? await _db.Employees.CountAsync(e => e.CreatedOnUtc >= f && e.CreatedOnUtc < t, cancellationToken)
+                .ConfigureAwait(false)
+            : await _db.Employees.CountAsync(cancellationToken).ConfigureAwait(false);
+        var employeesNoDept = isFiltered
+            ? await _db.Employees.CountAsync(
+                e => e.DepartmentId == null && e.CreatedOnUtc >= f && e.CreatedOnUtc < t,
+                cancellationToken).ConfigureAwait(false)
+            : await _db.Employees.CountAsync(e => e.DepartmentId == null, cancellationToken).ConfigureAwait(false);
+        var totalPartners = isFiltered
+            ? await _db.Partners.CountAsync(p => p.CreatedOnUtc >= f && p.CreatedOnUtc < t, cancellationToken)
+                .ConfigureAwait(false)
+            : await _db.Partners.CountAsync(cancellationToken).ConfigureAwait(false);
+        var totalInitiatives = isFiltered
+            ? await _db.Initiatives.CountAsync(i => i.CreatedOnUtc >= f && i.CreatedOnUtc < t, cancellationToken)
+                .ConfigureAwait(false)
+            : await _db.Initiatives.CountAsync(cancellationToken).ConfigureAwait(false);
+        var totalQuestions = isFiltered
+            ? await _db.Questions.CountAsync(q => q.CreatedOnUtc >= f && q.CreatedOnUtc < t, cancellationToken)
+                .ConfigureAwait(false)
+            : await _db.Questions.CountAsync(cancellationToken).ConfigureAwait(false);
+        var totalSurveyParticipants = isFiltered
+            ? await _db.SurveyParticipants.CountAsync(
+                p => (p.InvitedAtUtc ?? p.CreatedOnUtc) >= f && (p.InvitedAtUtc ?? p.CreatedOnUtc) < t,
+                cancellationToken).ConfigureAwait(false)
+            : await _db.SurveyParticipants.CountAsync(cancellationToken).ConfigureAwait(false);
+        var totalRecommendations = isFiltered
+            ? await _db.Recommendations.CountAsync(r => r.CreatedOnUtc >= f && r.CreatedOnUtc < t, cancellationToken)
+                .ConfigureAwait(false)
+            : await _db.Recommendations.CountAsync(cancellationToken).ConfigureAwait(false);
+        var totalNotifications = isFiltered
+            ? await _db.InboxNotifications.CountAsync(n => n.CreatedOnUtc >= f && n.CreatedOnUtc < t, cancellationToken)
+                .ConfigureAwait(false)
+            : await _db.InboxNotifications.CountAsync(cancellationToken).ConfigureAwait(false);
+
+        var surveysForStatus = _db.Surveys.AsNoTracking();
+        if (isFiltered) surveysForStatus = surveysForStatus.Where(s => s.CreatedOnUtc >= f && s.CreatedOnUtc < t);
+        var surveyStatusRows = await surveysForStatus
+            .GroupBy(s => s.Status)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-        var openPlans = await _db.ActionPlans.CountAsync(
-            p => p.Status == ActionPlanStatus.Draft || p.Status == ActionPlanStatus.Active,
-            cancellationToken).ConfigureAwait(false);
+        var surveyStatusDist = surveyStatusRows
+            .Select(x => new NamedCountDto { Key = x.Key.ToString(), Count = x.Count })
+            .ToList();
+
+        var initiativesForStatus = _db.Initiatives.AsNoTracking();
+        if (isFiltered) initiativesForStatus = initiativesForStatus.Where(i => i.CreatedOnUtc >= f && i.CreatedOnUtc < t);
+        var initiativeStatusRows = await initiativesForStatus
+            .GroupBy(i => i.Status)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var initiativeStatusDist = initiativeStatusRows
+            .Select(x => new NamedCountDto { Key = x.Key.ToString(), Count = x.Count })
+            .ToList();
+
+        var plansForStatus = _db.ActionPlans.AsNoTracking();
+        if (isFiltered) plansForStatus = plansForStatus.Where(p => p.CreatedOnUtc >= f && p.CreatedOnUtc < t);
+        var actionPlanStatusRows = await plansForStatus
+            .GroupBy(p => p.Status)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var actionPlanStatusDist = actionPlanStatusRows
+            .Select(x => new NamedCountDto { Key = x.Key.ToString(), Count = x.Count })
+            .ToList();
+
+        var responsesForStatus = _db.SurveyResponses.AsNoTracking();
+        if (isFiltered) responsesForStatus = responsesForStatus.Where(r => r.CreatedOnUtc >= f && r.CreatedOnUtc < t);
+        var responseStatusRows = await responsesForStatus
+            .GroupBy(r => r.Status)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var responseStatusDist = responseStatusRows
+            .Select(x => new NamedCountDto { Key = x.Key.ToString(), Count = x.Count })
+            .ToList();
+
+        var surveysForAudience = _db.Surveys.AsNoTracking();
+        if (isFiltered) surveysForAudience = surveysForAudience.Where(s => s.CreatedOnUtc >= f && s.CreatedOnUtc < t);
+        var audienceRows = await surveysForAudience
+            .GroupBy(s => s.AudienceScope)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var audienceDist = audienceRows
+            .Select(x => new NamedCountDto { Key = x.Key.ToString(), Count = x.Count })
+            .ToList();
+
+        var participantsForStatus = _db.SurveyParticipants.AsNoTracking();
+        if (isFiltered)
+        {
+            participantsForStatus = participantsForStatus.Where(p =>
+                (p.InvitedAtUtc ?? p.CreatedOnUtc) >= f && (p.InvitedAtUtc ?? p.CreatedOnUtc) < t);
+        }
+
+        var participantRows = await participantsForStatus
+            .GroupBy(p => p.Status)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var participantStatusDist = participantRows
+            .Select(x => new NamedCountDto { Key = x.Key.ToString(), Count = x.Count })
+            .ToList();
+
+        var recommendationsForStatus = _db.Recommendations.AsNoTracking();
+        if (isFiltered) recommendationsForStatus = recommendationsForStatus.Where(r => r.CreatedOnUtc >= f && r.CreatedOnUtc < t);
+        var recommendationRows = await recommendationsForStatus
+            .GroupBy(r => r.Status)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var recommendationStatusDist = recommendationRows
+            .Select(x => new NamedCountDto { Key = x.Key.ToString(), Count = x.Count })
+            .ToList();
+
+        var questionsForTypes = _db.Questions.AsNoTracking();
+        if (isFiltered) questionsForTypes = questionsForTypes.Where(q => q.CreatedOnUtc >= f && q.CreatedOnUtc < t);
+        var questionTypeRows = await questionsForTypes
+            .GroupBy(q => q.Type)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var questionTypeDist = questionTypeRows
+            .Select(x => new NamedCountDto { Key = x.Key.ToString(), Count = x.Count })
+            .ToList();
+
+        var partnersForTypes = _db.Partners.AsNoTracking();
+        if (isFiltered) partnersForTypes = partnersForTypes.Where(p => p.CreatedOnUtc >= f && p.CreatedOnUtc < t);
+        var partnerTypeRows = await partnersForTypes
+            .GroupBy(p => p.Type)
+            .Select(g => new { Key = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var partnerTypeDist = partnerTypeRows
+            .Select(x => new NamedCountDto { Key = x.Key.ToString(), Count = x.Count })
+            .ToList();
+
+        var fromDay = isFiltered ? f.Date : DateTime.UtcNow.Date.AddDays(-29);
+        var toDayExclusive = isFiltered ? t.Date : DateTime.UtcNow.Date.AddDays(1);
+
+        var submissionDays = await _db.SurveyResponses.AsNoTracking()
+            .Where(r => r.Status == ResponseStatus.Submitted && r.SubmittedAtUtc != null &&
+                        r.SubmittedAtUtc >= fromDay && r.SubmittedAtUtc < toDayExclusive)
+            .GroupBy(r => r.SubmittedAtUtc!.Value.Date)
+            .Select(g => new { Day = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var submissionsTimeline = BuildFilledDailyTimeline(fromDay, toDayExclusive, submissionDays.ToDictionary(x => x.Day, x => x.Count));
+
+        var userRegDays = await _db.Users.AsNoTracking()
+            .Where(u => u.CreatedOnUtc >= fromDay && u.CreatedOnUtc < toDayExclusive)
+            .GroupBy(u => u.CreatedOnUtc.Date)
+            .Select(g => new { Day = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var usersTimeline = BuildFilledDailyTimeline(fromDay, toDayExclusive, userRegDays.ToDictionary(x => x.Day, x => x.Count));
+
+        var surveyCreatedDays = await _db.Surveys.AsNoTracking()
+            .Where(s => s.CreatedOnUtc >= fromDay && s.CreatedOnUtc < toDayExclusive)
+            .GroupBy(s => s.CreatedOnUtc.Date)
+            .Select(g => new { Day = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var surveysCreatedTimeline = BuildFilledDailyTimeline(fromDay, toDayExclusive, surveyCreatedDays.ToDictionary(x => x.Day, x => x.Count));
+
+        var planCreatedDays = await _db.ActionPlans.AsNoTracking()
+            .Where(p => p.CreatedOnUtc >= fromDay && p.CreatedOnUtc < toDayExclusive)
+            .GroupBy(p => p.CreatedOnUtc.Date)
+            .Select(g => new { Day = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var plansCreatedTimeline = BuildFilledDailyTimeline(fromDay, toDayExclusive, planCreatedDays.ToDictionary(x => x.Day, x => x.Count));
+
+        var iniCreatedDays = await _db.Initiatives.AsNoTracking()
+            .Where(i => i.CreatedOnUtc >= fromDay && i.CreatedOnUtc < toDayExclusive)
+            .GroupBy(i => i.CreatedOnUtc.Date)
+            .Select(g => new { Day = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var initiativesCreatedTimeline = BuildFilledDailyTimeline(fromDay, toDayExclusive, iniCreatedDays.ToDictionary(x => x.Day, x => x.Count));
+
+        var dowCutoff = DateTime.UtcNow.Date.AddDays(-365);
+        var dowQuery = _db.SurveyResponses.AsNoTracking()
+            .Where(r => r.Status == ResponseStatus.Submitted && r.SubmittedAtUtc != null);
+        dowQuery = isFiltered
+            ? dowQuery.Where(r => r.SubmittedAtUtc >= f && r.SubmittedAtUtc < t)
+            : dowQuery.Where(r => r.SubmittedAtUtc >= dowCutoff);
+        var submittedMoments = await dowQuery
+            .Select(r => r.SubmittedAtUtc!.Value)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var dowDict = submittedMoments
+            .GroupBy(d => d.DayOfWeek)
+            .ToDictionary(g => g.Key, g => g.Count());
+        var submissionsByDow = Enum.GetValues<DayOfWeek>()
+            .Select(d => new NamedCountDto { Key = d.ToString(), Count = dowDict.TryGetValue(d, out var c) ? c : 0 })
+            .ToList();
+
+        var employeesForDept = _db.Employees.AsNoTracking().Where(e => e.DepartmentId != null);
+        if (isFiltered) employeesForDept = employeesForDept.Where(e => e.CreatedOnUtc >= f && e.CreatedOnUtc < t);
+        var deptRows = await employeesForDept
+            .GroupBy(e => e.DepartmentId!.Value)
+            .Select(g => new { DeptId = g.Key, Cnt = g.Count() })
+            .OrderByDescending(x => x.Cnt)
+            .Take(8)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var deptIds = deptRows.Select(x => x.DeptId).ToList();
+        IReadOnlyList<DepartmentHeadcountRowDto> topDepts;
+        if (deptIds.Count == 0)
+        {
+            topDepts = Array.Empty<DepartmentHeadcountRowDto>();
+        }
+        else
+        {
+            var deptMeta = await _db.Departments.AsNoTracking()
+                .Where(d => deptIds.Contains(d.Id))
+                .Select(d => new { d.Id, d.NameAr, d.NameEn })
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+            var metaById = deptMeta.ToDictionary(x => x.Id, x => (x.NameAr, x.NameEn));
+            topDepts = deptRows
+                .Select(r =>
+                {
+                    var found = metaById.TryGetValue(r.DeptId, out var meta);
+                    return new DepartmentHeadcountRowDto
+                    {
+                        DepartmentId = r.DeptId,
+                        TitleAr = found ? meta.NameAr : string.Empty,
+                        TitleEn = found ? meta.NameEn : string.Empty,
+                        EmployeeCount = r.Cnt,
+                    };
+                })
+                .ToList();
+        }
+
+        var topResponses = _db.SurveyResponses.AsNoTracking().Where(r => r.Status == ResponseStatus.Submitted);
+        if (isFiltered)
+        {
+            topResponses = topResponses.Where(r =>
+                (r.SubmittedAtUtc ?? r.CreatedOnUtc) >= f && (r.SubmittedAtUtc ?? r.CreatedOnUtc) < t);
+        }
+
+        var topRows = await topResponses
+            .GroupBy(r => r.SurveyId)
+            .Select(g => new { SurveyId = g.Key, Cnt = g.Count() })
+            .OrderByDescending(x => x.Cnt)
+            .Take(8)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var topIds = topRows.Select(x => x.SurveyId).ToList();
+        Dictionary<Guid, (string TitleAr, string TitleEn, SurveyStatus Status)> surveyMeta;
+        if (topIds.Count == 0)
+        {
+            surveyMeta = new Dictionary<Guid, (string, string, SurveyStatus)>();
+        }
+        else
+        {
+            var metaRows = await _db.Surveys.AsNoTracking()
+                .Where(s => topIds.Contains(s.Id))
+                .Select(s => new { s.Id, s.TitleAr, s.TitleEn, s.Status })
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+            surveyMeta = metaRows.ToDictionary(x => x.Id, x => (x.TitleAr, x.TitleEn, x.Status));
+        }
+
+        var topSurveys = topRows
+            .Select(r =>
+            {
+                var found = surveyMeta.TryGetValue(r.SurveyId, out var meta);
+                return new TopSurveyRowDto
+                {
+                    SurveyId = r.SurveyId,
+                    TitleAr = found ? meta.TitleAr ?? string.Empty : string.Empty,
+                    TitleEn = found ? meta.TitleEn ?? string.Empty : string.Empty,
+                    Status = found ? meta.Status.ToString() : string.Empty,
+                    SubmissionsInPeriod = r.Cnt,
+                };
+            })
+            .ToList();
 
         return Result<DashboardReportDto>.Ok(new DashboardReportDto
         {
             TotalSurveys = totalSurveys,
             PublishedSurveys = published,
             TotalResponses = responses,
-            OpenActionPlans = openPlans
+            OpenActionPlans = openPlans,
+            TotalUsers = totalUsers,
+            TotalInactiveUsers = totalInactiveUsers,
+            TotalDepartments = totalDepartments,
+            TotalEmployees = totalEmployees,
+            EmployeesWithoutDepartment = employeesNoDept,
+            TotalPartners = totalPartners,
+            TotalInitiatives = totalInitiatives,
+            TotalQuestions = totalQuestions,
+            TotalSurveyParticipants = totalSurveyParticipants,
+            TotalRecommendations = totalRecommendations,
+            TotalActionPlans = totalActionPlans,
+            TotalNotifications = totalNotifications,
+            SurveyStatusDistribution = surveyStatusDist,
+            InitiativeStatusDistribution = initiativeStatusDist,
+            ActionPlanStatusDistribution = actionPlanStatusDist,
+            ResponseStatusDistribution = responseStatusDist,
+            AudienceScopeDistribution = audienceDist,
+            ParticipantStatusDistribution = participantStatusDist,
+            RecommendationStatusDistribution = recommendationStatusDist,
+            QuestionTypeDistribution = questionTypeDist,
+            PartnerTypeDistribution = partnerTypeDist,
+            SubmissionsByDayOfWeek = submissionsByDow,
+            TopDepartmentsByEmployees = topDepts,
+            SubmissionsTimelineLast30Days = submissionsTimeline,
+            UsersRegisteredTimelineLast30Days = usersTimeline,
+            SurveysCreatedTimelineLast30Days = surveysCreatedTimeline,
+            ActionPlansCreatedTimelineLast30Days = plansCreatedTimeline,
+            InitiativesCreatedTimelineLast30Days = initiativesCreatedTimeline,
+            TopSurveysBySubmissions = topSurveys,
+            FilterFromUtc = isFiltered ? f : null,
+            FilterToUtcExclusive = isFiltered ? t : null,
+            GeneratedAtUtc = DateTime.UtcNow,
         });
+    }
+
+    private static bool TryNormalizeDashboardFilter(
+        DashboardFilterRequest? filter,
+        out DateTime? fromUtc,
+        out DateTime? toExclusiveUtc,
+        out string? error)
+    {
+        fromUtc = null;
+        toExclusiveUtc = null;
+        error = null;
+        if (filter is null || (!filter.FromUtc.HasValue && !filter.ToUtc.HasValue))
+            return true;
+        if (!filter.FromUtc.HasValue || !filter.ToUtc.HasValue)
+        {
+            error = "Dashboard date filter requires both fromUtc and toUtc query parameters.";
+            return false;
+        }
+
+        var from = EnsureUtc(filter.FromUtc.Value);
+        var toEx = EnsureUtc(filter.ToUtc.Value);
+        if (from >= toEx)
+        {
+            error = "fromUtc must be earlier than toUtc.";
+            return false;
+        }
+
+        if ((toEx - from).TotalDays > 366)
+        {
+            error = "Date range cannot exceed 366 days.";
+            return false;
+        }
+
+        fromUtc = from;
+        toExclusiveUtc = toEx;
+        return true;
+    }
+
+    private static DateTime EnsureUtc(DateTime dt) =>
+        dt.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(dt, DateTimeKind.Utc) : dt.ToUniversalTime();
+
+    private static List<TimelinePointDto> BuildFilledDailyTimeline(
+        DateTime fromDay,
+        DateTime toDayExclusive,
+        IReadOnlyDictionary<DateTime, int> countsByDay)
+    {
+        var list = new List<TimelinePointDto>();
+        for (var d = fromDay; d < toDayExclusive; d = d.AddDays(1))
+        {
+            list.Add(new TimelinePointDto
+            {
+                Date = d.ToString("yyyy-MM-dd"),
+                Count = countsByDay.TryGetValue(d, out var c) ? c : 0,
+            });
+        }
+
+        return list;
     }
 
     public async Task<Result<ExecutiveReportDto>> GetExecutiveAsync(CancellationToken cancellationToken = default)
     {
-        var dash = await GetDashboardAsync(cancellationToken).ConfigureAwait(false);
+        var dash = await GetDashboardAsync(null, cancellationToken).ConfigureAwait(false);
         if (!dash.IsSuccess) return Result<ExecutiveReportDto>.Fail(dash.Errors, dash.FailureCode);
 
         var recent = await _surveys.GetPagedAsync(
@@ -111,7 +525,7 @@ public sealed class QuestionnaireReportService : IQuestionnaireReportService
             var ws = wb.AddWorksheet("Dashboard");
             ws.Cell(1, 1).Value = "Metric";
             ws.Cell(1, 2).Value = "Value";
-            var d = await GetDashboardAsync(cancellationToken).ConfigureAwait(false);
+            var d = await GetDashboardAsync(null, cancellationToken).ConfigureAwait(false);
             if (!d.IsSuccess)
                 return Result<byte[]>.Fail(d.Errors, d.FailureCode);
 
@@ -552,6 +966,103 @@ public sealed class QuestionnaireReportService : IQuestionnaireReportService
                 .ToList();
         }
 
+        var actionPlansQuery = _db.ActionPlans.AsNoTracking();
+        if (request.SurveyId.HasValue)
+        {
+            actionPlansQuery = actionPlansQuery.Where(p => p.SurveyId == request.SurveyId.Value);
+        }
+
+        if (from.HasValue)
+        {
+            actionPlansQuery = actionPlansQuery.Where(p => p.CreatedOnUtc >= from.Value);
+        }
+
+        if (to.HasValue)
+        {
+            actionPlansQuery = actionPlansQuery.Where(p => p.CreatedOnUtc <= to.Value);
+        }
+
+        var actionPlansInScope = await actionPlansQuery.CountAsync(cancellationToken).ConfigureAwait(false);
+        var apStatusAgg = await actionPlansQuery
+            .GroupBy(p => p.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var actionPlanStatusDist = apStatusAgg
+            .Select(x => new NamedCountDto { Key = x.Status.ToString(), Count = x.Count })
+            .ToList();
+
+        const int maxActionPlanRows = 500;
+        var actionPlanRows = await (
+                from p in actionPlansQuery
+                join s in _db.Surveys.AsNoTracking() on p.SurveyId equals s.Id into sg
+                from s in sg.DefaultIfEmpty()
+                orderby p.CreatedOnUtc descending
+                select new CrossSurveyActionPlanReportRowDto
+                {
+                    TitleAr = p.TitleAr,
+                    TitleEn = p.TitleEn,
+                    Status = p.Status.ToString(),
+                    LinkedSurveyTitleAr = s != null ? s.TitleAr : null,
+                    LinkedSurveyTitleEn = s != null ? s.TitleEn : null,
+                    CreatedOnUtc = p.CreatedOnUtc,
+                })
+            .Take(maxActionPlanRows)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var initiativesFilteredQuery =
+            from i in _db.Initiatives.AsNoTracking()
+            join p in _db.ActionPlans.AsNoTracking() on i.ActionPlanId equals p.Id
+            select new { i, p };
+
+        if (request.SurveyId.HasValue)
+        {
+            initiativesFilteredQuery = initiativesFilteredQuery.Where(x => x.p.SurveyId == request.SurveyId.Value);
+        }
+
+        if (from.HasValue)
+        {
+            initiativesFilteredQuery = initiativesFilteredQuery.Where(x => x.i.CreatedOnUtc >= from.Value);
+        }
+
+        if (to.HasValue)
+        {
+            initiativesFilteredQuery = initiativesFilteredQuery.Where(x => x.i.CreatedOnUtc <= to.Value);
+        }
+
+        var initiativesInScope = await initiativesFilteredQuery.CountAsync(cancellationToken).ConfigureAwait(false);
+        var iniStatusAgg = await initiativesFilteredQuery
+            .GroupBy(x => x.i.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var initiativeStatusDist = iniStatusAgg
+            .Select(x => new NamedCountDto { Key = x.Status.ToString(), Count = x.Count })
+            .ToList();
+
+        const int maxInitiativeRows = 500;
+        var initiativeRows = await (
+                from x in initiativesFilteredQuery
+                join s in _db.Surveys.AsNoTracking() on x.p.SurveyId equals s.Id into sg
+                from s in sg.DefaultIfEmpty()
+                orderby x.i.CreatedOnUtc descending
+                select new CrossSurveyInitiativeReportRowDto
+                {
+                    TitleAr = x.i.TitleAr,
+                    TitleEn = x.i.TitleEn,
+                    Status = x.i.Status.ToString(),
+                    ActionPlanTitleAr = x.p.TitleAr,
+                    ActionPlanTitleEn = x.p.TitleEn,
+                    LinkedSurveyTitleAr = s != null ? s.TitleAr : null,
+                    LinkedSurveyTitleEn = s != null ? s.TitleEn : null,
+                    TargetDateUtc = x.i.TargetDateUtc,
+                    CreatedOnUtc = x.i.CreatedOnUtc,
+                })
+            .Take(maxInitiativeRows)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
         var dto = new CrossSurveyAnalyticsDto
         {
             AppliedFilter = new CrossSurveyAnalyticsFilterSnapshotDto
@@ -575,6 +1086,8 @@ public sealed class QuestionnaireReportService : IQuestionnaireReportService
                 CompletedParticipantsInScope = completedParticipants,
                 DeclinedParticipantsInScope = declinedParticipants,
                 AverageMinutesToSubmitInPeriod = avgMinutes,
+                ActionPlansInScope = actionPlansInScope,
+                InitiativesInScope = initiativesInScope,
             },
             SurveyStatusDistribution = surveyStatusDist,
             ResponseStatusDistribution = responseStatusDist,
@@ -583,6 +1096,10 @@ public sealed class QuestionnaireReportService : IQuestionnaireReportService
             SubmissionsByDayOfWeek = submissionsByDow,
             SubmissionsByDay = timeline,
             TopSurveysBySubmissions = topSurveys,
+            ActionPlanStatusDistribution = actionPlanStatusDist,
+            InitiativeStatusDistribution = initiativeStatusDist,
+            ActionPlans = actionPlanRows,
+            Initiatives = initiativeRows,
             RatingsDistribution = ratingsDistribution,
             QuestionTypeAnswerTotals = questionTypeAnswerTotals,
             TextAnswerKeywords = textAnswerKeywords,

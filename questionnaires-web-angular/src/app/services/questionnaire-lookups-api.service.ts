@@ -3,7 +3,10 @@ import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs/operators';
 import { apiUrl } from '../core/config/api-url';
 import { ApiResponse } from '../shared/models/api.types';
-import { LookupItemDto } from '../shared/models/questionnaire.models';
+import {
+  LookupItemDto,
+  SurveyAudienceLookupItemDto,
+} from '../shared/models/questionnaire.models';
 import { toHttpParams, unwrapApiResponse } from '../shared/utils/api-helpers';
 
 /** GET /api/lookups/* — lightweight lists for dropdowns (requires FORM_LOOKUPS / ReportView / SurveyView, etc.). */
@@ -32,6 +35,17 @@ export class QuestionnaireLookupsApiService {
     });
     return this.http
       .get<ApiResponse<LookupItemDto[]>>(`${this.base}/users`, { params })
+      .pipe(map((r) => unwrapApiResponse(r)));
+  }
+
+  /** Users, employees (no linked account + email), partners with email — for survey SpecificUsers audience. */
+  searchSurveyAudienceSubjects(search?: string | null, take = 60) {
+    const params = toHttpParams({
+      search: search?.trim() || undefined,
+      take: Math.min(200, Math.max(1, take)),
+    });
+    return this.http
+      .get<ApiResponse<SurveyAudienceLookupItemDto[]>>(`${this.base}/survey-audience-subjects`, { params })
       .pipe(map((r) => unwrapApiResponse(r)));
   }
 }

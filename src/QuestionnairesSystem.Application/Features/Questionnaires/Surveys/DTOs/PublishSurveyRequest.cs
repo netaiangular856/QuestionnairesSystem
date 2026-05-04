@@ -9,4 +9,7 @@ public sealed class PublishSurveyRequest
 
     /// <summary>عند <see cref="SurveyAudienceScope.SpecificUsers"/> يُحدد المستخدمون المسموح لهم.</summary>
     public IReadOnlyList<Guid>? AudienceUserIds { get; set; }
+
+    /// <summary>بديل أوضح عن <see cref="AudienceUserIds"/>؛ يتضمّن مستخدمين أو بريداً فقط.</summary>
+    public IReadOnlyList<SurveyAudienceMemberInputDto>? AudienceMembers { get; set; }
 }

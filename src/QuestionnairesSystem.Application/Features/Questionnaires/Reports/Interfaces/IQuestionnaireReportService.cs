@@ -5,7 +5,9 @@ namespace QuestionnairesSystem.Application.Features.Questionnaires.Reports.Inter
 
 public interface IQuestionnaireReportService
 {
-    Task<Result<DashboardReportDto>> GetDashboardAsync(CancellationToken cancellationToken = default);
+    Task<Result<DashboardReportDto>> GetDashboardAsync(
+        DashboardFilterRequest? filter = null,
+        CancellationToken cancellationToken = default);
     Task<Result<ExecutiveReportDto>> GetExecutiveAsync(CancellationToken cancellationToken = default);
     Task<Result<SurveyReportDto>> GetSurveyReportAsync(Guid surveyId, CancellationToken cancellationToken = default);
     Task<Result<byte[]>> ExportPdfAsync(CancellationToken cancellationToken = default);

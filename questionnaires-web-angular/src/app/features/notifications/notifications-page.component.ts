@@ -1,14 +1,17 @@
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { NotificationsApiService } from '../../services/notifications-api.service';
 import { PagedResult } from '../../shared/models/api.types';
 import { NotificationDto } from '../../shared/models/notification.models';
 import { PermissionCodes } from '../../shared/models/permission-codes';
+import { qLocalizedTitle } from '../../shared/questionnaires/q-display';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { I18nService } from '../../shared/services/i18n.service';
+import { notificationTargetUrl } from '../../shared/utils/notification-navigation';
 
 @Component({
   selector: 'app-notifications-page',
@@ -21,6 +24,7 @@ export class NotificationsPageComponent implements OnInit {
   private readonly api = inject(NotificationsApiService);
   private readonly toast = inject(ToastService);
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   readonly i18n = inject(I18nService);
 
   get canManage(): boolean {
@@ -82,6 +86,30 @@ export class NotificationsPageComponent implements OnInit {
     if (this.page <= 1) return;
     this.page -= 1;
     this.load();
+  }
+
+  notifTitle(row: NotificationDto): string {
+    return qLocalizedTitle(this.i18n.lang(), row.titleAr ?? '', row.titleEn ?? '');
+  }
+
+  notifMessage(row: NotificationDto): string {
+    return qLocalizedTitle(this.i18n.lang(), row.messageAr ?? '', row.messageEn ?? '');
+  }
+
+  notifLink(row: NotificationDto): string | null {
+    return notificationTargetUrl(row);
+  }
+
+  openLinked(row: NotificationDto): void {
+    const url = this.notifLink(row);
+    if (!url) return;
+    void this.router.navigateByUrl(url);
+    if (!row.isRead && this.canManage) {
+      this.api.markRead(row.id, { isRead: true }).subscribe({
+        next: () => this.load(),
+        error: () => this.toast.show(this.i18n.t('notifications.error.update'), 'error'),
+      });
+    }
   }
 
   mark(row: NotificationDto, read: boolean): void {

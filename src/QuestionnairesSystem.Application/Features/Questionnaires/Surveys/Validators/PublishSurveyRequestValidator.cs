@@ -6,11 +6,21 @@ namespace QuestionnairesSystem.Application.Features.Questionnaires.Surveys.Valid
 
 public sealed class PublishSurveyRequestValidator : AbstractValidator<PublishSurveyRequest>
 {
-    public PublishSurveyRequestValidator()
+    public PublishSurveyRequestValidator(SurveyAudienceMemberInputDtoValidator memberValidator)
     {
-        RuleFor(x => x.AudienceUserIds)
-            .Must(ids => ids is { Count: > 0 })
-            .When(x => x.AudienceScope == SurveyAudienceScope.SpecificUsers)
-            .WithMessage("AudienceUserIds is required when targeting specific users.");
+        When(x => x.AudienceMembers is { Count: > 0 }, () =>
+        {
+            RuleForEach(x => x.AudienceMembers!).SetValidator(memberValidator);
+            RuleFor(x => x.AudienceScope)
+                .Must(s => !s.HasValue || s == SurveyAudienceScope.SpecificUsers)
+                .WithMessage("AudienceMembers require SpecificUsers audience scope.");
+        });
+
+        When(x => x.AudienceUserIds is { Count: > 0 }, () =>
+        {
+            RuleFor(x => x.AudienceScope)
+                .Must(s => !s.HasValue || s == SurveyAudienceScope.SpecificUsers)
+                .WithMessage("AudienceUserIds require SpecificUsers audience scope.");
+        });
     }
 }

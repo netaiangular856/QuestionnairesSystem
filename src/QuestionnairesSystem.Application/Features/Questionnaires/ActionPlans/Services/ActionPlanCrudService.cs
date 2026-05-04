@@ -1,12 +1,16 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using QuestionnairesSystem.Application.Common;
+using QuestionnairesSystem.Application.Features.Notifications;
+using QuestionnairesSystem.Application.Features.Notifications.DTOs;
+using QuestionnairesSystem.Application.Features.Notifications.Interfaces;
 using QuestionnairesSystem.Application.Features.Questionnaires.ActionPlans.DTOs;
 using QuestionnairesSystem.Application.Features.Questionnaires.ActionPlans.Interfaces;
 using QuestionnairesSystem.Domain.ActionPlans;
 using QuestionnairesSystem.Domain.Enums;
 using QuestionnairesSystem.Persistence;
 using QuestionnairesSystem.Shared.Api;
+using QuestionnairesSystem.Shared.Identity;
 using QuestionnairesSystem.Shared.Results;
 
 namespace QuestionnairesSystem.Application.Features.Questionnaires.ActionPlans.Services;
@@ -19,6 +23,8 @@ public sealed class ActionPlanCrudService : IActionPlanCrudService
     private readonly IValidator<CreateInitiativeRequest> _createInitiativeValidator;
     private readonly IValidator<UpdateInitiativeRequest> _updateInitiativeValidator;
     private readonly IValidator<AddInitiativeProgressRequest> _progressValidator;
+    private readonly ICurrentUserService _currentUser;
+    private readonly IInboxNotificationDispatchService _notify;
 
     public ActionPlanCrudService(
         QuestionnairesDbContext db,
@@ -26,7 +32,9 @@ public sealed class ActionPlanCrudService : IActionPlanCrudService
         IValidator<UpdateActionPlanRequest> updatePlanValidator,
         IValidator<CreateInitiativeRequest> createInitiativeValidator,
         IValidator<UpdateInitiativeRequest> updateInitiativeValidator,
-        IValidator<AddInitiativeProgressRequest> progressValidator)
+        IValidator<AddInitiativeProgressRequest> progressValidator,
+        ICurrentUserService currentUser,
+        IInboxNotificationDispatchService notify)
     {
         _db = db;
         _createPlanValidator = createPlanValidator;
@@ -34,6 +42,8 @@ public sealed class ActionPlanCrudService : IActionPlanCrudService
         _createInitiativeValidator = createInitiativeValidator;
         _updateInitiativeValidator = updateInitiativeValidator;
         _progressValidator = progressValidator;
+        _currentUser = currentUser;
+        _notify = notify;
     }
 
     public async Task<Result<ActionPlanDto>> CreateAsync(CreateActionPlanRequest request, CancellationToken cancellationToken = default)
@@ -62,6 +72,25 @@ public sealed class ActionPlanCrudService : IActionPlanCrudService
         var created = await SelectActionPlanDto(_db.ActionPlans.AsNoTracking().Where(x => x.Id == p.Id))
             .FirstAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        var (pa, pen) = BilingualTitles(p.TitleAr, p.TitleEn);
+        var planRecipients = new HashSet<Guid>();
+        if (_currentUser.UserId is { } apActor)
+            planRecipients.Add(apActor);
+        if (p.OwnerUserId is { } apOwner)
+            planRecipients.Add(apOwner);
+        await _notify.DispatchAsync(
+            planRecipients,
+            new LocalizedInboxNotificationText(
+                "تم إنشاء خطة عمل",
+                "Action plan created",
+                $"تم إنشاء خطة العمل «{pa}».",
+                $"Action plan «{pen}» was created."),
+            NotificationRelatedEntityTypes.ActionPlan,
+            p.Id,
+            null,
+            cancellationToken).ConfigureAwait(false);
+
         return Result<ActionPlanDto>.Ok(created);
     }
 
@@ -136,6 +165,25 @@ public sealed class ActionPlanCrudService : IActionPlanCrudService
         var updatedPlan = await SelectActionPlanDto(_db.ActionPlans.AsNoTracking().Where(x => x.Id == p.Id))
             .FirstAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        var (paUpd, penUpd) = BilingualTitles(p.TitleAr, p.TitleEn);
+        var planUpdRecipients = new HashSet<Guid>();
+        if (_currentUser.UserId is { } apUpdActor)
+            planUpdRecipients.Add(apUpdActor);
+        if (p.OwnerUserId is { } apUpdOwner)
+            planUpdRecipients.Add(apUpdOwner);
+        await _notify.DispatchAsync(
+            planUpdRecipients,
+            new LocalizedInboxNotificationText(
+                "تم تحديث خطة عمل",
+                "Action plan updated",
+                $"تم تحديث خطة العمل «{paUpd}».",
+                $"Action plan «{penUpd}» was updated."),
+            NotificationRelatedEntityTypes.ActionPlan,
+            p.Id,
+            null,
+            cancellationToken).ConfigureAwait(false);
+
         return Result<ActionPlanDto>.Ok(updatedPlan);
     }
 
@@ -189,6 +237,32 @@ public sealed class ActionPlanCrudService : IActionPlanCrudService
         var createdInit = await SelectInitiativeDto(_db.Initiatives.AsNoTracking().Where(x => x.Id == i.Id))
             .FirstAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        var (ia, ien) = BilingualTitles(i.TitleAr, i.TitleEn);
+        var planOwnerId = await _db.ActionPlans.AsNoTracking()
+            .Where(x => x.Id == actionPlanId)
+            .Select(x => x.OwnerUserId)
+            .FirstAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var initCreateRecipients = new HashSet<Guid>();
+        if (_currentUser.UserId is { } inCrActor)
+            initCreateRecipients.Add(inCrActor);
+        if (i.OwnerUserId is { } inCrOwner)
+            initCreateRecipients.Add(inCrOwner);
+        if (planOwnerId is { } planOwnCr)
+            initCreateRecipients.Add(planOwnCr);
+        await _notify.DispatchAsync(
+            initCreateRecipients,
+            new LocalizedInboxNotificationText(
+                "تم إنشاء مبادرة",
+                "Initiative created",
+                $"تمت إضافة المبادرة «{ia}» إلى خطة عمل.",
+                $"Initiative «{ien}» was added to an action plan."),
+            NotificationRelatedEntityTypes.Initiative,
+            i.Id,
+            null,
+            cancellationToken).ConfigureAwait(false);
+
         return Result<InitiativeDto>.Ok(createdInit);
     }
 
@@ -289,6 +363,32 @@ public sealed class ActionPlanCrudService : IActionPlanCrudService
         var updatedInit = await SelectInitiativeDto(_db.Initiatives.AsNoTracking().Where(x => x.Id == i.Id))
             .FirstAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        var (iaUpd, ienUpd) = BilingualTitles(i.TitleAr, i.TitleEn);
+        var planOwnerUpd = await _db.ActionPlans.AsNoTracking()
+            .Where(x => x.Id == i.ActionPlanId)
+            .Select(x => x.OwnerUserId)
+            .FirstAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var initUpdRecipients = new HashSet<Guid>();
+        if (_currentUser.UserId is { } inUpdActor)
+            initUpdRecipients.Add(inUpdActor);
+        if (i.OwnerUserId is { } inUpdOwner)
+            initUpdRecipients.Add(inUpdOwner);
+        if (planOwnerUpd is { } planOwnUpd)
+            initUpdRecipients.Add(planOwnUpd);
+        await _notify.DispatchAsync(
+            initUpdRecipients,
+            new LocalizedInboxNotificationText(
+                "تم تحديث مبادرة",
+                "Initiative updated",
+                $"تم تحديث المبادرة «{iaUpd}».",
+                $"Initiative «{ienUpd}» was updated."),
+            NotificationRelatedEntityTypes.Initiative,
+            i.Id,
+            null,
+            cancellationToken).ConfigureAwait(false);
+
         return Result<InitiativeDto>.Ok(updatedInit);
     }
 
@@ -301,8 +401,12 @@ public sealed class ActionPlanCrudService : IActionPlanCrudService
         if (!validation.IsValid)
             return Result<InitiativeProgressDto>.Fail(validation.ToErrorMessages());
 
-        var exists = await _db.Initiatives.AnyAsync(x => x.Id == initiativeId, cancellationToken).ConfigureAwait(false);
-        if (!exists)
+        var initRow = await _db.Initiatives.AsNoTracking()
+            .Where(x => x.Id == initiativeId)
+            .Select(x => new { x.TitleAr, x.TitleEn, x.OwnerUserId, PlanOwner = x.ActionPlan.OwnerUserId })
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+        if (initRow is null)
             return Result<InitiativeProgressDto>.Fail("Initiative was not found.", QuestionnaireErrors.InitiativeNotFound);
 
         var e = new InitiativeProgress
@@ -310,7 +414,8 @@ public sealed class ActionPlanCrudService : IActionPlanCrudService
             InitiativeId = initiativeId,
             ProgressPercent = request.ProgressPercent,
             Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim(),
-            RecordedAtUtc = DateTime.UtcNow
+            RecordedAtUtc = DateTime.UtcNow,
+            RecordedByUserId = _currentUser.UserId
         };
         _db.InitiativeProgressEntries.Add(e);
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -318,6 +423,28 @@ public sealed class ActionPlanCrudService : IActionPlanCrudService
                 _db.InitiativeProgressEntries.AsNoTracking().Where(x => x.Id == e.Id))
             .FirstAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        var (ipa, ipen) = BilingualTitles(initRow.TitleAr, initRow.TitleEn);
+        var pct = request.ProgressPercent?.ToString() ?? "—";
+        var progRecipients = new HashSet<Guid>();
+        if (_currentUser.UserId is { } progActor)
+            progRecipients.Add(progActor);
+        if (initRow.OwnerUserId is { } io)
+            progRecipients.Add(io);
+        if (initRow.PlanOwner is { } po)
+            progRecipients.Add(po);
+        await _notify.DispatchAsync(
+            progRecipients,
+            new LocalizedInboxNotificationText(
+                "تم تسجيل تقدم مبادرة",
+                "Initiative progress recorded",
+                $"تم تسجيل تقدم ({pct}%) على المبادرة «{ipa}».",
+                $"Progress ({pct}%) was recorded on initiative «{ipen}»."),
+            NotificationRelatedEntityTypes.Initiative,
+            initiativeId,
+            null,
+            cancellationToken).ConfigureAwait(false);
+
         return Result<InitiativeProgressDto>.Ok(progressDto);
     }
 
@@ -341,6 +468,12 @@ public sealed class ActionPlanCrudService : IActionPlanCrudService
             .ConfigureAwait(false);
         return Result<IReadOnlyList<InitiativeProgressDto>>.Ok(list);
     }
+
+    private static (string Ar, string En) BilingualTitles(string titleAr, string titleEn) =>
+    (
+        string.IsNullOrWhiteSpace(titleAr) ? titleEn : titleAr,
+        string.IsNullOrWhiteSpace(titleEn) ? titleAr : titleEn
+    );
 
     private static IQueryable<ActionPlanDto> SelectActionPlanDto(IQueryable<ActionPlan> query) =>
         query.Select(p => new ActionPlanDto

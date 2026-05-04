@@ -12,8 +12,10 @@ public sealed class InboxNotificationConfiguration : IEntityTypeConfiguration<In
 
         builder.HasKey(x => x.Id);
 
-        builder.Property(x => x.Title).IsRequired().HasMaxLength(300);
-        builder.Property(x => x.Message).IsRequired().HasMaxLength(4000);
+        builder.Property(x => x.TitleAr).IsRequired().HasMaxLength(300);
+        builder.Property(x => x.TitleEn).IsRequired().HasMaxLength(300);
+        builder.Property(x => x.MessageAr).IsRequired().HasMaxLength(4000);
+        builder.Property(x => x.MessageEn).IsRequired().HasMaxLength(4000);
         builder.Property(x => x.RelatedEntityType).HasMaxLength(128);
 
         builder.HasIndex(x => new { x.UserId, x.IsRead });

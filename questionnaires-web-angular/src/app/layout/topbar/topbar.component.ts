@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { AuthService } from '../../core/auth/auth.service';
 import { CurrentUserProfileService } from '../../core/services/current-user-profile.service';
@@ -8,6 +8,8 @@ import { NotificationDto } from '../../shared/models/notification.models';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { I18nService } from '../../shared/services/i18n.service';
 import { NotificationsApiService } from '../../services/notifications-api.service';
+import { qLocalizedTitle } from '../../shared/questionnaires/q-display';
+import { notificationTargetUrl } from '../../shared/utils/notification-navigation';
 import { LayoutStateService } from '../layout-state.service';
 
 @Component({
@@ -24,6 +26,7 @@ export class TopbarComponent {
   readonly notificationsApi = inject(NotificationsApiService);
   readonly toast = inject(ToastService);
   readonly me = inject(CurrentUserProfileService);
+  private readonly router = inject(Router);
   menuOpen = false;
   notificationsOpen = false;
   loadingNotifications = false;
@@ -58,6 +61,25 @@ export class TopbarComponent {
   closePopups(): void {
     this.menuOpen = false;
     this.notificationsOpen = false;
+  }
+
+  notifTitle(row: NotificationDto): string {
+    return qLocalizedTitle(this.i18n.lang(), row.titleAr ?? '', row.titleEn ?? '');
+  }
+
+  notifMessage(row: NotificationDto): string {
+    return qLocalizedTitle(this.i18n.lang(), row.messageAr ?? '', row.messageEn ?? '');
+  }
+
+  notifLink(row: NotificationDto): string | null {
+    return notificationTargetUrl(row);
+  }
+
+  openNotification(row: NotificationDto): void {
+    const url = this.notifLink(row);
+    if (!url) return;
+    void this.router.navigateByUrl(url);
+    this.closePopups();
   }
 
   markAsRead(row: NotificationDto): void {

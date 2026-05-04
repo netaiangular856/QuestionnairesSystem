@@ -4,7 +4,12 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { apiUrl } from '../core/config/api-url';
 import { ApiResponse } from '../shared/models/api.types';
-import { CrossSurveyAnalyticsDto, CrossSurveyAnalyticsFilterRequest, DashboardReportDto } from '../shared/models/questionnaire.models';
+import {
+  CrossSurveyAnalyticsDto,
+  CrossSurveyAnalyticsFilterRequest,
+  DashboardFilterQuery,
+  DashboardReportDto,
+} from '../shared/models/questionnaire.models';
 import { toHttpParams, unwrapApiResponse } from '../shared/utils/api-helpers';
 
 @Injectable({ providedIn: 'root' })
@@ -12,9 +17,13 @@ export class ReportsApiService {
   private readonly http = inject(HttpClient);
   private readonly base = apiUrl('/api/reports');
 
-  getDashboard() {
+  getDashboard(filter?: DashboardFilterQuery) {
+    const params =
+      filter?.fromUtc && filter?.toUtc
+        ? toHttpParams({ fromUtc: filter.fromUtc, toUtc: filter.toUtc })
+        : undefined;
     return this.http
-      .get<ApiResponse<DashboardReportDto>>(`${this.base}/dashboard`)
+      .get<ApiResponse<DashboardReportDto>>(`${this.base}/dashboard`, { params })
       .pipe(map((r) => unwrapApiResponse(r)));
   }
 

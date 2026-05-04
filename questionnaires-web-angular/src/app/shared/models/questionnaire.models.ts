@@ -16,6 +16,44 @@ export enum SurveyAudienceScope {
   AllOrganizationMembers = 4,
 }
 
+/** Matches backend SurveyAudienceSubjectKind — lookup rows for survey audience. */
+export enum SurveyAudienceSubjectKind {
+  User = 1,
+  Employee = 2,
+  Partner = 3,
+}
+
+/** GET /api/lookups/survey-audience-subjects */
+export interface SurveyAudienceLookupItemDto {
+  kind: SurveyAudienceSubjectKind;
+  entityId: string;
+  name: string;
+  email: string | null;
+  userId: string | null;
+}
+
+/** Matches backend SurveyAudienceMemberInputDto */
+export interface SurveyAudienceMemberInputDto {
+  userId?: string | null;
+  email?: string | null;
+}
+
+/** Matches backend SurveyAudienceMemberDetailDto */
+export interface SurveyAudienceMemberDetailDto {
+  userId: string | null;
+  email: string | null;
+  displayName: string;
+}
+
+/** UI chip for audience picker (maps to SurveyAudienceMemberInputDto for API). */
+export interface SurveyAudiencePickItem {
+  userId: string | null;
+  email: string | null;
+  label: string;
+  kind: SurveyAudienceSubjectKind;
+  entityId: string;
+}
+
 export enum RecommendationStatus {
   Draft = 1,
   Active = 2,
@@ -94,6 +132,7 @@ export interface SurveyDetailDto {
   opensAtUtc: string | null;
   closesAtUtc: string | null;
   rejectionReason: string | null;
+  audienceMembers?: SurveyAudienceMemberDetailDto[] | null;
 }
 
 export interface SurveyFilterRequest {
@@ -128,12 +167,14 @@ export interface CreateSurveyRequest {
   questions?: CreateSurveyQuestionItem[] | null;
   opensAtUtc?: string | null;
   closesAtUtc?: string | null;
+  audienceMembers?: SurveyAudienceMemberInputDto[] | null;
 }
 
 /** Optional body for POST /publish — audience at publish time. */
 export interface PublishSurveyRequest {
   audienceScope?: SurveyAudienceScope | null;
   audienceUserIds?: string[] | null;
+  audienceMembers?: SurveyAudienceMemberInputDto[] | null;
 }
 
 export interface UpdateSurveyRequest {
@@ -144,6 +185,7 @@ export interface UpdateSurveyRequest {
   code?: string | null;
   audienceScope: SurveyAudienceScope;
   questions?: CreateSurveyQuestionItem[] | null;
+  audienceMembers?: SurveyAudienceMemberInputDto[] | null;
 }
 
 export interface PatchSurveyStatusRequest {
@@ -399,11 +441,65 @@ export interface AddInitiativeProgressRequest {
   notes?: string | null;
 }
 
+export interface DepartmentHeadcountRowDto {
+  departmentId: string;
+  titleAr: string;
+  titleEn: string;
+  employeeCount: number;
+}
+
+/** Query params for GET /api/reports/dashboard — toUtc is exclusive (UTC). */
+export interface DashboardFilterQuery {
+  fromUtc: string;
+  toUtc: string;
+}
+
 export interface DashboardReportDto {
   totalSurveys: number;
   publishedSurveys: number;
   totalResponses: number;
   openActionPlans: number;
+
+  totalUsers: number;
+  totalInactiveUsers: number;
+  totalDepartments: number;
+  totalEmployees: number;
+  employeesWithoutDepartment: number;
+  totalPartners: number;
+  totalInitiatives: number;
+  totalQuestions: number;
+  totalSurveyParticipants: number;
+  totalRecommendations: number;
+  totalActionPlans: number;
+  totalNotifications: number;
+
+  surveyStatusDistribution: NamedCountDto[];
+  initiativeStatusDistribution: NamedCountDto[];
+  actionPlanStatusDistribution: NamedCountDto[];
+  responseStatusDistribution: NamedCountDto[];
+
+  audienceScopeDistribution: NamedCountDto[];
+  participantStatusDistribution: NamedCountDto[];
+  recommendationStatusDistribution: NamedCountDto[];
+  questionTypeDistribution: NamedCountDto[];
+  partnerTypeDistribution: NamedCountDto[];
+  submissionsByDayOfWeek: NamedCountDto[];
+
+  topDepartmentsByEmployees: DepartmentHeadcountRowDto[];
+
+  submissionsTimelineLast30Days: TimelinePointDto[];
+  usersRegisteredTimelineLast30Days: TimelinePointDto[];
+  surveysCreatedTimelineLast30Days: TimelinePointDto[];
+  actionPlansCreatedTimelineLast30Days: TimelinePointDto[];
+  initiativesCreatedTimelineLast30Days: TimelinePointDto[];
+
+  topSurveysBySubmissions: TopSurveyRowDto[];
+
+  /** Echoed when a date filter was applied (UTC). */
+  filterFromUtc?: string | null;
+  filterToUtcExclusive?: string | null;
+
+  generatedAtUtc: string;
 }
 
 /** Workspace-wide survey analytics (filtered by date and/or survey). */
@@ -428,6 +524,10 @@ export interface CrossSurveyAnalyticsDto {
   submissionsByDayOfWeek?: NamedCountDto[];
   submissionsByDay: TimelinePointDto[];
   topSurveysBySubmissions: TopSurveyRowDto[];
+  actionPlanStatusDistribution?: NamedCountDto[];
+  initiativeStatusDistribution?: NamedCountDto[];
+  actionPlans?: CrossSurveyActionPlanReportRowDto[];
+  initiatives?: CrossSurveyInitiativeReportRowDto[];
   /** Rating/scale answers aggregated for the same submitted-response scope as the filter. */
   ratingsDistribution?: RatingAnalyticsDto[];
   /** Answer counts per question type (submitted responses in scope). */
@@ -471,6 +571,29 @@ export interface CrossSurveyOverviewDto {
   completedParticipantsInScope?: number;
   declinedParticipantsInScope?: number;
   averageMinutesToSubmitInPeriod?: number;
+  actionPlansInScope?: number;
+  initiativesInScope?: number;
+}
+
+export interface CrossSurveyActionPlanReportRowDto {
+  titleAr: string;
+  titleEn: string;
+  status: string;
+  linkedSurveyTitleAr?: string | null;
+  linkedSurveyTitleEn?: string | null;
+  createdOnUtc: string;
+}
+
+export interface CrossSurveyInitiativeReportRowDto {
+  titleAr: string;
+  titleEn: string;
+  status: string;
+  actionPlanTitleAr: string;
+  actionPlanTitleEn: string;
+  linkedSurveyTitleAr?: string | null;
+  linkedSurveyTitleEn?: string | null;
+  targetDateUtc?: string | null;
+  createdOnUtc: string;
 }
 
 export interface NamedCountDto {

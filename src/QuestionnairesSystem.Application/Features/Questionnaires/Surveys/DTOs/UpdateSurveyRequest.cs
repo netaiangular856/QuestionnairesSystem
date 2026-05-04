@@ -11,4 +11,7 @@ public sealed class UpdateSurveyRequest
     public string? Code { get; set; }
     public SurveyAudienceScope AudienceScope { get; set; }
     public IReadOnlyList<CreateSurveyQuestionItem>? Questions { get; set; }
+
+    /// <summary>عند الإرسال يُستبدل جدول الجمهور بالكامل؛ عند <see langword="null"/> لا يُغيّر الجمهور.</summary>
+    public IReadOnlyList<SurveyAudienceMemberInputDto>? AudienceMembers { get; set; }
 }

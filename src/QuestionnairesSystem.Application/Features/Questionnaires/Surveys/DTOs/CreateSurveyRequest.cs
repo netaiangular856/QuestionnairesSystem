@@ -20,4 +20,7 @@ public sealed class CreateSurveyRequest
 
     /// <summary>نهاية المخطط؛ بعدها يُؤرشف الاستبيان تلقائياً.</summary>
     public DateTime? ClosesAtUtc { get; set; }
+
+    /// <summary>عند <see cref="SurveyAudienceScope.SpecificUsers"/> يُحدد المستخدمون أو عناوين البريد المسموح لهم.</summary>
+    public IReadOnlyList<SurveyAudienceMemberInputDto>? AudienceMembers { get; set; }
 }

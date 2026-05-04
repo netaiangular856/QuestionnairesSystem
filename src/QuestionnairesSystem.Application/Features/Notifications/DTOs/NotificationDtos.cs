@@ -4,12 +4,15 @@ public sealed class NotificationDto
 {
     public Guid Id { get; init; }
     public Guid UserId { get; init; }
-    public string Title { get; init; } = string.Empty;
-    public string Message { get; init; } = string.Empty;
+    public string TitleAr { get; init; } = string.Empty;
+    public string TitleEn { get; init; } = string.Empty;
+    public string MessageAr { get; init; } = string.Empty;
+    public string MessageEn { get; init; } = string.Empty;
     public bool IsRead { get; init; }
     public DateTime? ReadAtUtc { get; init; }
     public string? RelatedEntityType { get; init; }
     public Guid? RelatedEntityId { get; init; }
+    public Guid? RelatedEntityParentId { get; init; }
     public DateTime CreatedOnUtc { get; init; }
 }
 

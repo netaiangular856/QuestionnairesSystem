@@ -1,0 +1,54 @@
+<div class="sa-audience">
+  <div class="sa-audience__search">
+    <input
+      type="search"
+      class="sa-audience__input"
+      [(ngModel)]="searchInput"
+      (ngModelChange)="onSearchInput()"
+      (focus)="loadOnFocus()"
+      (keyup.enter)="runSearch()"
+      [disabled]="disabled"
+      [placeholder]="'q.surveys.audience.searchPlaceholder' | t"
+    />
+    <button type="button" class="btn-primary btn-sm" [disabled]="disabled || searchBusy()" (click)="runSearch()">
+      {{ 'common.search' | t }}
+    </button>
+  </div>
+
+  @if (searchBusy()) {
+    <p class="muted sa-audience__hint">{{ 'common.loading' | t }}</p>
+  } @else if (results().length > 0) {
+    <ul class="sa-audience__results" role="listbox" [attr.aria-label]="'q.surveys.audience.resultsAria' | t">
+      @for (r of results(); track r.kind + ':' + r.entityId) {
+        <li>
+          <button type="button" class="sa-audience__row" [disabled]="disabled" (click)="addFromLookup(r)">
+            <span class="sa-audience__name">{{ r.name }}</span>
+            <span class="sa-audience__meta">
+              <span class="sa-audience__kind">{{ kindLabel(r.kind) }}</span>
+              @if (r.email) {
+                <span class="sa-audience__email">{{ r.email }}</span>
+              }
+            </span>
+          </button>
+        </li>
+      }
+    </ul>
+  } @else if (!hasFetched()) {
+    <p class="muted sa-audience__hint">{{ 'q.surveys.audience.openHint' | t }}</p>
+  } @else {
+    <p class="muted sa-audience__hint">{{ 'q.surveys.audience.noMatches' | t }}</p>
+  }
+
+  @if (selection.length > 0) {
+    <div class="sa-audience__chips" [attr.aria-label]="'q.surveys.audience.selectedAria' | t">
+      @for (p of selection; track pickKey(p); let i = $index) {
+        <span class="sa-chip">
+          <span class="sa-chip__text">{{ p.label }}</span>
+          <button type="button" class="sa-chip__x" [disabled]="disabled" (click)="removeAt(i)" [attr.aria-label]="'q.surveys.audience.removeChip' | t">
+            ×
+          </button>
+        </span>
+      }
+    </div>
+  }
+</div>

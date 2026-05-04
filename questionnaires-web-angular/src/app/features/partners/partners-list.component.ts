@@ -2,7 +2,9 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PartnersApiService } from '../../services/partners-api.service';
+import { DepartmentsApiService } from '../../services/departments-api.service';
 import { PartnerListItemDto, PartnerFilterRequest, PartnerType, CreatePartnerRequest, UpdatePartnerRequest } from '../../shared/models/partners.models';
+import { DepartmentListItemDto } from '../../shared/models/department.models';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { I18nService } from '../../shared/services/i18n.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -18,8 +20,11 @@ type ViewMode = 'table' | 'cards';
 })
 export class PartnersListComponent implements OnInit {
   private readonly api = inject(PartnersApiService);
+  private readonly departmentsApi = inject(DepartmentsApiService);
   private readonly toast = inject(ToastService);
   readonly i18n = inject(I18nService);
+
+  readonly departmentOptions = signal<DepartmentListItemDto[]>([]);
 
   readonly result = signal<PagedResult<PartnerListItemDto> | null>(null);
   readonly loading = signal(false);
@@ -50,7 +55,17 @@ export class PartnersListComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.loadDepartments();
     this.load();
+  }
+
+  private loadDepartments(): void {
+    this.departmentsApi
+      .getPagedList({ search: null, parentDepartmentId: null, page: 1, pageSize: 500 })
+      .subscribe({
+        next: (r) => this.departmentOptions.set([...r.items]),
+        error: () => this.departmentOptions.set([]),
+      });
   }
 
   load(): void {
@@ -137,6 +152,7 @@ export class PartnersListComponent implements OnInit {
           contactPerson: p.contactPerson,
           address: p.address,
           isActive: p.isActive,
+          departmentId: p.departmentId ?? null,
         };
         this.editBusy.set(false);
       },
@@ -177,6 +193,7 @@ export class PartnersListComponent implements OnInit {
       phoneNumber: '',
       contactPerson: '',
       address: '',
+      departmentId: null,
     };
   }
 

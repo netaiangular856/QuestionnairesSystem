@@ -1,12 +1,15 @@
 export interface NotificationDto {
   id: string;
   userId: string;
-  title: string;
-  message: string;
+  titleAr: string;
+  titleEn: string;
+  messageAr: string;
+  messageEn: string;
   isRead: boolean;
   readAtUtc?: string | null;
   relatedEntityType?: string | null;
   relatedEntityId?: string | null;
+  relatedEntityParentId?: string | null;
   createdOnUtc: string;
 }
 

@@ -2,7 +2,9 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EmployeesApiService } from '../../services/employees-api.service';
+import { DepartmentsApiService } from '../../services/departments-api.service';
 import { EmployeeListItemDto, EmployeeFilterRequest, CreateEmployeeRequest, UpdateEmployeeRequest, EmployeeDto } from '../../shared/models/employees.models';
+import { DepartmentListItemDto } from '../../shared/models/department.models';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { I18nService } from '../../shared/services/i18n.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -18,10 +20,12 @@ type ViewMode = 'table' | 'cards';
 })
 export class EmployeesListComponent implements OnInit {
   private readonly api = inject(EmployeesApiService);
+  private readonly departmentsApi = inject(DepartmentsApiService);
   private readonly toast = inject(ToastService);
   readonly i18n = inject(I18nService);
 
   readonly result = signal<PagedResult<EmployeeListItemDto> | null>(null);
+  readonly departmentOptions = signal<DepartmentListItemDto[]>([]);
   readonly loading = signal(false);
   readonly viewMode = signal<ViewMode>('table');
 
@@ -42,6 +46,16 @@ export class EmployeesListComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    this.loadDepartments();
+  }
+
+  private loadDepartments(): void {
+    this.departmentsApi
+      .getPagedList({ search: null, parentDepartmentId: null, page: 1, pageSize: 500 })
+      .subscribe({
+        next: (r) => this.departmentOptions.set([...r.items]),
+        error: () => this.departmentOptions.set([]),
+      });
   }
 
   load(): void {

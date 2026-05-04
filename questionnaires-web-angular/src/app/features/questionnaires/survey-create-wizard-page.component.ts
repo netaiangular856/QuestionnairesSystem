@@ -8,6 +8,8 @@ import {
   CreateSurveyQuestionItem,
   CreateSurveyRequest,
   QuestionType,
+  SurveyAudienceMemberInputDto,
+  SurveyAudiencePickItem,
   SurveyAudienceScope,
   TemplateDetailDto,
   TemplateListItemDto,
@@ -15,13 +17,14 @@ import {
 import { qLocalizedTitle } from '../../shared/questionnaires/q-display';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { I18nService } from '../../shared/services/i18n.service';
+import { SurveyAudiencePickerComponent } from '../../shared/questionnaires/survey-audience-picker/survey-audience-picker.component';
 
 type SourceMode = 'blank' | 'template';
 
 @Component({
   selector: 'app-survey-create-wizard-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, TranslatePipe],
+  imports: [FormsModule, RouterLink, TranslatePipe, SurveyAudiencePickerComponent],
   templateUrl: './survey-create-wizard-page.component.html',
   styleUrl: './survey-create-wizard-page.component.scss',
 })
@@ -51,6 +54,8 @@ export class SurveyCreateWizardPageComponent implements OnInit {
   descriptionEn = '';
   code = '';
   audienceScope = SurveyAudienceScope.AllOrganizationMembers;
+  /** When audience is SpecificUsers — chips from unified lookup. */
+  audienceSelection: SurveyAudiencePickItem[] = [];
   opensAtLocal = '';
   closesAtLocal = '';
 
@@ -128,11 +133,24 @@ export class SurveyCreateWizardPageComponent implements OnInit {
     this.step.set(s - 1);
   }
 
+  onAudienceScopeChange(): void {
+    if (this.audienceScope !== SurveyAudienceScope.SpecificUsers) {
+      this.audienceSelection = [];
+    }
+  }
+
   next(): void {
     const s = this.step();
     if (s === 0) {
       if (!this.titleAr.trim() || !this.titleEn.trim()) {
         this.toast.show(this.i18n.t('q.surveys.wizard.toast.titlesRequired'), 'error');
+        return;
+      }
+      if (
+        this.audienceScope === SurveyAudienceScope.SpecificUsers &&
+        this.audienceSelection.length === 0
+      ) {
+        this.toast.show(this.i18n.t('q.surveys.wizard.toast.audienceRequired'), 'error');
         return;
       }
       this.step.set(1);
@@ -229,6 +247,13 @@ export class SurveyCreateWizardPageComponent implements OnInit {
       this.toast.show(this.i18n.t('q.surveys.wizard.toast.titlesRequired'), 'error');
       return;
     }
+    if (
+      this.audienceScope === SurveyAudienceScope.SpecificUsers &&
+      this.audienceSelection.length === 0
+    ) {
+      this.toast.show(this.i18n.t('q.surveys.wizard.toast.audienceRequired'), 'error');
+      return;
+    }
     if (this.sourceMode === 'blank') {
       if (!this.validateChoiceQuestions(this.questions)) return;
       const qs = this.normalizeList(this.questions);
@@ -257,11 +282,38 @@ export class SurveyCreateWizardPageComponent implements OnInit {
     });
   }
 
+  private mapAudienceToApi(): SurveyAudienceMemberInputDto[] {
+    return this.audienceSelection.map((p) =>
+      p.userId
+        ? { userId: p.userId, email: null }
+        : { userId: null, email: p.email! },
+    );
+  }
+
   private buildBaseBody(): Pick<
     CreateSurveyRequest,
-    'titleAr' | 'titleEn' | 'descriptionAr' | 'descriptionEn' | 'code' | 'audienceScope' | 'opensAtUtc' | 'closesAtUtc'
+    | 'titleAr'
+    | 'titleEn'
+    | 'descriptionAr'
+    | 'descriptionEn'
+    | 'code'
+    | 'audienceScope'
+    | 'opensAtUtc'
+    | 'closesAtUtc'
+    | 'audienceMembers'
   > {
-    return {
+    const base: Pick<
+      CreateSurveyRequest,
+      | 'titleAr'
+      | 'titleEn'
+      | 'descriptionAr'
+      | 'descriptionEn'
+      | 'code'
+      | 'audienceScope'
+      | 'opensAtUtc'
+      | 'closesAtUtc'
+      | 'audienceMembers'
+    > = {
       titleAr: this.titleAr.trim(),
       titleEn: this.titleEn.trim(),
       descriptionAr: this.descriptionAr.trim() || null,
@@ -270,7 +322,10 @@ export class SurveyCreateWizardPageComponent implements OnInit {
       audienceScope: this.audienceScope,
       opensAtUtc: this.toIsoOrNull(this.opensAtLocal),
       closesAtUtc: this.toIsoOrNull(this.closesAtLocal),
+      audienceMembers:
+        this.audienceScope === SurveyAudienceScope.SpecificUsers ? this.mapAudienceToApi() : null,
     };
+    return base;
   }
 
   private toIsoOrNull(local: string): string | null {

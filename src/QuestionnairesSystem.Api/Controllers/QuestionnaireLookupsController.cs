@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuestionnairesSystem.Api.Authorization;
 using QuestionnairesSystem.Application.Features.Identity.DTOs;
+using QuestionnairesSystem.Application.Features.Questionnaires.Surveys.DTOs;
+using QuestionnairesSystem.Domain.Enums;
 using QuestionnairesSystem.Persistence;
 using QuestionnairesSystem.Shared.Api;
 
@@ -130,6 +132,111 @@ public sealed class QuestionnaireLookupsController : ControllerBase
         });
 
         return Ok(ApiResponse<IReadOnlyList<LookupItemDto>>.FromSuccess(list, traceId));
+    }
+
+    /// <summary>بحث موحّد: مستخدمون نشطون، موظفون بلا حساب (بريد)، متعاملون ببريد — للجمهور «مستخدمون محددون».</summary>
+    [HttpGet("survey-audience-subjects")]
+    public async Task<IActionResult> SurveyAudienceSubjects(
+        [FromQuery] string? search,
+        [FromQuery] int take = 60,
+        CancellationToken cancellationToken = default)
+    {
+        var traceId = HttpContext.TraceIdentifier;
+        var cap = Math.Clamp(take, 1, 200);
+        var perKind = Math.Max(1, (cap + 2) / 3);
+        var term = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+
+        var usersQ = _db.Users.AsNoTracking().Where(u => u.IsActive);
+        if (term is not null)
+        {
+            usersQ = usersQ.Where(u =>
+                u.UserName.Contains(term)
+                || u.Email.Contains(term)
+                || (u.NameAr != null && u.NameAr.Contains(term))
+                || (u.NameEn != null && u.NameEn.Contains(term)));
+        }
+
+        var userRows2 = await usersQ
+            .OrderBy(u => u.NameAr)
+            .ThenBy(u => u.NameEn)
+            .Take(perKind)
+            .Select(u => new { u.Id, u.NameAr, u.NameEn, u.UserName, u.Email })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var users = userRows2.ConvertAll(u => new SurveyAudienceLookupItemDto
+        {
+            Kind = SurveyAudienceSubjectKind.User,
+            EntityId = u.Id,
+            Name = PickDisplayName(u.NameAr, u.NameEn, u.UserName),
+            Email = u.Email,
+            UserId = u.Id
+        });
+
+        var empBase = _db.Employees.AsNoTracking()
+            .Where(e => e.IsActive && e.Email != null && e.Email != "")
+            .Where(e => !_db.Users.Any(u => u.EmployeeId == e.Id && u.IsActive));
+        if (term is not null)
+        {
+            empBase = empBase.Where(e =>
+                e.NameAr.Contains(term)
+                || e.NameEn.Contains(term)
+                || e.EmployeeNumber.Contains(term)
+                || (e.Email != null && e.Email.Contains(term)));
+        }
+
+        var empRows = await empBase
+            .OrderBy(e => e.NameAr)
+            .ThenBy(e => e.NameEn)
+            .Take(perKind)
+            .Select(e => new { e.Id, e.NameAr, e.NameEn, e.EmployeeNumber, e.Email })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var employees = empRows.ConvertAll(e => new SurveyAudienceLookupItemDto
+        {
+            Kind = SurveyAudienceSubjectKind.Employee,
+            EntityId = e.Id,
+            Name = PickDisplayName(e.NameAr, e.NameEn, e.EmployeeNumber),
+            Email = e.Email,
+            UserId = null
+        });
+
+        var partQ = _db.Partners.AsNoTracking().Where(p => p.IsActive && p.Email != null && p.Email != "");
+        if (term is not null)
+        {
+            partQ = partQ.Where(p =>
+                p.NameAr.Contains(term)
+                || p.NameEn.Contains(term)
+                || p.Code.Contains(term)
+                || (p.Email != null && p.Email.Contains(term)));
+        }
+
+        var partRows = await partQ
+            .OrderBy(p => p.NameAr)
+            .ThenBy(p => p.NameEn)
+            .Take(perKind)
+            .Select(p => new { p.Id, p.NameAr, p.NameEn, p.Code, p.Email })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var partners = partRows.ConvertAll(p => new SurveyAudienceLookupItemDto
+        {
+            Kind = SurveyAudienceSubjectKind.Partner,
+            EntityId = p.Id,
+            Name = PickDisplayName(p.NameAr, p.NameEn, p.Code),
+            Email = p.Email,
+            UserId = null
+        });
+
+        var merged = users
+            .Concat(employees)
+            .Concat(partners)
+            .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .Take(cap)
+            .ToList();
+
+        return Ok(ApiResponse<IReadOnlyList<SurveyAudienceLookupItemDto>>.FromSuccess(merged, traceId));
     }
 
     /// <summary>Generic lookup rows filtered by <paramref name="category"/> (domain table LookupItems).</summary>

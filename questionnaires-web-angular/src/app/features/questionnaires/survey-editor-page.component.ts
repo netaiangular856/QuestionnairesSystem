@@ -8,18 +8,22 @@ import {
   CreateSurveyQuestionItem,
   QuestionDto,
   QuestionType,
+  SurveyAudienceMemberInputDto,
+  SurveyAudiencePickItem,
   SurveyAudienceScope,
+  SurveyAudienceSubjectKind,
   UpdateSurveyRequest,
 } from '../../shared/models/questionnaire.models';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { I18nService } from '../../shared/services/i18n.service';
+import { SurveyAudiencePickerComponent } from '../../shared/questionnaires/survey-audience-picker/survey-audience-picker.component';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-survey-editor-page',
   standalone: true,
-  imports: [FormsModule, TranslatePipe],
+  imports: [FormsModule, TranslatePipe, SurveyAudiencePickerComponent],
   templateUrl: './survey-editor-page.component.html',
   styleUrl: './survey-editor-page.component.scss',
 })
@@ -42,6 +46,7 @@ export class SurveyEditorPageComponent implements OnInit {
   descriptionEn = '';
   code = '';
   audienceScope = SurveyAudienceScope.AllOrganizationMembers;
+  audienceSelection: SurveyAudiencePickItem[] = [];
   questions: CreateSurveyQuestionItem[] = [this.emptyQuestion()];
 
   readonly QuestionType = QuestionType;
@@ -105,11 +110,24 @@ export class SurveyEditorPageComponent implements OnInit {
     this.step.set(s - 1);
   }
 
+  onAudienceScopeChange(): void {
+    if (this.audienceScope !== SurveyAudienceScope.SpecificUsers) {
+      this.audienceSelection = [];
+    }
+  }
+
   next(): void {
     const s = this.step();
     if (s === 0) {
       if (!this.titleAr.trim() || !this.titleEn.trim()) {
         this.toast.show(this.i18n.t('q.surveys.wizard.toast.titlesRequired'), 'error');
+        return;
+      }
+      if (
+        this.audienceScope === SurveyAudienceScope.SpecificUsers &&
+        this.audienceSelection.length === 0
+      ) {
+        this.toast.show(this.i18n.t('q.surveys.wizard.toast.audienceRequired'), 'error');
         return;
       }
       this.step.set(1);
@@ -130,6 +148,13 @@ export class SurveyEditorPageComponent implements OnInit {
       this.toast.show(this.i18n.t('q.surveys.wizard.toast.titlesRequired'), 'error');
       return;
     }
+    if (
+      this.audienceScope === SurveyAudienceScope.SpecificUsers &&
+      this.audienceSelection.length === 0
+    ) {
+      this.toast.show(this.i18n.t('q.surveys.wizard.toast.audienceRequired'), 'error');
+      return;
+    }
     const qs = this.normalizeForApi(this.questions);
     if (qs.length === 0) {
       this.toast.show(this.i18n.t('q.surveys.wizard.toast.questionsRequired'), 'error');
@@ -145,6 +170,8 @@ export class SurveyEditorPageComponent implements OnInit {
         code: this.code.trim() || null,
         audienceScope: this.audienceScope,
         questions: qs,
+        audienceMembers:
+          this.audienceScope === SurveyAudienceScope.SpecificUsers ? this.mapAudienceToApi() : undefined,
       };
       this.saveBusy.set(true);
       this.api.update(this.surveyId, body).subscribe({
@@ -174,6 +201,13 @@ export class SurveyEditorPageComponent implements OnInit {
         this.descriptionEn = survey.descriptionEn ?? '';
         this.code = survey.code ?? '';
         this.audienceScope = survey.audienceScope;
+        this.audienceSelection = (survey.audienceMembers ?? []).map((m) => ({
+          userId: m.userId,
+          email: m.email,
+          label: m.displayName,
+          entityId: m.userId ?? m.email ?? '',
+          kind: m.userId ? SurveyAudienceSubjectKind.User : SurveyAudienceSubjectKind.Partner,
+        }));
         
         const rows = (questions ?? [])
           .sort((a, b) => a.displayOrder - b.displayOrder)
@@ -200,6 +234,12 @@ export class SurveyEditorPageComponent implements OnInit {
       optionsJson: q.optionsJson,
       displayOrder: q.displayOrder,
     };
+  }
+
+  private mapAudienceToApi(): SurveyAudienceMemberInputDto[] {
+    return this.audienceSelection.map((p) =>
+      p.userId ? { userId: p.userId, email: null } : { userId: null, email: p.email! },
+    );
   }
 
   private normalizeForApi(rows: CreateSurveyQuestionItem[]): CreateSurveyQuestionItem[] {

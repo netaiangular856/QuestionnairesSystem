@@ -1,0 +1,343 @@
+<div class="page-workspace reports-dashboard">
+  <div class="rp-page">
+    <header class="rp-hero db-hero--compact" role="banner">
+      <div class="rp-hero__icon db-hero__icon--sm" aria-hidden="true"><i class="pi pi-th-large"></i></div>
+      <div class="rp-hero__text">
+        <div class="db-hero__row">
+          <h1 class="rp-hero__title db-hero__title">{{ 'dashboard.title' | t }}</h1>
+          @if (canReport() && report(); as rpt) {
+            <p
+              class="db-meta muted db-hero__meta"
+              [attr.title]="('dashboard.updated' | t) + ': ' + (rpt.generatedAtUtc | date: 'medium')"
+            >
+              <i class="pi pi-clock" aria-hidden="true"></i>
+              {{ rpt.generatedAtUtc | date: 'short' }}
+              @if (rpt.filterFromUtc && rpt.filterToUtcExclusive) {
+                <span class="db-meta__sep" aria-hidden="true"> · </span>
+                <span class="db-filter-badge">{{ 'dashboard.filter.active' | t }}</span>
+              }
+            </p>
+          }
+        </div>
+        <p class="rp-hero__lead db-hero__lead">{{ 'dashboard.subtitle' | t }}</p>
+      </div>
+    </header>
+
+    <section class="rp-panel db-top-panel" aria-labelledby="db-top-h">
+      <div class="rp-panel__head db-top-panel__head">
+        <span class="rp-panel__icon" aria-hidden="true"><i class="pi pi-bolt"></i></span>
+        <div class="db-top-panel__titles">
+          <h2 id="db-top-h" class="rp-panel__title">{{ 'dashboard.section.shortcuts' | t }}</h2>
+          <p class="rp-panel__hint muted db-top-panel__hint">{{ 'dashboard.topPanel.hint' | t }}</p>
+        </div>
+      </div>
+      <div class="db-top-panel__body">
+      <div class="db-shortcuts__grid">
+        <a routerLink="/available-surveys" class="db-shortcut db-shortcut--a">
+          <i class="pi pi-list" aria-hidden="true"></i>
+          <span>{{ 'dashboard.quick.available' | t }}</span>
+        </a>
+        <a routerLink="/profile" class="db-shortcut db-shortcut--b">
+          <i class="pi pi-user" aria-hidden="true"></i>
+          <span>{{ 'dashboard.quick.profile' | t }}</span>
+        </a>
+        @if (has('SURVEY_VIEW')) {
+          <a routerLink="/surveys" class="db-shortcut db-shortcut--c">
+            <i class="pi pi-file-edit" aria-hidden="true"></i>
+            <span>{{ 'dashboard.quick.surveys' | t }}</span>
+          </a>
+        }
+        @if (canReport()) {
+          <a routerLink="/reports" class="db-shortcut db-shortcut--d">
+            <i class="pi pi-chart-line" aria-hidden="true"></i>
+            <span>{{ 'dashboard.quick.reports' | t }}</span>
+          </a>
+          <a routerLink="/survey-analysis" class="db-shortcut db-shortcut--g">
+            <i class="pi pi-chart-bar" aria-hidden="true"></i>
+            <span>{{ 'nav.surveyAnalysis' | t }}</span>
+          </a>
+        }
+        @if (has('ACTION_PLAN_VIEW')) {
+          <a routerLink="/action-plans" class="db-shortcut db-shortcut--e">
+            <i class="pi pi-sitemap" aria-hidden="true"></i>
+            <span>{{ 'dashboard.quick.actionPlans' | t }}</span>
+          </a>
+          <a routerLink="/initiatives" class="db-shortcut db-shortcut--f">
+            <i class="pi pi-flag" aria-hidden="true"></i>
+            <span>{{ 'dashboard.quick.initiatives' | t }}</span>
+          </a>
+        }
+      </div>
+
+      @if (canReport()) {
+        <div class="db-filter-compact" [attr.aria-label]="'dashboard.filter.title' | t">
+          <div class="db-filter-compact__row">
+            <span class="db-filter-compact__lbl">{{ 'dashboard.filter.from' | t }}</span>
+            <span class="db-date-wrap">
+              <input
+                #fromDateIn
+                id="db-filter-from"
+                class="db-filter-input"
+                type="date"
+                [(ngModel)]="filterDateFrom"
+                [disabled]="reportBusy()"
+              />
+              <button
+                type="button"
+                class="db-date-wrap__btn"
+                [disabled]="reportBusy()"
+                (click)="openDatePicker(fromDateIn)"
+                [attr.aria-label]="'dashboard.filter.openCalendar' | t"
+              >
+                <i class="pi pi-calendar" aria-hidden="true"></i>
+              </button>
+            </span>
+            <span class="db-filter-compact__lbl">{{ 'dashboard.filter.to' | t }}</span>
+            <span class="db-date-wrap">
+              <input
+                #toDateIn
+                id="db-filter-to"
+                class="db-filter-input"
+                type="date"
+                [(ngModel)]="filterDateTo"
+                [disabled]="reportBusy()"
+              />
+              <button
+                type="button"
+                class="db-date-wrap__btn"
+                [disabled]="reportBusy()"
+                (click)="openDatePicker(toDateIn)"
+                [attr.aria-label]="'dashboard.filter.openCalendar' | t"
+              >
+                <i class="pi pi-calendar" aria-hidden="true"></i>
+              </button>
+            </span>
+            <button
+              type="button"
+              class="rp-btn rp-btn--primary rp-btn--compact"
+              [disabled]="reportBusy()"
+              (click)="applyDateFilter()"
+            >
+              {{ 'dashboard.filter.apply' | t }}
+            </button>
+            <button
+              type="button"
+              class="rp-btn rp-btn--ghost rp-btn--compact"
+              [disabled]="reportBusy()"
+              (click)="clearDateFilter()"
+            >
+              {{ 'dashboard.filter.clear' | t }}
+            </button>
+          </div>
+          @if (filterClientError(); as ferr) {
+            <p class="db-filter-err" role="alert">{{ ferr }}</p>
+          }
+        </div>
+      }
+      </div>
+    </section>
+
+    @if (!canReport()) {
+      <section class="rp-panel db-notice" role="region" aria-labelledby="db-no-analytics-h">
+        <span class="db-notice__icon" aria-hidden="true"><i class="pi pi-info-circle"></i></span>
+        <div>
+          <h2 id="db-no-analytics-h" class="rp-panel__title">{{ 'dashboard.noAnalytics.title' | t }}</h2>
+          <p class="muted">{{ 'dashboard.noAnalytics.body' | t }}</p>
+        </div>
+      </section>
+    }
+
+    @if (canReport() && reportBusy()) {
+      <div class="rp-state rp-state--loading rp-panel" role="status" aria-live="polite">
+        <span class="rp-spinner" aria-hidden="true"></span>
+        <span class="rp-state__text">{{ 'common.loading' | t }}</span>
+      </div>
+    }
+
+    @if (canReport() && !reportBusy() && reportFailed()) {
+      <div class="rp-state rp-state--err rp-panel" role="alert">
+        <span class="rp-state__text">{{ 'dashboard.loadError' | t }}</span>
+        <button type="button" class="rp-btn rp-btn--primary rp-btn--compact" (click)="retry()">
+          {{ 'common.retry' | t }}
+        </button>
+      </div>
+    }
+
+    @if (canReport() && !reportBusy() && report(); as d) {
+      <div class="rp-main db-dashboard db-dashboard--tight" role="region" [attr.aria-label]="('nav.dashboard' | t)">
+        <div class="db-kpi-grid">
+          <article class="rp-kpi db-kpi--cell">
+            <i class="pi pi-folder rp-kpi__ico" aria-hidden="true"></i>
+            <p class="rp-kpi__label">{{ 'q.reports.totalSurveys' | t }}</p>
+            <p class="rp-kpi__value">{{ d.totalSurveys | number }}</p>
+          </article>
+          <article class="rp-kpi db-kpi--cell">
+            <i class="pi pi-megaphone rp-kpi__ico" aria-hidden="true"></i>
+            <p class="rp-kpi__label">{{ 'q.reports.published' | t }}</p>
+            <p class="rp-kpi__value">{{ d.publishedSurveys | number }}</p>
+          </article>
+          <article class="rp-kpi rp-kpi--accent db-kpi--cell">
+            <i class="pi pi-send rp-kpi__ico" aria-hidden="true"></i>
+            <p class="rp-kpi__label">{{ 'q.reports.responses' | t }}</p>
+            <p class="rp-kpi__value">{{ d.totalResponses | number }}</p>
+          </article>
+          <article class="rp-kpi db-kpi--cell">
+            <i class="pi pi-users rp-kpi__ico" aria-hidden="true"></i>
+            <p class="rp-kpi__label">{{ 'q.analysis.kpi.invited' | t }}</p>
+            <p class="rp-kpi__value">{{ d.totalSurveyParticipants | number }}</p>
+          </article>
+          <article class="rp-kpi db-kpi--cell">
+            <i class="pi pi-user-plus rp-kpi__ico" aria-hidden="true"></i>
+            <p class="rp-kpi__label">{{ 'dashboard.kpi.users' | t }}</p>
+            <p class="rp-kpi__value">{{ d.totalUsers | number }}</p>
+          </article>
+          <article class="rp-kpi db-kpi--cell">
+            <i class="pi pi-building rp-kpi__ico" aria-hidden="true"></i>
+            <p class="rp-kpi__label">{{ 'dashboard.kpi.departments' | t }}</p>
+            <p class="rp-kpi__value">{{ d.totalDepartments | number }}</p>
+          </article>
+          <article class="rp-kpi db-kpi--cell">
+            <i class="pi pi-briefcase rp-kpi__ico" aria-hidden="true"></i>
+            <p class="rp-kpi__label">{{ 'q.reports.openPlans' | t }}</p>
+            <p class="rp-kpi__value">{{ d.openActionPlans | number }}</p>
+          </article>
+          <article class="rp-kpi db-kpi--cell">
+            <i class="pi pi-flag rp-kpi__ico" aria-hidden="true"></i>
+            <p class="rp-kpi__label">{{ 'dashboard.kpi.initiatives' | t }}</p>
+            <p class="rp-kpi__value">{{ d.totalInitiatives | number }}</p>
+          </article>
+        </div>
+
+        <div class="rp-chart-grid-triple db-triple-tight db-chart-gap">
+          <article class="rp-chart-card rp-chart-card--triple">
+            <h3 class="rp-chart-card__title">{{ 'q.analysis.chart.audienceScopeMix' | t }}</h3>
+            <div class="rp-chart-card__canvas rp-chart-card__canvas--triple-bar db-canvas-compact">
+              @if (d.audienceScopeDistribution.length > 0) {
+                <canvas baseChart type="bar" [data]="barAudienceData()" [options]="barAudienceOpts()"></canvas>
+              } @else {
+                <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+              }
+            </div>
+          </article>
+          <article class="rp-chart-card rp-chart-card--triple">
+            <h3 class="rp-chart-card__title">{{ 'dashboard.chart.questionTypes' | t }}</h3>
+            <div class="rp-chart-card__canvas rp-chart-card__canvas--triple-bar db-canvas-compact">
+              @if (d.questionTypeDistribution.length > 0) {
+                <canvas baseChart type="bar" [data]="barQuestionTypeData()" [options]="barQuestionOpts()"></canvas>
+              } @else {
+                <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+              }
+            </div>
+          </article>
+          <article class="rp-chart-card rp-chart-card--triple">
+            <h3 class="rp-chart-card__title">{{ 'q.analysis.chart.submissionsByWeekday' | t }}</h3>
+            <div class="rp-chart-card__canvas rp-chart-card__canvas--triple-bar db-canvas-compact">
+              @if (d.submissionsByDayOfWeek.length > 0) {
+                <canvas baseChart type="bar" [data]="barWeekdayData()" [options]="barWeekdayOpts()"></canvas>
+              } @else {
+                <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+              }
+            </div>
+          </article>
+        </div>
+
+        <div class="db-chart-pair db-chart-gap">
+          <article class="rp-chart-card rp-chart-card--triple">
+            <h3 class="rp-chart-card__title">{{ 'dashboard.chart.partnerTypes' | t }}</h3>
+            <div class="rp-chart-card__canvas rp-chart-card__canvas--triple-bar db-canvas-compact">
+              @if (d.partnerTypeDistribution.length > 0) {
+                <canvas baseChart type="bar" [data]="barPartnerData()" [options]="barPartnerOpts()"></canvas>
+              } @else {
+                <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+              }
+            </div>
+          </article>
+          <article class="rp-chart-card rp-chart-card--triple">
+            <h3 class="rp-chart-card__title">{{ 'dashboard.chart.recommendationStatus' | t }}</h3>
+            <div class="rp-chart-card__canvas rp-chart-card__canvas--triple-bar db-canvas-compact">
+              @if (d.recommendationStatusDistribution.length > 0) {
+                <canvas baseChart type="bar" [data]="barRecommendationData()" [options]="barRecommendationOpts()"></canvas>
+              } @else {
+                <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+              }
+            </div>
+          </article>
+        </div>
+
+        <!-- صفان × عمودين: خطوط ثم ترتيب -->
+        <div
+          class="db-summary-grid"
+          role="group"
+          [attr.aria-label]="('dashboard.section.analytics' | t)"
+        >
+          <article class="rp-chart-card rp-chart-card--line db-summary-cell">
+            <h3 class="rp-chart-card__title">{{ 'dashboard.chart.submissions30d' | t }}</h3>
+            <div class="rp-chart-card__canvas db-canvas-line">
+              <canvas baseChart type="line" [data]="lineData()" [options]="lineOpts()"></canvas>
+            </div>
+          </article>
+          <article class="rp-chart-card rp-chart-card--line db-summary-cell">
+            <h3 class="rp-chart-card__title">{{ 'dashboard.chart.systemActivity30d' | t }}</h3>
+            <div class="rp-chart-card__canvas db-canvas-line">
+              <canvas baseChart type="line" [data]="lineActivityData()" [options]="lineActivityOpts()"></canvas>
+            </div>
+          </article>
+          <article class="rp-chart-card rp-chart-card--top-bar db-summary-cell">
+            <h3 class="rp-chart-card__title">{{ 'dashboard.chart.topSurveys' | t }}</h3>
+            <div class="rp-chart-card__canvas rp-chart-card__canvas--bar db-canvas-rank">
+              @if (d.topSurveysBySubmissions.length > 0) {
+                <canvas baseChart type="bar" [data]="barTopData()" [options]="barTopOpts()"></canvas>
+              } @else {
+                <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+              }
+            </div>
+          </article>
+          <article class="rp-chart-card rp-chart-card--top-bar db-summary-cell">
+            <h3 class="rp-chart-card__title">{{ 'dashboard.chart.topDepartments' | t }}</h3>
+            <div class="rp-chart-card__canvas rp-chart-card__canvas--bar db-canvas-rank">
+              @if (d.topDepartmentsByEmployees.length > 0) {
+                <canvas baseChart type="bar" [data]="barDeptData()" [options]="barDeptOpts()"></canvas>
+              } @else {
+                <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+              }
+            </div>
+          </article>
+        </div>
+
+        <!-- صف واحد × 3: دونات الاستبيانات + المبادرات + خطط العمل -->
+        <div
+          class="db-summary-row-triple db-chart-gap"
+          role="group"
+          [attr.aria-label]="('dashboard.section.statusMix' | t)"
+        >
+          <article class="rp-chart-card rp-chart-card--donut-survey db-summary-cell">
+            <h3 class="rp-chart-card__title">{{ 'dashboard.chart.surveyByStatus' | t }}</h3>
+            <div class="rp-chart-card__canvas rp-chart-card__canvas--donut db-canvas-donut db-canvas-donut--triple">
+              <canvas baseChart type="doughnut" [data]="doughnutSurveyData()" [options]="doughnutSurveyOpts()"></canvas>
+            </div>
+          </article>
+          <article class="rp-chart-card rp-chart-card--top-bar db-summary-cell">
+            <h3 class="rp-chart-card__title">{{ 'dashboard.chart.initiativesByStatus' | t }}</h3>
+            <div class="rp-chart-card__canvas rp-chart-card__canvas--bar db-canvas-rank db-canvas-rank--triple">
+              @if (d.initiativeStatusDistribution.length > 0) {
+                <canvas baseChart type="bar" [data]="barInitiativeStatusData()" [options]="barInitiativeStatusOpts()"></canvas>
+              } @else {
+                <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+              }
+            </div>
+          </article>
+          <article class="rp-chart-card rp-chart-card--top-bar db-summary-cell">
+            <h3 class="rp-chart-card__title">{{ 'dashboard.chart.plansByStatus' | t }}</h3>
+            <div class="rp-chart-card__canvas rp-chart-card__canvas--bar db-canvas-rank db-canvas-rank--triple">
+              @if (d.actionPlanStatusDistribution.length > 0) {
+                <canvas baseChart type="bar" [data]="barPlanStatusData()" [options]="barPlanStatusOpts()"></canvas>
+              } @else {
+                <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+              }
+            </div>
+          </article>
+        </div>
+      </div>
+    }
+  </div>
+</div>

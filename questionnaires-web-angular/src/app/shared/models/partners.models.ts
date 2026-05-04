@@ -17,6 +17,9 @@ export interface PartnerDto {
   contactPerson?: string | null;
   isActive: boolean;
   address?: string | null;
+  departmentId?: string | null;
+  departmentNameAr?: string | null;
+  departmentNameEn?: string | null;
 }
 
 export interface PartnerListItemDto {
@@ -27,6 +30,8 @@ export interface PartnerListItemDto {
   type: PartnerType;
   email?: string | null;
   isActive: boolean;
+  departmentNameAr?: string | null;
+  departmentNameEn?: string | null;
 }
 
 export interface CreatePartnerRequest {
@@ -38,6 +43,7 @@ export interface CreatePartnerRequest {
   phoneNumber?: string | null;
   contactPerson?: string | null;
   address?: string | null;
+  departmentId?: string | null;
 }
 
 export interface UpdatePartnerRequest {
@@ -50,6 +56,7 @@ export interface UpdatePartnerRequest {
   contactPerson?: string | null;
   isActive: boolean;
   address?: string | null;
+  departmentId?: string | null;
 }
 
 export interface PartnerFilterRequest {

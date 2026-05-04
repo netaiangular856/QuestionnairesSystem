@@ -128,19 +128,9 @@
               <p class="rp-kpi__value">{{ d.overview.submittedResponsesInPeriod }}</p>
             </article>
             <article class="rp-kpi">
-              <i class="pi pi-chart-line rp-kpi__ico" aria-hidden="true"></i>
-              <p class="rp-kpi__label">{{ 'q.analysis.kpi.surveysWithActivity' | t }}</p>
-              <p class="rp-kpi__value">{{ d.overview.surveysWithSubmissionsInPeriod }}</p>
-            </article>
-            <article class="rp-kpi">
               <i class="pi pi-users rp-kpi__ico" aria-hidden="true"></i>
               <p class="rp-kpi__label">{{ 'q.analysis.kpi.invited' | t }}</p>
               <p class="rp-kpi__value">{{ d.overview.invitedParticipantsInScope }}</p>
-            </article>
-            <article class="rp-kpi">
-              <i class="pi pi-spinner rp-kpi__ico" aria-hidden="true"></i>
-              <p class="rp-kpi__label">{{ 'q.analysis.kpi.inProgress' | t }}</p>
-              <p class="rp-kpi__value">{{ d.overview.inProgressResponsesOpen }}</p>
             </article>
             <article class="rp-kpi">
               <i class="pi pi-bolt rp-kpi__ico" aria-hidden="true"></i>
@@ -151,6 +141,16 @@
               <i class="pi pi-question-circle rp-kpi__ico" aria-hidden="true"></i>
               <p class="rp-kpi__label">{{ 'q.analysis.kpi.questions' | t }}</p>
               <p class="rp-kpi__value">{{ d.overview.totalQuestionsInScope }}</p>
+            </article>
+            <article class="rp-kpi">
+              <i class="pi pi-list rp-kpi__ico" aria-hidden="true"></i>
+              <p class="rp-kpi__label">{{ 'q.analysis.kpi.actionPlansInScope' | t }}</p>
+              <p class="rp-kpi__value">{{ d.overview.actionPlansInScope ?? 0 }}</p>
+            </article>
+            <article class="rp-kpi">
+              <i class="pi pi-flag rp-kpi__ico" aria-hidden="true"></i>
+              <p class="rp-kpi__label">{{ 'q.analysis.kpi.initiativesInScope' | t }}</p>
+              <p class="rp-kpi__value">{{ d.overview.initiativesInScope ?? 0 }}</p>
             </article>
           </div>
         </section>
@@ -197,6 +197,8 @@
           <div class="rp-section__head">
             <span class="rp-section__eyebrow" id="rp-charts-heading">{{ 'q.analysis.sectionCharts' | t }}</span>
           </div>
+
+
           <div class="rp-chart-grid">
             <article class="rp-chart-card rp-chart-card--top-bar">
               <h3 class="rp-chart-card__title">{{ 'q.analysis.chart.topSurveys' | t }}</h3>
@@ -256,6 +258,92 @@
           </div>
         </section>
 
+        
+        <div class="rp-plans-before-charts" aria-labelledby="rp-plans-heading">
+          <div class="rp-section__head rp-section__head--sub">
+            <span class="rp-section__eyebrow" id="rp-plans-heading">{{ 'q.reports.sectionPlansInitiatives' | t }}</span>
+          </div>
+          <div class="rp-chart-grid-two">
+            <article class="rp-chart-card rp-chart-card--triple">
+              <h3 class="rp-chart-card__title">{{ 'q.analysis.chart.actionPlanStatusMix' | t }}</h3>
+              <div class="rp-chart-card__canvas rp-chart-card__canvas--donut">
+                @if ((d.actionPlanStatusDistribution?.length ?? 0) > 0) {
+                  <canvas baseChart [type]="'doughnut'" [data]="doughnutActionPlanData()" [options]="doughnutActionPlanOpts()"></canvas>
+                } @else {
+                  <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+                }
+              </div>
+            </article>
+            <article class="rp-chart-card rp-chart-card--triple">
+              <h3 class="rp-chart-card__title">{{ 'q.analysis.chart.initiativeStatusMix' | t }}</h3>
+              <div class="rp-chart-card__canvas rp-chart-card__canvas--donut">
+                @if ((d.initiativeStatusDistribution?.length ?? 0) > 0) {
+                  <canvas baseChart [type]="'doughnut'" [data]="doughnutInitiativeData()" [options]="doughnutInitiativeOpts()"></canvas>
+                } @else {
+                  <p class="rp-chart-empty muted">{{ 'q.detail.analytics.chartEmpty' | t }}</p>
+                }
+              </div>
+            </article>
+          </div>
+          <div class="rp-strip-stack">
+            <div class="rp-strip-panel rp-panel">
+              <div class="rp-strip-panel__head">
+                <span class="rp-strip-panel__icon" aria-hidden="true"><i class="pi pi-list"></i></span>
+                <h3 class="rp-strip-panel__title">{{ 'nav.actionPlans' | t }}</h3>
+              </div>
+              <div class="rp-strip-panel__body">
+                @for (row of d.actionPlans ?? []; track $index) {
+                  <div [class]="stripRowClass('ap', row.status)">
+                    <div class="rp-strip-item__row">
+                      <span class="rp-strip-item__title">{{ displayBilingualTitle(row) }}</span>
+                      <span class="rp-pill">{{ actionPlanStatusLabel(row.status) }}</span>
+                    </div>
+                    <div class="rp-strip-item__track" role="presentation">
+                      <span class="rp-strip-item__fill" [style.width.%]="actionPlanStripPercent(row.status)"></span>
+                    </div>
+                    <p class="rp-strip-item__meta muted">
+                      {{ linkedSurveyTitle(row) }}
+                      <span class="rp-strip-item__dot" aria-hidden="true">·</span>
+                      {{ row.createdOnUtc | date: 'short' }}
+                    </p>
+                  </div>
+                } @empty {
+                  <p class="rp-strip-empty muted">{{ 'q.reports.noActionPlansInScope' | t }}</p>
+                }
+              </div>
+            </div>
+            <div class="rp-strip-panel rp-panel">
+              <div class="rp-strip-panel__head">
+                <span class="rp-strip-panel__icon" aria-hidden="true"><i class="pi pi-flag"></i></span>
+                <h3 class="rp-strip-panel__title">{{ 'nav.initiatives' | t }}</h3>
+              </div>
+              <div class="rp-strip-panel__body">
+                @for (row of d.initiatives ?? []; track $index) {
+                  <div [class]="stripRowClass('in', row.status)">
+                    <div class="rp-strip-item__row">
+                      <span class="rp-strip-item__title">{{ displayBilingualTitle(row) }}</span>
+                      <span class="rp-pill">{{ initiativeStatusLabel(row.status) }}</span>
+                    </div>
+                    <div class="rp-strip-item__track" role="presentation">
+                      <span class="rp-strip-item__fill" [style.width.%]="initiativeStripPercent(row.status)"></span>
+                    </div>
+                    <p class="rp-strip-item__meta muted">
+                      {{ displayBilingualTitle({ titleAr: row.actionPlanTitleAr, titleEn: row.actionPlanTitleEn }) }}
+                      <span class="rp-strip-item__dot" aria-hidden="true">·</span>
+                      {{ linkedSurveyTitle(row) }}
+                      <span class="rp-strip-item__dot" aria-hidden="true">·</span>
+                      {{ row.targetDateUtc ? (row.targetDateUtc | date: 'short') : '—' }}
+                      <span class="rp-strip-item__dot" aria-hidden="true">·</span>
+                      {{ row.createdOnUtc | date: 'short' }}
+                    </p>
+                  </div>
+                } @empty {
+                  <p class="rp-strip-empty muted">{{ 'q.reports.noInitiativesInScope' | t }}</p>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
         <section class="rp-section" aria-labelledby="rp-table-heading">
           <div class="rp-section__head">
             <span class="rp-section__eyebrow" id="rp-table-heading">{{ 'q.analysis.sectionTables' | t }}</span>

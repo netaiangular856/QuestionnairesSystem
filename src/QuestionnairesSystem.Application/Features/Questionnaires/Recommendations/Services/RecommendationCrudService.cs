@@ -1,12 +1,16 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using QuestionnairesSystem.Application.Common;
-using QuestionnairesSystem.Shared.Api;
+using QuestionnairesSystem.Application.Features.Notifications;
+using QuestionnairesSystem.Application.Features.Notifications.DTOs;
+using QuestionnairesSystem.Application.Features.Notifications.Interfaces;
 using QuestionnairesSystem.Application.Features.Questionnaires.Recommendations.DTOs;
 using QuestionnairesSystem.Application.Features.Questionnaires.Recommendations.Interfaces;
 using QuestionnairesSystem.Domain.Enums;
 using QuestionnairesSystem.Domain.Recommendations;
 using QuestionnairesSystem.Persistence;
+using QuestionnairesSystem.Shared.Api;
+using QuestionnairesSystem.Shared.Identity;
 using QuestionnairesSystem.Shared.Results;
 
 namespace QuestionnairesSystem.Application.Features.Questionnaires.Recommendations.Services;
@@ -16,15 +20,21 @@ public sealed class RecommendationCrudService : IRecommendationCrudService
     private readonly QuestionnairesDbContext _db;
     private readonly IValidator<CreateRecommendationRequest> _createValidator;
     private readonly IValidator<UpdateRecommendationRequest> _updateValidator;
+    private readonly ICurrentUserService _currentUser;
+    private readonly IInboxNotificationDispatchService _notify;
 
     public RecommendationCrudService(
         QuestionnairesDbContext db,
         IValidator<CreateRecommendationRequest> createValidator,
-        IValidator<UpdateRecommendationRequest> updateValidator)
+        IValidator<UpdateRecommendationRequest> updateValidator,
+        ICurrentUserService currentUser,
+        IInboxNotificationDispatchService notify)
     {
         _db = db;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+        _currentUser = currentUser;
+        _notify = notify;
     }
 
     public async Task<Result<RecommendationDto>> CreateAsync(CreateRecommendationRequest request, CancellationToken cancellationToken = default)
@@ -53,6 +63,25 @@ public sealed class RecommendationCrudService : IRecommendationCrudService
         var created = await SelectRecommendationDto(_db.Recommendations.AsNoTracking().Where(x => x.Id == r.Id))
             .FirstAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        var (na, ne) = RecommendationNamePair(r);
+        var createRecipients = new HashSet<Guid>();
+        if (_currentUser.UserId is { } actorCr)
+            createRecipients.Add(actorCr);
+        if (r.AssignedToUserId is { } assignCr)
+            createRecipients.Add(assignCr);
+        await _notify.DispatchAsync(
+            createRecipients,
+            new LocalizedInboxNotificationText(
+                "تم إنشاء توصية",
+                "Recommendation created",
+                $"تم إنشاء التوصية «{na}».",
+                $"Recommendation «{ne}» was created."),
+            NotificationRelatedEntityTypes.Recommendation,
+            r.Id,
+            null,
+            cancellationToken).ConfigureAwait(false);
+
         return Result<RecommendationDto>.Ok(created);
     }
 
@@ -103,6 +132,8 @@ public sealed class RecommendationCrudService : IRecommendationCrudService
         if (r is null)
             return Result<RecommendationDto>.Fail("Recommendation was not found.", QuestionnaireErrors.RecommendationNotFound);
 
+        var previousAssignee = r.AssignedToUserId;
+
         if (request.SurveyId is { } sid && !await _db.Surveys.AnyAsync(s => s.Id == sid, cancellationToken).ConfigureAwait(false))
             return Result<RecommendationDto>.Fail("Survey was not found.", QuestionnaireErrors.SurveyNotFound);
 
@@ -119,6 +150,27 @@ public sealed class RecommendationCrudService : IRecommendationCrudService
         var updated = await SelectRecommendationDto(_db.Recommendations.AsNoTracking().Where(x => x.Id == r.Id))
             .FirstAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        var (naUpd, neUpd) = RecommendationNamePair(r);
+        var updRecipients = new HashSet<Guid>();
+        if (_currentUser.UserId is { } actorUpd)
+            updRecipients.Add(actorUpd);
+        if (r.AssignedToUserId is { } newAsg)
+            updRecipients.Add(newAsg);
+        if (previousAssignee is { } oldAsg && oldAsg != r.AssignedToUserId)
+            updRecipients.Add(oldAsg);
+        await _notify.DispatchAsync(
+            updRecipients,
+            new LocalizedInboxNotificationText(
+                "تم تحديث توصية",
+                "Recommendation updated",
+                $"تم تحديث التوصية «{naUpd}».",
+                $"Recommendation «{neUpd}» was updated."),
+            NotificationRelatedEntityTypes.Recommendation,
+            r.Id,
+            null,
+            cancellationToken).ConfigureAwait(false);
+
         return Result<RecommendationDto>.Ok(updated);
     }
 
@@ -128,10 +180,36 @@ public sealed class RecommendationCrudService : IRecommendationCrudService
         if (r is null)
             return Result.Fail("Recommendation was not found.", QuestionnaireErrors.RecommendationNotFound);
 
+        var (naDel, neDel) = RecommendationNamePair(r);
+        var delAssignee = r.AssignedToUserId;
         r.RecordStatus = RecordStatus.Deleted;
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        var delRecipients = new HashSet<Guid>();
+        if (_currentUser.UserId is { } actorDel)
+            delRecipients.Add(actorDel);
+        if (delAssignee is { } asgDel)
+            delRecipients.Add(asgDel);
+        await _notify.DispatchAsync(
+            delRecipients,
+            new LocalizedInboxNotificationText(
+                "تم حذف توصية",
+                "Recommendation deleted",
+                $"تم حذف التوصية «{naDel}».",
+                $"Recommendation «{neDel}» was deleted."),
+            NotificationRelatedEntityTypes.Recommendation,
+            r.Id,
+            null,
+            cancellationToken).ConfigureAwait(false);
+
         return Result.Ok();
     }
+
+    private static (string Ar, string En) RecommendationNamePair(Recommendation r) =>
+    (
+        string.IsNullOrWhiteSpace(r.TitleAr) ? r.TitleEn : r.TitleAr,
+        string.IsNullOrWhiteSpace(r.TitleEn) ? r.TitleAr : r.TitleEn
+    );
 
     private static IQueryable<RecommendationDto> SelectRecommendationDto(IQueryable<Recommendation> query) =>
         query.Select(r => new RecommendationDto

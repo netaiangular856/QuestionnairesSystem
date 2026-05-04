@@ -190,13 +190,30 @@
           </div>
         </label>
         <label class="field full">
-          <span>{{ 'users.form.roles' | t }} <span class="required">*</span></span>
-          <app-lookup-picker
-            [items]="roles()"
-            [selectedIds]="createRoleIds()"
-            (selectedIdsChange)="createRoleIds.set($event)"
-            [searchPlaceholder]="'users.roles.search' | t"
-          ></app-lookup-picker>
+          <span id="create-user-roles-label">{{ 'users.form.roles' | t }} <span class="required">*</span></span>
+          <p-multiselect
+            class="users-roles-ms"
+            [inputId]="'create-user-roles-ms'"
+            [ariaLabelledBy]="'create-user-roles-label'"
+            [options]="roles()"
+            [ngModel]="createRoleIds()"
+            (ngModelChange)="createRoleIds.set($event)"
+            optionLabel="name"
+            optionValue="id"
+            [filter]="true"
+            [filterPlaceHolder]="'users.roles.search' | t"
+            [showToggleAll]="true"
+            [showClear]="true"
+            display="comma"
+            [placeholder]="'users.roles.select' | t"
+            appendTo="body"
+            [fluid]="true"
+            scrollHeight="220px"
+            [emptyMessage]="'users.roles.empty' | t"
+            [emptyFilterMessage]="'users.roles.noMatch' | t"
+            panelStyleClass="users-roles-overlay"
+            variant="outlined"
+          />
         </label>
         <label class="field full">
           <span>{{ 'employees.form.employeeLink' | t }}</span>
@@ -357,12 +374,32 @@
       <button type="button" class="modal-close" (click)="closeRoles()">{{ 'common.close' | t }}</button>
     </header>
     <div class="modal-panel__body">
-      <app-lookup-picker
-        [items]="roles()"
-        [selectedIds]="assignedRoleIds()"
-        (selectedIdsChange)="assignedRoleIds.set($event)"
-        [searchPlaceholder]="'users.roles.search' | t"
-      ></app-lookup-picker>
+      <label class="field full users-roles-assign-field">
+        <span id="assign-user-roles-label">{{ 'users.form.roles' | t }} <span class="required">*</span></span>
+        <p-multiselect
+          class="users-roles-ms"
+          [inputId]="'assign-user-roles-ms'"
+          [ariaLabelledBy]="'assign-user-roles-label'"
+          [options]="roles()"
+          [ngModel]="assignedRoleIds()"
+          (ngModelChange)="assignedRoleIds.set($event)"
+          optionLabel="name"
+          optionValue="id"
+          [filter]="true"
+          [filterPlaceHolder]="'users.roles.search' | t"
+          [showToggleAll]="true"
+          [showClear]="true"
+          display="comma"
+          [placeholder]="'users.roles.select' | t"
+          appendTo="body"
+          [fluid]="true"
+          scrollHeight="280px"
+          [emptyMessage]="'users.roles.empty' | t"
+          [emptyFilterMessage]="'users.roles.noMatch' | t"
+          panelStyleClass="users-roles-overlay"
+          variant="outlined"
+        />
+      </label>
     </div>
     <footer class="modal-panel__foot">
       <button type="button" (click)="closeRoles()" [disabled]="roleAssignBusy()">{{ 'users.actions.cancel' | t }}</button>

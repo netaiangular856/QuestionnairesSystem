@@ -9,7 +9,7 @@ import { PagedResult } from '../../shared/models/api.types';
 import { LookupItem } from '../../shared/models/lookup.models';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { I18nService } from '../../shared/services/i18n.service';
-import { LookupPickerComponent } from '../../shared/ui/lookup-picker.component';
+import { MultiSelect } from 'primeng/multiselect';
 import {
   AssignUserRolesRequest,
   CreateUserRequest,
@@ -23,7 +23,7 @@ type ViewMode = 'table' | 'cards';
 @Component({
   selector: 'app-users-page',
   standalone: true,
-  imports: [FormsModule, DatePipe, TranslatePipe, LookupPickerComponent],
+  imports: [FormsModule, DatePipe, TranslatePipe, MultiSelect],
   templateUrl: './users-page.component.html',
   styleUrl: './users-page.component.scss',
 })
@@ -159,13 +159,6 @@ export class UsersPageComponent implements OnInit {
 
   toggleCreatePasswordVisibility(): void {
     this.showCreatePassword.update((v) => !v);
-  }
-
-  createRoleSummary(): string {
-    const ids = this.createRoleIds();
-    if (ids.length === 0) return this.i18n.t('users.roles.select');
-    const roleMap = new Map(this.roles().map((r) => [r.id, r.name]));
-    return ids.map((id) => roleMap.get(id) ?? id).join('، ');
   }
 
   saveCreate(): void {
@@ -318,13 +311,6 @@ export class UsersPageComponent implements OnInit {
     if (this.roleAssignBusy()) return;
     this.rolesOpen.set(false);
     this.roleUserId.set(null);
-  }
-
-  assignRoleSummary(): string {
-    const ids = this.assignedRoleIds();
-    if (ids.length === 0) return this.i18n.t('users.roles.select');
-    const roleMap = new Map(this.roles().map((r) => [r.id, r.name]));
-    return ids.map((id) => roleMap.get(id) ?? id).join('، ');
   }
 
   saveRoles(): void {

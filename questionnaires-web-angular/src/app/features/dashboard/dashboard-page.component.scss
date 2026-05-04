@@ -1,0 +1,445 @@
+/* Reuse reports grid, cards, hero, KPI (same visual system as /reports). */
+@import '../questionnaires/reports-page.component.scss';
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.db-hero-name {
+  color: var(--color-accent);
+  font-weight: 800;
+}
+
+.db-meta {
+  margin: 0;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+/* —— Condensed hero (single row title + clock; subtitle one line) —— */
+.db-hero--compact.rp-hero {
+  padding: 0.65rem 0.95rem;
+  gap: 0.65rem 0.85rem;
+  align-items: center;
+}
+
+.db-hero__icon--sm {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 1.15rem;
+}
+
+.db-hero__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+}
+
+.db-hero__title {
+  margin: 0 !important;
+  font-size: clamp(1.15rem, 2.2vw, 1.45rem) !important;
+}
+
+.db-hero__lead {
+  margin: 0.35rem 0 0 !important;
+  font-size: 0.84rem !important;
+  line-height: 1.35 !important;
+  max-width: 72ch;
+}
+
+.db-hero__meta {
+  flex: 0 0 auto;
+}
+
+/* —— Shortcuts + date filter in one panel —— */
+.db-top-panel.rp-panel {
+  padding: 0.65rem 0.85rem 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.db-top-panel__head.rp-panel__head {
+  margin-bottom: 0.25rem;
+}
+
+.db-top-panel__titles {
+  min-width: 0;
+}
+
+.db-top-panel .rp-panel__title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.db-top-panel__hint {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.db-top-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+@media (min-width: 960px) {
+  .db-top-panel__body {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.65rem 1rem;
+  }
+
+  .db-top-panel__body > .db-shortcuts__grid {
+    flex: 1 1 260px;
+    margin-top: 0;
+  }
+
+  .db-top-panel__body > .db-filter-compact {
+    flex: 0 1 auto;
+  }
+}
+
+.db-chart-grid-triple--spaced {
+  margin-top: 0.85rem;
+}
+
+.db-chart-card--line-main {
+  margin-bottom: 0.35rem;
+}
+
+.db-line-quad {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+
+@media (min-width: 900px) {
+  .db-line-quad {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.rp-chart-card__canvas--small-line {
+  height: 200px;
+  min-height: 180px;
+}
+
+.db-doughnut-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+
+@media (min-width: 700px) {
+  .db-doughnut-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.db-notice {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.db-notice__icon {
+  font-size: 1.5rem;
+  color: var(--color-accent);
+}
+
+.db-shortcuts__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+
+.db-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.8rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-text);
+  transition:
+    transform 0.18s var(--rp-ease, ease),
+    box-shadow 0.18s var(--rp-ease, ease);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.db-shortcut i {
+  font-size: 1.05rem;
+  opacity: 0.88;
+}
+
+.db-shortcut:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  border-color: rgba(99, 102, 241, 0.22);
+}
+
+.db-shortcut--a {
+  border-color: color-mix(in srgb, #6366f1 35%, var(--color-border));
+  background: linear-gradient(145deg, #eef2ff, #fff);
+}
+
+.db-shortcut--b {
+  border-color: color-mix(in srgb, #0e7490 35%, var(--color-border));
+  background: linear-gradient(145deg, #ecfeff, #fff);
+}
+
+.db-shortcut--c {
+  border-color: color-mix(in srgb, #059669 30%, var(--color-border));
+  background: linear-gradient(145deg, #ecfdf5, #fff);
+}
+
+.db-shortcut--d {
+  border-color: color-mix(in srgb, #d97706 30%, var(--color-border));
+  background: linear-gradient(145deg, #fffbeb, #fff);
+}
+
+.db-shortcut--e {
+  border-color: color-mix(in srgb, #7c3aed 28%, var(--color-border));
+  background: linear-gradient(145deg, #f5f3ff, #fff);
+}
+
+.db-shortcut--f {
+  border-color: color-mix(in srgb, #db2777 26%, var(--color-border));
+  background: linear-gradient(145deg, #fdf2f8, #fff);
+}
+
+.db-shortcut--g {
+  border-color: color-mix(in srgb, #4338ca 30%, var(--color-border));
+  background: linear-gradient(145deg, #e0e7ff, #fff);
+}
+
+/* 8 KPIs: 4×2 grid, no horizontal scroll */
+.rp-main.db-dashboard--tight {
+  gap: 0.5rem;
+}
+
+.db-dashboard--tight {
+  margin-top: 0.35rem;
+}
+
+.db-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+@media (max-width: 1100px) {
+  .db-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.db-kpi-grid .rp-kpi.db-kpi--cell {
+  min-width: 0;
+  padding: 0.6rem 0.7rem;
+}
+
+.db-kpi-grid .rp-kpi__value {
+  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+}
+
+.db-kpi-grid .rp-kpi__label {
+  font-size: 0.74rem;
+  line-height: 1.25;
+}
+
+.db-chart-gap {
+  margin-top: 0.45rem;
+}
+
+/* خطوط + ترتيب: عمودان */
+.db-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  width: 100%;
+  margin-top: 0.45rem;
+  align-items: stretch;
+}
+
+.db-summary-grid .db-summary-cell {
+  min-width: 0;
+}
+
+@media (max-width: 639px) {
+  .db-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* دونات + مبادرات + خطط: صف واحد بثلاثة أعمدة */
+.db-summary-row-triple {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+  width: 100%;
+  align-items: stretch;
+}
+
+.db-summary-row-triple .db-summary-cell {
+  min-width: 0;
+}
+
+@media (min-width: 768px) {
+  .db-summary-row-triple {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ارتفاع أقل قليلاً داخل الصف الثلاثي حتى يتوازن مع عرض العمود */
+.db-canvas-donut--triple {
+  height: 220px;
+  min-height: 200px;
+}
+
+.db-canvas-rank--triple {
+  height: 220px;
+  min-height: 200px;
+}
+
+.db-triple-tight {
+  gap: 0.55rem !important;
+  margin-top: 0.35rem;
+}
+
+.db-dashboard--tight .db-chart-pair,
+.db-dashboard--tight .db-triple-tight {
+  margin-top: 0;
+}
+
+.db-chart-pair {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+}
+
+@media (min-width: 640px) {
+  .db-chart-pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.db-canvas-compact {
+  height: 220px;
+  min-height: 200px;
+}
+
+.db-canvas-line {
+  height: 260px;
+  min-height: 240px;
+}
+
+.db-canvas-rank {
+  height: 240px;
+  min-height: 220px;
+}
+
+.db-canvas-donut {
+  height: 240px;
+  min-height: 220px;
+}
+
+.db-filter-compact__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.45rem;
+}
+
+.db-filter-compact__lbl {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-muted, #64748b);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.db-date-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.db-filter-input[type='date'] {
+  -webkit-appearance: auto;
+  appearance: auto;
+  min-width: 9.25rem;
+  min-height: 2.15rem;
+  padding: 0.28rem 0.45rem;
+  padding-inline-end: 2.15rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, rgba(148, 163, 184, 0.45));
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #0f172a);
+  font-size: 0.82rem;
+  color-scheme: light dark;
+}
+
+/* RTL: keep calendar affordance visible */
+.db-date-wrap .db-filter-input[type='date']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+  margin-inline-start: 0.15rem;
+}
+
+.db-date-wrap__btn {
+  position: absolute;
+  inset-inline-end: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.75rem;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-accent, #6366f1) 14%, transparent);
+  color: var(--color-accent, #4f46e5);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.db-date-wrap__btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent, #6366f1) 24%, transparent);
+}
+
+.db-date-wrap__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.db-filter-err {
+  margin: 0.5rem 0 0;
+  font-size: 0.88rem;
+  color: var(--color-danger, #b91c1c);
+}
+
+.db-meta__sep {
+  opacity: 0.55;
+}
+
+.db-filter-badge {
+  font-weight: 700;
+  color: var(--color-accent, #4f46e5);
+}

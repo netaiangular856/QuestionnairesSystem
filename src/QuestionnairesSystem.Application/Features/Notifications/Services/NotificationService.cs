@@ -46,7 +46,11 @@ public sealed class NotificationService : INotificationService
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             var term = request.Search.Trim();
-            query = query.Where(x => x.Title.Contains(term) || x.Message.Contains(term));
+            query = query.Where(x =>
+                x.TitleAr.Contains(term) ||
+                x.TitleEn.Contains(term) ||
+                x.MessageAr.Contains(term) ||
+                x.MessageEn.Contains(term));
         }
 
         var total = await query.CountAsync(cancellationToken).ConfigureAwait(false);
@@ -58,12 +62,15 @@ public sealed class NotificationService : INotificationService
             {
                 Id = x.Id,
                 UserId = x.UserId,
-                Title = x.Title,
-                Message = x.Message,
+                TitleAr = x.TitleAr,
+                TitleEn = x.TitleEn,
+                MessageAr = x.MessageAr,
+                MessageEn = x.MessageEn,
                 IsRead = x.IsRead,
                 ReadAtUtc = x.ReadAtUtc,
                 RelatedEntityType = x.RelatedEntityType,
                 RelatedEntityId = x.RelatedEntityId,
+                RelatedEntityParentId = x.RelatedEntityParentId,
                 CreatedOnUtc = x.CreatedOnUtc
             })
             .ToListAsync(cancellationToken)

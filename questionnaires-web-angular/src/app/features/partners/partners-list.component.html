@@ -50,6 +50,7 @@
               <th>{{ 'partners.table.code' | t }}</th>
               <th>{{ 'partners.table.name' | t }}</th>
               <th>{{ 'partners.table.type' | t }}</th>
+              <th>{{ 'employees.table.dept' | t }}</th>
               <th>{{ 'common.status' | t }}</th>
               <th class="actions-col-head">{{ 'common.actions' | t }}</th>
             </tr>
@@ -67,6 +68,7 @@
                 <td>
                   <span class="type-tag">{{ getTypeLabel(row.type) | t }}</span>
                 </td>
+                <td>{{ i18n.lang() === 'ar' ? (row.departmentNameAr || '—') : (row.departmentNameEn || '—') }}</td>
                 <td>
                   <span class="status-chip" [class.status-chip--inactive]="!row.isActive">
                     {{ (row.isActive ? 'profile.statusActive' : 'users.status.inactive') | t }}
@@ -119,8 +121,17 @@
                   <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                 </div>
                 <div class="user-card__info-content">
-                  <span class="muted x-small">{{ 'employees.form.email' | t }}</span>
+                  <span class="muted x-small">{{ 'partners.form.email' | t }}</span>
                   <span class="small truncate">{{ row.email || '-' }}</span>
+                </div>
+              </div>
+              <div class="user-card__info-item">
+                <div class="user-card__info-icon">
+                  <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                </div>
+                <div class="user-card__info-content">
+                  <span class="muted x-small">{{ 'employees.table.dept' | t }}</span>
+                  <span class="small truncate">{{ i18n.lang() === 'ar' ? (row.departmentNameAr || '-') : (row.departmentNameEn || '-') }}</span>
                 </div>
               </div>
             </div>
@@ -146,7 +157,11 @@
 
 @if (createOpen()) {
   <div class="modal-backdrop" (click)="createOpen.set(false)"></div>
-  <div class="modal-panel modal-panel--partner card" role="dialog" aria-modal="true">
+  <div
+    class="modal-panel modal-panel--partner card modal-panel--form-organized modal-panel--form-wide"
+    role="dialog"
+    aria-modal="true"
+  >
     <header class="modal-panel__head">
       <div class="modal-panel__title-group">
         <span class="modal-panel__icon">🤝</span>
@@ -155,57 +170,63 @@
       <button type="button" class="modal-close" (click)="createOpen.set(false)">✕</button>
     </header>
     <div class="modal-panel__body">
-      <div class="form-grid">
-        <!-- Partner Info Section -->
-        <div class="form-section-title full">
-          <span>{{ 'partners.table.name' | t }}</span>
-        </div>
+      <div class="form-stack">
+        <section class="form-block">
+          <h3 class="form-block__title">{{ 'partners.form.section.basic' | t }}</h3>
+          <label class="field">
+            <span>{{ 'partners.form.code' | t }} <span class="required">*</span></span>
+            <input type="text" [(ngModel)]="createModel.code" [placeholder]="'#PART-001'" />
+          </label>
+          <label class="field">
+            <span>{{ 'partners.form.nameAr' | t }} <span class="required">*</span></span>
+            <input type="text" [(ngModel)]="createModel.nameAr" />
+          </label>
+          <label class="field">
+            <span>{{ 'partners.form.nameEn' | t }} <span class="required">*</span></span>
+            <input type="text" [(ngModel)]="createModel.nameEn" />
+          </label>
+          <label class="field">
+            <span>{{ 'partners.form.type' | t }}</span>
+            <select [(ngModel)]="createModel.type">
+              @for (t of partnerTypes; track t.value) {
+                <option [ngValue]="t.value">{{ t.labelKey | t }}</option>
+              }
+            </select>
+          </label>
+        </section>
 
-        <label class="field">
-          <span>{{ 'partners.form.code' | t }} <span class="required">*</span></span>
-          <input type="text" [(ngModel)]="createModel.code" [placeholder]="'#PART-001'" />
-        </label>
-        <label class="field">
-          <span>{{ 'partners.form.type' | t }}</span>
-          <select [(ngModel)]="createModel.type">
-            @for (t of partnerTypes; track t.value) {
-              <option [ngValue]="t.value">{{ t.labelKey | t }}</option>
-            }
-          </select>
-        </label>
+        <section class="form-block">
+          <h3 class="form-block__title">{{ 'employees.form.section.dept' | t }}</h3>
+          <label class="field full">
+            <span>{{ 'employees.form.dept' | t }}</span>
+            <select [(ngModel)]="createModel.departmentId">
+              <option [ngValue]="null">{{ 'employees.form.deptNone' | t }}</option>
+              @for (dept of departmentOptions(); track dept.id) {
+                <option [ngValue]="dept.id">{{ i18n.lang() === 'ar' ? dept.nameAr : dept.nameEn }}</option>
+              }
+            </select>
+          </label>
+        </section>
 
-        <label class="field">
-          <span>{{ 'partners.form.nameAr' | t }} <span class="required">*</span></span>
-          <input type="text" [(ngModel)]="createModel.nameAr" />
-        </label>
-        <label class="field">
-          <span>{{ 'partners.form.nameEn' | t }} <span class="required">*</span></span>
-          <input type="text" [(ngModel)]="createModel.nameEn" />
-        </label>
-
-        <!-- Contact Info Section -->
-        <div class="form-section-title full">
-          <span>{{ 'partners.form.contact' | t }}</span>
-        </div>
-
-        <label class="field">
-          <span>{{ 'employees.form.email' | t }}</span>
-          <input type="email" [(ngModel)]="createModel.email" placeholder="contact@partner.com" />
-        </label>
-        <label class="field">
-          <span>{{ 'employees.form.phone' | t }}</span>
-          <input type="text" [(ngModel)]="createModel.phoneNumber" />
-        </label>
-        
-        <label class="field full">
-          <span>{{ 'partners.form.contact' | t }}</span>
-          <input type="text" [(ngModel)]="createModel.contactPerson" [placeholder]="'John Doe'" />
-        </label>
-        
-        <label class="field full">
-          <span>{{ 'partners.form.address' | t }}</span>
-          <textarea rows="2" [(ngModel)]="createModel.address" [placeholder]="'123 Business St, City'"></textarea>
-        </label>
+        <section class="form-block">
+          <h3 class="form-block__title">{{ 'partners.form.section.contact' | t }}</h3>
+          <label class="field">
+            <span>{{ 'partners.form.email' | t }}</span>
+            <input type="email" [(ngModel)]="createModel.email" placeholder="contact@partner.com" />
+          </label>
+          <label class="field">
+            <span>{{ 'partners.form.phone' | t }}</span>
+            <input type="text" [(ngModel)]="createModel.phoneNumber" />
+          </label>
+          <label class="field full">
+            <span>{{ 'partners.form.contactPerson' | t }}</span>
+            <input type="text" [(ngModel)]="createModel.contactPerson" [placeholder]="'John Doe'" />
+          </label>
+          <label class="field full">
+            <span>{{ 'partners.form.address' | t }}</span>
+            <textarea rows="2" [(ngModel)]="createModel.address" [placeholder]="'123 Business St, City'"></textarea>
+          </label>
+        </section>
       </div>
     </div>
     <footer class="modal-panel__foot">
@@ -220,7 +241,11 @@
 
 @if (editOpen()) {
   <div class="modal-backdrop" (click)="editOpen.set(false)"></div>
-  <div class="modal-panel modal-panel--partner card" role="dialog" aria-modal="true">
+  <div
+    class="modal-panel modal-panel--partner card modal-panel--form-organized modal-panel--form-wide"
+    role="dialog"
+    aria-modal="true"
+  >
     <header class="modal-panel__head">
       <div class="modal-panel__title-group">
         <span class="modal-panel__icon">📝</span>
@@ -229,64 +254,69 @@
       <button type="button" class="modal-close" (click)="editOpen.set(false)">✕</button>
     </header>
     <div class="modal-panel__body">
-      <div class="form-grid">
-        <!-- Partner Info Section -->
-        <div class="form-section-title full">
-          <span>{{ 'partners.table.name' | t }}</span>
-        </div>
+      <div class="form-stack">
+        <section class="form-block">
+          <h3 class="form-block__title">{{ 'partners.form.section.basic' | t }}</h3>
+          <label class="field">
+            <span>{{ 'partners.form.code' | t }} <span class="required">*</span></span>
+            <input type="text" [(ngModel)]="editModel.code" />
+          </label>
+          <label class="field">
+            <span>{{ 'partners.form.nameAr' | t }} <span class="required">*</span></span>
+            <input type="text" [(ngModel)]="editModel.nameAr" />
+          </label>
+          <label class="field">
+            <span>{{ 'partners.form.nameEn' | t }} <span class="required">*</span></span>
+            <input type="text" [(ngModel)]="editModel.nameEn" />
+          </label>
+          <label class="field">
+            <span>{{ 'partners.form.type' | t }}</span>
+            <select [(ngModel)]="editModel.type">
+              @for (t of partnerTypes; track t.value) {
+                <option [ngValue]="t.value">{{ t.labelKey | t }}</option>
+              }
+            </select>
+          </label>
+        </section>
 
-        <label class="field">
-          <span>{{ 'partners.form.code' | t }} <span class="required">*</span></span>
-          <input type="text" [(ngModel)]="editModel.code" />
-        </label>
-        <label class="field">
-          <span>{{ 'partners.form.type' | t }}</span>
-          <select [(ngModel)]="editModel.type">
-            @for (t of partnerTypes; track t.value) {
-              <option [ngValue]="t.value">{{ t.labelKey | t }}</option>
-            }
-          </select>
-        </label>
+        <section class="form-block">
+          <h3 class="form-block__title">{{ 'employees.form.section.dept' | t }}</h3>
+          <label class="field full">
+            <span>{{ 'employees.form.dept' | t }}</span>
+            <select [(ngModel)]="editModel.departmentId">
+              <option [ngValue]="null">{{ 'employees.form.deptNone' | t }}</option>
+              @for (dept of departmentOptions(); track dept.id) {
+                <option [ngValue]="dept.id">{{ i18n.lang() === 'ar' ? dept.nameAr : dept.nameEn }}</option>
+              }
+            </select>
+          </label>
+        </section>
 
-        <label class="field">
-          <span>{{ 'partners.form.nameAr' | t }} <span class="required">*</span></span>
-          <input type="text" [(ngModel)]="editModel.nameAr" />
-        </label>
-        <label class="field">
-          <span>{{ 'partners.form.nameEn' | t }} <span class="required">*</span></span>
-          <input type="text" [(ngModel)]="editModel.nameEn" />
-        </label>
-
-        <!-- Contact Info Section -->
-        <div class="form-section-title full">
-          <span>{{ 'partners.form.contact' | t }}</span>
-        </div>
-
-        <label class="field">
-          <span>{{ 'employees.form.email' | t }}</span>
-          <input type="email" [(ngModel)]="editModel.email" />
-        </label>
-        <label class="field">
-          <span>{{ 'employees.form.phone' | t }}</span>
-          <input type="text" [(ngModel)]="editModel.phoneNumber" />
-        </label>
-        
-        <label class="field full">
-          <span>{{ 'partners.form.contact' | t }}</span>
-          <input type="text" [(ngModel)]="editModel.contactPerson" />
-        </label>
-        
-        <label class="field full">
-          <span>{{ 'partners.form.address' | t }}</span>
-          <textarea rows="2" [(ngModel)]="editModel.address"></textarea>
-        </label>
-
-        <label class="field full">
-          <span class="checkbox-label">
-            <input type="checkbox" [(ngModel)]="editModel.isActive" />
-            {{ 'employees.form.isActive' | t }}
-          </span>
-        </label>
+        <section class="form-block">
+          <h3 class="form-block__title">{{ 'partners.form.section.contact' | t }}</h3>
+          <label class="field">
+            <span>{{ 'partners.form.email' | t }}</span>
+            <input type="email" [(ngModel)]="editModel.email" />
+          </label>
+          <label class="field">
+            <span>{{ 'partners.form.phone' | t }}</span>
+            <input type="text" [(ngModel)]="editModel.phoneNumber" />
+          </label>
+          <label class="field full">
+            <span>{{ 'partners.form.contactPerson' | t }}</span>
+            <input type="text" [(ngModel)]="editModel.contactPerson" />
+          </label>
+          <label class="field full">
+            <span>{{ 'partners.form.address' | t }}</span>
+            <textarea rows="2" [(ngModel)]="editModel.address"></textarea>
+          </label>
+          <label class="field full">
+            <span class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="editModel.isActive" />
+              {{ 'partners.form.isActive' | t }}
+            </span>
+          </label>
+        </section>
       </div>
     </div>
     <footer class="modal-panel__foot">

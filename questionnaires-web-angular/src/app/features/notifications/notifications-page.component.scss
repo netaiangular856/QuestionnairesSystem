@@ -76,6 +76,31 @@
   font-size: 1rem;
 }
 
+.notif--linked .notif__body-btn:not(:disabled) {
+  cursor: pointer;
+}
+
+.notif__body-btn {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: inherit;
+  font: inherit;
+  color: inherit;
+}
+
+.notif__body-btn:not(:disabled):hover .notif__msg {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.notif__body-btn:disabled {
+  cursor: default;
+}
+
 .badge {
   font-size: 0.72rem;
   font-weight: 700;

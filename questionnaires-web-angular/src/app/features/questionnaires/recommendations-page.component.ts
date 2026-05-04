@@ -67,11 +67,21 @@ export class RecommendationsPageComponent implements OnInit, OnDestroy {
   readonly detailItem = signal<RecommendationDto | null>(null);
 
   private querySub?: Subscription;
+  private lastRecommendationIdFromQuery: string | null = null;
 
   ngOnInit(): void {
     this.querySub = this.route.queryParamMap.subscribe((q) => {
       const raw = q.get('surveyId');
       this.prefillSurveyId.set(raw && raw.length >= 32 ? raw : null);
+      const rid = q.get('recommendationId');
+      if (rid && rid.length >= 32) {
+        if (this.lastRecommendationIdFromQuery !== rid) {
+          this.lastRecommendationIdFromQuery = rid;
+          this.openDetailModal(rid);
+        }
+      } else {
+        this.lastRecommendationIdFromQuery = null;
+      }
     });
 
     this.loadPage();

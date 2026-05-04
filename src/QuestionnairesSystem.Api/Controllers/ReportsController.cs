@@ -68,10 +68,19 @@ public sealed class ReportsController : ControllerBase
 
     [HttpGet("dashboard")]
     [Authorize(Policy = PermissionCodes.ReportView)]
-    public async Task<IActionResult> Dashboard(CancellationToken cancellationToken)
+    public async Task<IActionResult> Dashboard(
+        [FromQuery] DateTime? fromUtc,
+        [FromQuery] DateTime? toUtc,
+        CancellationToken cancellationToken)
     {
         var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
-        var result = await _reports.GetDashboardAsync(cancellationToken).ConfigureAwait(false);
+        DashboardFilterRequest? filter = null;
+        if (fromUtc.HasValue || toUtc.HasValue)
+        {
+            filter = new DashboardFilterRequest { FromUtc = fromUtc, ToUtc = toUtc };
+        }
+
+        var result = await _reports.GetDashboardAsync(filter, cancellationToken).ConfigureAwait(false);
         return result.ToApiActionResult(this, traceId);
     }
 

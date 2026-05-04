@@ -37,5 +37,10 @@ public sealed class PartnerConfiguration : IEntityTypeConfiguration<Partner>
             .HasMaxLength(500);
 
         builder.HasIndex(x => x.Code).IsUnique();
+
+        builder.HasOne(x => x.Department)
+            .WithMany()
+            .HasForeignKey(x => x.DepartmentId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

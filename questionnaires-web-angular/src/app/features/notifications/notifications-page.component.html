@@ -32,14 +32,16 @@
   } @else {
     <div class="list">
       @for (row of result()!.items; track row.id) {
-        <article class="card notif" [class.notif--unread]="!row.isRead">
+        <article class="card notif" [class.notif--unread]="!row.isRead" [class.notif--linked]="!!notifLink(row)">
           <header class="notif__head">
-            <h3>{{ row.title }}</h3>
+            <h3>{{ notifTitle(row) }}</h3>
             <span class="badge" [class.badge--muted]="row.isRead">
               {{ row.isRead ? ('notifications.read' | t) : ('notifications.unread' | t) }}
             </span>
           </header>
-          <p class="notif__msg">{{ row.message }}</p>
+          <button type="button" class="notif__body-btn" (click)="openLinked(row)" [disabled]="!notifLink(row)">
+            <p class="notif__msg">{{ notifMessage(row) }}</p>
+          </button>
           <footer class="notif__foot">
             <span class="muted">{{ row.createdOnUtc | date: 'medium' }}</span>
             @if (canManage) {

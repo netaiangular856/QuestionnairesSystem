@@ -564,7 +564,12 @@ namespace QuestionnairesSystem.Persistence.Migrations
                     b.Property<bool>("IsRead")
                         .HasColumnType("bit");
 
-                    b.Property<string>("Message")
+                    b.Property<string>("MessageAr")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("MessageEn")
                         .IsRequired()
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
@@ -584,11 +589,19 @@ namespace QuestionnairesSystem.Persistence.Migrations
                     b.Property<Guid?>("RelatedEntityId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("RelatedEntityParentId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("RelatedEntityType")
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
 
-                    b.Property<string>("Title")
+                    b.Property<string>("TitleAr")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("TitleEn")
                         .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
@@ -824,6 +837,9 @@ namespace QuestionnairesSystem.Persistence.Migrations
                     b.Property<DateTime?>("DeletedOnUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("DepartmentId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Email")
                         .HasMaxLength(320)
                         .HasColumnType("nvarchar(320)");
@@ -861,6 +877,8 @@ namespace QuestionnairesSystem.Persistence.Migrations
 
                     b.HasIndex("Code")
                         .IsUnique();
+
+                    b.HasIndex("DepartmentId");
 
                     b.ToTable("Partners", (string)null);
                 });
@@ -1529,6 +1547,16 @@ namespace QuestionnairesSystem.Persistence.Migrations
                     b.Navigation("Survey");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("QuestionnairesSystem.Domain.Partners.Partner", b =>
+                {
+                    b.HasOne("QuestionnairesSystem.Domain.Organizations.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Department");
                 });
 
             modelBuilder.Entity("QuestionnairesSystem.Domain.Recommendations.Recommendation", b =>

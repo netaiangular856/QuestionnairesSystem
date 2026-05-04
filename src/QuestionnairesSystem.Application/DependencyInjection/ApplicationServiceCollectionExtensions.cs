@@ -45,6 +45,7 @@ public static class ApplicationServiceCollectionExtensions
 
         services.AddScoped<IAuditLogService, AuditLogService>();
         services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IInboxNotificationDispatchService, InboxNotificationDispatchService>();
 
         services.AddScoped<ISurveyService, SurveyService>();
         services.AddScoped<ISurveyTemplateService, SurveyTemplateService>();

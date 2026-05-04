@@ -75,14 +75,16 @@
         <p class="notif-modal__state">{{ 'notifications.empty' | t }}</p>
       } @else {
         @for (row of notifications; track row.id) {
-          <article [class.is-read]="row.isRead">
+          <article [class.is-read]="row.isRead" [class.notif-item--linked]="!!notifLink(row)">
             <div class="notif-item__head">
-              <strong>{{ row.title }}</strong>
-              <button type="button" [disabled]="row.isRead || markingId === row.id" (click)="markAsRead(row)">
+              <strong>{{ notifTitle(row) }}</strong>
+              <button type="button" [disabled]="row.isRead || markingId === row.id" (click)="markAsRead(row); $event.stopPropagation()">
                 {{ 'topbar.notif.markAsRead' | t }}
               </button>
             </div>
-            <p>{{ row.message }}</p>
+            <button type="button" class="notif-item__main" (click)="openNotification(row)" [disabled]="!notifLink(row)">
+              <p class="notif-item__msg">{{ notifMessage(row) }}</p>
+            </button>
           </article>
         }
       }

@@ -1,5 +1,6 @@
 using QuestionnairesSystem.Domain.Common;
 using QuestionnairesSystem.Domain.Enums;
+using QuestionnairesSystem.Domain.Organizations;
 
 namespace QuestionnairesSystem.Domain.Partners;
 
@@ -14,4 +15,7 @@ public sealed class Partner : AuditableDomainEntity
     public string? ContactPerson { get; set; }
     public bool IsActive { get; set; } = true;
     public string? Address { get; set; }
+    public Guid? DepartmentId { get; set; }
+
+    public Department? Department { get; set; }
 }

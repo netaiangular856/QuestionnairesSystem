@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { Component, OnInit, effect, ElementRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -34,7 +34,7 @@ interface RpChartPalette {
 @Component({
   selector: 'app-reports-page',
   standalone: true,
-  imports: [RouterLink, TranslatePipe, DecimalPipe, FormsModule, BaseChartDirective],
+  imports: [RouterLink, TranslatePipe, DecimalPipe, DatePipe, FormsModule, BaseChartDirective],
   templateUrl: './reports-page.component.html',
   styleUrl: './reports-page.component.scss',
 })
@@ -69,6 +69,8 @@ export class ReportsPageComponent implements OnInit {
   readonly barRatingsData = signal<ChartData<'bar'>>({ datasets: [] });
   readonly doughnutCategoriesData = signal<ChartData<'doughnut'>>({ datasets: [] });
   readonly barKeywordsData = signal<ChartData<'bar'>>({ datasets: [] });
+  readonly doughnutActionPlanData = signal<ChartData<'doughnut'>>({ datasets: [] });
+  readonly doughnutInitiativeData = signal<ChartData<'doughnut'>>({ datasets: [] });
 
   readonly lineOpts = signal<ChartOptions<'line'>>({ responsive: true, maintainAspectRatio: false });
   readonly doughnutOpts = signal<ChartOptions<'doughnut'>>({ responsive: true, maintainAspectRatio: false });
@@ -79,6 +81,8 @@ export class ReportsPageComponent implements OnInit {
   readonly barRatingsOpts = signal<ChartOptions<'bar'>>({ responsive: true, maintainAspectRatio: false });
   readonly doughnutCategoriesOpts = signal<ChartOptions<'doughnut'>>({ responsive: true, maintainAspectRatio: false });
   readonly barKeywordsOpts = signal<ChartOptions<'bar'>>({ responsive: true, maintainAspectRatio: false });
+  readonly doughnutActionPlanOpts = signal<ChartOptions<'doughnut'>>({ responsive: true, maintainAspectRatio: false });
+  readonly doughnutInitiativeOpts = signal<ChartOptions<'doughnut'>>({ responsive: true, maintainAspectRatio: false });
 
   private static readonly fontFamily = `system-ui, "Segoe UI", sans-serif`;
 
@@ -201,6 +205,89 @@ export class ReportsPageComponent implements OnInit {
 
   surveyTitle(row: { titleAr: string; titleEn: string }): string {
     return qLocalizedTitle(this.i18n.lang(), row.titleAr ?? '', row.titleEn ?? '');
+  }
+
+  linkedSurveyTitle(row: { linkedSurveyTitleAr?: string | null; linkedSurveyTitleEn?: string | null }): string {
+    const ar = this.normalizeReportTitle(row.linkedSurveyTitleAr ?? '');
+    const en = this.normalizeReportTitle(row.linkedSurveyTitleEn ?? '');
+    const t = this.surveyTitle({ titleAr: ar, titleEn: en });
+    return t.trim().length > 0 ? t : '—';
+  }
+
+  /**
+   * Single readable title: dedupe doubled text in one field, collapse identical AR/EN,
+   * then pick by UI language.
+   */
+  displayBilingualTitle(row: { titleAr?: string | null; titleEn?: string | null }): string {
+    const ar = this.normalizeReportTitle(row.titleAr ?? '');
+    const en = this.normalizeReportTitle(row.titleEn ?? '');
+    if (!ar && !en) {
+      return '—';
+    }
+    if (!ar) {
+      return en;
+    }
+    if (!en) {
+      return ar;
+    }
+    if (ar === en) {
+      return ar;
+    }
+    return this.surveyTitle({ titleAr: ar, titleEn: en });
+  }
+
+  /** If the whole string is the same substring twice (e.g. pasted placeholder), return one half. */
+  private normalizeReportTitle(raw: string): string {
+    let t = raw.trim();
+    if (t.length < 4) {
+      return t;
+    }
+    if (t.length % 2 === 0) {
+      const half = t.length / 2;
+      const a = t.slice(0, half);
+      const b = t.slice(half);
+      if (a === b) {
+        return a.trim();
+      }
+    }
+    return t;
+  }
+
+  stripRowClass(prefix: 'ap' | 'in', status: string): string {
+    const key = (status ?? '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    return `rp-strip-item rp-strip-item--${prefix}-${key || 'unknown'}`;
+  }
+
+  actionPlanStripPercent(status: string): number {
+    switch (status) {
+      case 'Active':
+        return 100;
+      case 'Draft':
+        return 42;
+      case 'Completed':
+        return 78;
+      case 'Cancelled':
+        return 24;
+      default:
+        return 55;
+    }
+  }
+
+  initiativeStripPercent(status: string): number {
+    switch (status) {
+      case 'InProgress':
+        return 100;
+      case 'Planned':
+        return 40;
+      case 'Completed':
+        return 80;
+      case 'AtRisk':
+        return 58;
+      case 'Cancelled':
+        return 22;
+      default:
+        return 50;
+    }
   }
 
   surveyStatusLabel(key: string): string {
@@ -373,6 +460,60 @@ export class ReportsPageComponent implements OnInit {
     this.barOpts.set(this.buildBarOptions(P));
     this.barAudienceOpts.set(this.buildAudienceColumnBarOptions(P));
     this.barWeekdayOpts.set(this.buildWeekdayColumnBarOptions(P));
+
+    const apStatus = d.actionPlanStatusDistribution ?? [];
+    this.doughnutActionPlanData.set({
+      labels: apStatus.length ? apStatus.map((x) => this.actionPlanStatusLabel(x.key)) : [emptyLbl],
+      datasets: [
+        {
+          data: apStatus.length ? apStatus.map((x) => x.count) : [0],
+          backgroundColor: apStatus.length
+            ? apStatus.map((_, i) => P.sequence[(i + 2) % P.sequence.length])
+            : [P.sequence[0]],
+          borderWidth: 0,
+        },
+      ],
+    });
+
+    const iniStatus = d.initiativeStatusDistribution ?? [];
+    this.doughnutInitiativeData.set({
+      labels: iniStatus.length ? iniStatus.map((x) => this.initiativeStatusLabel(x.key)) : [emptyLbl],
+      datasets: [
+        {
+          data: iniStatus.length ? iniStatus.map((x) => x.count) : [0],
+          backgroundColor: iniStatus.length
+            ? iniStatus.map((_, i) => P.sequence[(i + 4) % P.sequence.length])
+            : [P.sequence[1]],
+          borderWidth: 0,
+        },
+      ],
+    });
+
+    this.doughnutActionPlanOpts.set(this.buildDoughnutOptions(P));
+    this.doughnutInitiativeOpts.set(this.buildDoughnutOptions(P));
+  }
+
+  actionPlanStatusLabel(key: string): string {
+    const m: Record<string, string> = {
+      Draft: 'q.actionPlanStatus.draft',
+      Active: 'q.actionPlanStatus.active',
+      Completed: 'q.actionPlanStatus.completed',
+      Cancelled: 'q.actionPlanStatus.cancelled',
+    };
+    const tr = m[key];
+    return tr ? this.i18n.t(tr) : key;
+  }
+
+  initiativeStatusLabel(key: string): string {
+    const m: Record<string, string> = {
+      Planned: 'q.initiativeStatus.planned',
+      InProgress: 'q.initiativeStatus.inProgress',
+      Completed: 'q.initiativeStatus.completed',
+      AtRisk: 'q.initiativeStatus.atRisk',
+      Cancelled: 'q.initiativeStatus.cancelled',
+    };
+    const tr = m[key];
+    return tr ? this.i18n.t(tr) : key;
   }
 
   private applyInsightCharts(d: CrossSurveyAnalyticsDto | null): void {

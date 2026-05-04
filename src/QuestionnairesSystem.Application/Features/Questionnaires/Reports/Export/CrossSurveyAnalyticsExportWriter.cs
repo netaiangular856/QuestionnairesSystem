@@ -15,6 +15,9 @@ public static class CrossSurveyAnalyticsExportWriter
     /// <summary>PDF only — very large tables can exceed viewer limits; Excel always contains full rows.</summary>
     private const int PdfAnswerDetailMaxRows = 8000;
 
+    private const int PdfActionPlanRows = 120;
+    private const int PdfInitiativeRows = 120;
+
     private enum DistributionKind
     {
         SurveyStatus,
@@ -23,6 +26,8 @@ public static class CrossSurveyAnalyticsExportWriter
         Participant,
         Weekday,
         QuestionType,
+        ActionPlanStatus,
+        InitiativeStatus,
     }
 
     private static class Pdf
@@ -119,12 +124,28 @@ public static class CrossSurveyAnalyticsExportWriter
                     column.Item().Element(c =>
                         NamedCountBlock(c, lang, T(ReportMessageId.SubmissionsByWeekday), d.SubmissionsByDayOfWeek,
                             DistributionKind.Weekday));
+                    column.Item().Row(row =>
+                    {
+                        row.RelativeItem().Element(x =>
+                            NamedCountBlock(x, lang, T(ReportMessageId.ActionPlanStatusTitle), d.ActionPlanStatusDistribution,
+                                DistributionKind.ActionPlanStatus));
+                        row.ConstantItem(14);
+                        row.RelativeItem().Element(x =>
+                            NamedCountBlock(x, lang, T(ReportMessageId.InitiativeStatusTitle), d.InitiativeStatusDistribution,
+                                DistributionKind.InitiativeStatus));
+                    });
 
                     column.Item().Element(c => SectionTitle(c, lang, ReportMessageId.SubmissionsByDay));
                     column.Item().Element(c => TimelineTable(c, d.SubmissionsByDay, lang));
 
                     column.Item().Element(c => SectionTitle(c, lang, ReportMessageId.TopSurveys));
                     column.Item().Element(c => TopSurveysTable(c, d.TopSurveysBySubmissions, lang));
+
+                    column.Item().Element(c => SectionTitle(c, lang, ReportMessageId.ActionPlansSection));
+                    column.Item().Element(c => ActionPlansTable(c, d.ActionPlans, lang));
+
+                    column.Item().Element(c => SectionTitle(c, lang, ReportMessageId.InitiativesSection));
+                    column.Item().Element(c => InitiativesTable(c, d.Initiatives, lang));
 
                     column.Item().Element(c => SectionTitle(c, lang, ReportMessageId.RatingsSection));
                     column.Item().Element(c => RatingsTable(c, d.RatingsDistribution, lang));
@@ -172,6 +193,8 @@ public static class CrossSurveyAnalyticsExportWriter
             WriteBreakdownsWorksheet(wb, d, lang);
             WriteDailyWorksheet(wb, d, lang);
             WriteTopSurveysWorksheet(wb, d, lang);
+            WriteActionPlansWorksheet(wb, d, lang);
+            WriteInitiativesWorksheet(wb, d, lang);
             WriteRatingsWorksheet(wb, d, lang);
             WriteQuestionTypesWorksheet(wb, d, lang);
             WriteKeywordsWorksheet(wb, d, lang);
@@ -254,6 +277,8 @@ public static class CrossSurveyAnalyticsExportWriter
             RowKpi(8, OverviewMetricId.ParticipantsCompleted, o.CompletedParticipantsInScope.ToString(CultureInfo.InvariantCulture));
             RowKpi(9, OverviewMetricId.ParticipantsDeclined, o.DeclinedParticipantsInScope.ToString(CultureInfo.InvariantCulture));
             RowKpi(10, OverviewMetricId.AvgMinutesToSubmit, o.AverageMinutesToSubmitInPeriod.ToString("0.#", CultureInfo.InvariantCulture));
+            RowKpi(11, OverviewMetricId.ActionPlansInScope, o.ActionPlansInScope.ToString(CultureInfo.InvariantCulture));
+            RowKpi(12, OverviewMetricId.InitiativesInScope, o.InitiativesInScope.ToString(CultureInfo.InvariantCulture));
         });
     }
 
@@ -266,6 +291,8 @@ public static class CrossSurveyAnalyticsExportWriter
             DistributionKind.Participant => CrossSurveyAnalyticsReportLocalization.TranslateParticipantStatus(lang, key),
             DistributionKind.Weekday => CrossSurveyAnalyticsReportLocalization.TranslateDayOfWeek(lang, key),
             DistributionKind.QuestionType => CrossSurveyAnalyticsReportLocalization.TranslateQuestionType(lang, key),
+            DistributionKind.ActionPlanStatus => CrossSurveyAnalyticsReportLocalization.TranslateActionPlanStatus(lang, key),
+            DistributionKind.InitiativeStatus => CrossSurveyAnalyticsReportLocalization.TranslateInitiativeStatus(lang, key),
             _ => key,
         };
 
@@ -384,6 +411,131 @@ public static class CrossSurveyAnalyticsExportWriter
                 i++;
             }
         });
+    }
+
+    private static void ActionPlansTable(IContainer container, IReadOnlyList<CrossSurveyActionPlanReportRowDto> rows, string lang)
+    {
+        string T(ReportMessageId id) => CrossSurveyAnalyticsReportLocalization.Message(lang, id);
+        if (rows.Count == 0)
+        {
+            container.Text(T(ReportMessageId.NoActionPlans)).Italic().FontColor(Pdf.TextMuted).FontSize(9);
+            return;
+        }
+
+        var slice = rows.Count > PdfActionPlanRows ? rows.Take(PdfActionPlanRows).ToList() : rows.ToList();
+        container.Element(TableWrap).Table(table =>
+        {
+            table.ColumnsDefinition(c =>
+            {
+                c.RelativeColumn(3);
+                c.RelativeColumn();
+                c.RelativeColumn(2);
+                c.ConstantColumn(100);
+            });
+            table.Header(h =>
+            {
+                h.Cell().Element(Th).Text(T(ReportMessageId.ActionPlanTitleCol));
+                h.Cell().Element(Th).Text(T(ReportMessageId.Status));
+                h.Cell().Element(Th).Text(T(ReportMessageId.LinkedSurveyCol));
+                h.Cell().Element(Th).Text(T(ReportMessageId.CreatedOnCol));
+            });
+            var i = 0;
+            foreach (var r in slice)
+            {
+                var title = CrossSurveyAnalyticsReportLocalization.PickSurveyTitle(lang, r.TitleAr, r.TitleEn);
+                if (string.IsNullOrWhiteSpace(title))
+                {
+                    title = T(ReportMessageId.EmptyDash);
+                }
+
+                var survey = CrossSurveyAnalyticsReportLocalization.PickSurveyTitle(lang, r.LinkedSurveyTitleAr, r.LinkedSurveyTitleEn);
+                if (string.IsNullOrWhiteSpace(survey))
+                {
+                    survey = T(ReportMessageId.EmptyDash);
+                }
+
+                var statusLabel = CrossSurveyAnalyticsReportLocalization.TranslateActionPlanStatus(lang, r.Status);
+                table.Cell().Element(c => Td(c, i)).Text(title);
+                table.Cell().Element(c => Td(c, i)).Text(statusLabel);
+                table.Cell().Element(c => Td(c, i)).Text(survey);
+                table.Cell().Element(c => Td(c, i)).Text(r.CreatedOnUtc.ToString("u", CultureInfo.InvariantCulture));
+                i++;
+            }
+        });
+        if (rows.Count > PdfActionPlanRows)
+        {
+            container.PaddingTop(6).Text(string.Format(CultureInfo.InvariantCulture, "… +{0}", rows.Count - PdfActionPlanRows))
+                .FontSize(8).Italic().FontColor(Pdf.TextMuted);
+        }
+    }
+
+    private static void InitiativesTable(IContainer container, IReadOnlyList<CrossSurveyInitiativeReportRowDto> rows, string lang)
+    {
+        string T(ReportMessageId id) => CrossSurveyAnalyticsReportLocalization.Message(lang, id);
+        if (rows.Count == 0)
+        {
+            container.Text(T(ReportMessageId.NoInitiatives)).Italic().FontColor(Pdf.TextMuted).FontSize(9);
+            return;
+        }
+
+        var slice = rows.Count > PdfInitiativeRows ? rows.Take(PdfInitiativeRows).ToList() : rows.ToList();
+        container.Element(TableWrap).Table(table =>
+        {
+            table.ColumnsDefinition(c =>
+            {
+                c.RelativeColumn(2);
+                c.RelativeColumn();
+                c.RelativeColumn(2);
+                c.RelativeColumn(2);
+                c.ConstantColumn(88);
+                c.ConstantColumn(100);
+            });
+            table.Header(h =>
+            {
+                h.Cell().Element(Th).Text(T(ReportMessageId.InitiativeTitleCol));
+                h.Cell().Element(Th).Text(T(ReportMessageId.Status));
+                h.Cell().Element(Th).Text(T(ReportMessageId.ParentActionPlanCol));
+                h.Cell().Element(Th).Text(T(ReportMessageId.LinkedSurveyCol));
+                h.Cell().Element(Th).Text(T(ReportMessageId.TargetDateCol));
+                h.Cell().Element(Th).Text(T(ReportMessageId.CreatedOnCol));
+            });
+            var i = 0;
+            foreach (var r in slice)
+            {
+                var title = CrossSurveyAnalyticsReportLocalization.PickSurveyTitle(lang, r.TitleAr, r.TitleEn);
+                if (string.IsNullOrWhiteSpace(title))
+                {
+                    title = T(ReportMessageId.EmptyDash);
+                }
+
+                var plan = CrossSurveyAnalyticsReportLocalization.PickSurveyTitle(lang, r.ActionPlanTitleAr, r.ActionPlanTitleEn);
+                if (string.IsNullOrWhiteSpace(plan))
+                {
+                    plan = T(ReportMessageId.EmptyDash);
+                }
+
+                var survey = CrossSurveyAnalyticsReportLocalization.PickSurveyTitle(lang, r.LinkedSurveyTitleAr, r.LinkedSurveyTitleEn);
+                if (string.IsNullOrWhiteSpace(survey))
+                {
+                    survey = T(ReportMessageId.EmptyDash);
+                }
+
+                var target = r.TargetDateUtc?.ToString("u", CultureInfo.InvariantCulture) ?? T(ReportMessageId.EmptyDash);
+                var statusLabel = CrossSurveyAnalyticsReportLocalization.TranslateInitiativeStatus(lang, r.Status);
+                table.Cell().Element(c => Td(c, i)).Text(title);
+                table.Cell().Element(c => Td(c, i)).Text(statusLabel);
+                table.Cell().Element(c => Td(c, i)).Text(plan);
+                table.Cell().Element(c => Td(c, i)).Text(survey);
+                table.Cell().Element(c => TdSmall(c, i)).Text(target);
+                table.Cell().Element(c => TdSmall(c, i)).Text(r.CreatedOnUtc.ToString("u", CultureInfo.InvariantCulture));
+                i++;
+            }
+        });
+        if (rows.Count > PdfInitiativeRows)
+        {
+            container.PaddingTop(6).Text(string.Format(CultureInfo.InvariantCulture, "… +{0}", rows.Count - PdfInitiativeRows))
+                .FontSize(8).Italic().FontColor(Pdf.TextMuted);
+        }
     }
 
     private static void RatingsTable(IContainer container, IReadOnlyList<RatingAnalyticsDto> rows, string lang)
@@ -617,6 +769,8 @@ public static class CrossSurveyAnalyticsExportWriter
         Kpi(OverviewMetricId.ParticipantsCompleted, o.CompletedParticipantsInScope.ToString(CultureInfo.InvariantCulture), 8);
         Kpi(OverviewMetricId.ParticipantsDeclined, o.DeclinedParticipantsInScope.ToString(CultureInfo.InvariantCulture), 9);
         Kpi(OverviewMetricId.AvgMinutesToSubmit, o.AverageMinutesToSubmitInPeriod.ToString("0.#", CultureInfo.InvariantCulture), 10);
+        Kpi(OverviewMetricId.ActionPlansInScope, o.ActionPlansInScope.ToString(CultureInfo.InvariantCulture), 11);
+        Kpi(OverviewMetricId.InitiativesInScope, o.InitiativesInScope.ToString(CultureInfo.InvariantCulture), 12);
 
         OutlineRange(ws.Range(8, 1, r - 1, 2));
         ws.SheetView.FreezeRows(8);
@@ -653,6 +807,8 @@ public static class CrossSurveyAnalyticsExportWriter
         Dump(T(ReportMessageId.AudienceScope), d.AudienceScopeDistribution, DistributionKind.Audience);
         Dump(T(ReportMessageId.ParticipantStatus), d.ParticipantStatusDistribution, DistributionKind.Participant);
         Dump(T(ReportMessageId.SubmissionsByWeekday), d.SubmissionsByDayOfWeek, DistributionKind.Weekday);
+        Dump(T(ReportMessageId.ActionPlanStatusTitle), d.ActionPlanStatusDistribution, DistributionKind.ActionPlanStatus);
+        Dump(T(ReportMessageId.InitiativeStatusTitle), d.InitiativeStatusDistribution, DistributionKind.InitiativeStatus);
 
         if (row > 2)
         {
@@ -793,6 +949,111 @@ public static class CrossSurveyAnalyticsExportWriter
 
         ws.SheetView.FreezeRows(1);
         ws.Columns(1, 3).AdjustToContents();
+    }
+
+    private static void WriteActionPlansWorksheet(XLWorkbook wb, CrossSurveyAnalyticsDto d, string lang)
+    {
+        string T(ReportMessageId id) => CrossSurveyAnalyticsReportLocalization.Message(lang, id);
+
+        var ws = wb.Worksheets.Add(T(ReportMessageId.SheetActionPlans));
+        ws.TabColor = Xlsx.TabTeal;
+
+        ws.Cell(1, 1).Value = T(ReportMessageId.ActionPlanTitleCol);
+        ws.Cell(1, 2).Value = T(ReportMessageId.Status);
+        ws.Cell(1, 3).Value = T(ReportMessageId.LinkedSurveyCol);
+        ws.Cell(1, 4).Value = T(ReportMessageId.CreatedOnCol);
+        StyleHeaderRow(ws.Range(1, 1, 1, 4));
+
+        var r = 2;
+        var i = 0;
+        foreach (var x in d.ActionPlans)
+        {
+            var title = CrossSurveyAnalyticsReportLocalization.PickSurveyTitle(lang, x.TitleAr, x.TitleEn);
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                title = T(ReportMessageId.EmptyDash);
+            }
+
+            var survey = CrossSurveyAnalyticsReportLocalization.PickSurveyTitle(lang, x.LinkedSurveyTitleAr, x.LinkedSurveyTitleEn);
+            if (string.IsNullOrWhiteSpace(survey))
+            {
+                survey = T(ReportMessageId.EmptyDash);
+            }
+
+            ws.Cell(r, 1).Value = title;
+            ws.Cell(r, 2).Value = CrossSurveyAnalyticsReportLocalization.TranslateActionPlanStatus(lang, x.Status);
+            ws.Cell(r, 3).Value = survey;
+            ws.Cell(r, 4).Value = x.CreatedOnUtc.ToString("u", CultureInfo.InvariantCulture);
+            ApplyZebraRow(ws.Range(r, 1, r, 4), i);
+            r++;
+            i++;
+        }
+
+        if (r > 2)
+        {
+            OutlineRange(ws.Range(1, 1, r - 1, 4));
+        }
+
+        ws.SheetView.FreezeRows(1);
+        ws.Columns(1, 4).AdjustToContents();
+    }
+
+    private static void WriteInitiativesWorksheet(XLWorkbook wb, CrossSurveyAnalyticsDto d, string lang)
+    {
+        string T(ReportMessageId id) => CrossSurveyAnalyticsReportLocalization.Message(lang, id);
+
+        var ws = wb.Worksheets.Add(T(ReportMessageId.SheetInitiatives));
+        ws.TabColor = Xlsx.TabAmber;
+
+        ws.Cell(1, 1).Value = T(ReportMessageId.InitiativeTitleCol);
+        ws.Cell(1, 2).Value = T(ReportMessageId.Status);
+        ws.Cell(1, 3).Value = T(ReportMessageId.ParentActionPlanCol);
+        ws.Cell(1, 4).Value = T(ReportMessageId.LinkedSurveyCol);
+        ws.Cell(1, 5).Value = T(ReportMessageId.TargetDateCol);
+        ws.Cell(1, 6).Value = T(ReportMessageId.CreatedOnCol);
+        StyleHeaderRow(ws.Range(1, 1, 1, 6));
+
+        var r = 2;
+        var i = 0;
+        foreach (var x in d.Initiatives)
+        {
+            var title = CrossSurveyAnalyticsReportLocalization.PickSurveyTitle(lang, x.TitleAr, x.TitleEn);
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                title = T(ReportMessageId.EmptyDash);
+            }
+
+            var plan = CrossSurveyAnalyticsReportLocalization.PickSurveyTitle(lang, x.ActionPlanTitleAr, x.ActionPlanTitleEn);
+            if (string.IsNullOrWhiteSpace(plan))
+            {
+                plan = T(ReportMessageId.EmptyDash);
+            }
+
+            var survey = CrossSurveyAnalyticsReportLocalization.PickSurveyTitle(lang, x.LinkedSurveyTitleAr, x.LinkedSurveyTitleEn);
+            if (string.IsNullOrWhiteSpace(survey))
+            {
+                survey = T(ReportMessageId.EmptyDash);
+            }
+
+            var target = x.TargetDateUtc?.ToString("u", CultureInfo.InvariantCulture) ?? T(ReportMessageId.EmptyDash);
+            ws.Cell(r, 1).Value = title;
+            ws.Cell(r, 2).Value = CrossSurveyAnalyticsReportLocalization.TranslateInitiativeStatus(lang, x.Status);
+            ws.Cell(r, 3).Value = plan;
+            ws.Cell(r, 4).Value = survey;
+            ws.Cell(r, 5).Value = target;
+            ws.Cell(r, 6).Value = x.CreatedOnUtc.ToString("u", CultureInfo.InvariantCulture);
+            ApplyZebraRow(ws.Range(r, 1, r, 6), i);
+            r++;
+            i++;
+        }
+
+        if (r > 2)
+        {
+            OutlineRange(ws.Range(1, 1, r - 1, 6));
+        }
+
+        ws.SheetView.FreezeRows(1);
+        ws.Columns(1, 6).AdjustToContents();
     }
 
     private static void WriteRatingsWorksheet(XLWorkbook wb, CrossSurveyAnalyticsDto d, string lang)

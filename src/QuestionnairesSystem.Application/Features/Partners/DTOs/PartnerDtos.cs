@@ -12,7 +12,10 @@ public sealed record PartnerDto(
     string? PhoneNumber,
     string? ContactPerson,
     bool IsActive,
-    string? Address);
+    string? Address,
+    Guid? DepartmentId,
+    string? DepartmentNameAr,
+    string? DepartmentNameEn);
 
 public sealed record PartnerListItemDto(
     Guid Id,
@@ -21,7 +24,9 @@ public sealed record PartnerListItemDto(
     string NameEn,
     PartnerType Type,
     string? Email,
-    bool IsActive);
+    bool IsActive,
+    string? DepartmentNameAr,
+    string? DepartmentNameEn);
 
 public sealed record CreatePartnerRequest(
     string Code,
@@ -31,7 +36,8 @@ public sealed record CreatePartnerRequest(
     string? Email,
     string? PhoneNumber,
     string? ContactPerson,
-    string? Address);
+    string? Address,
+    Guid? DepartmentId);
 
 public sealed record UpdatePartnerRequest(
     string Code,
@@ -42,7 +48,8 @@ public sealed record UpdatePartnerRequest(
     string? PhoneNumber,
     string? ContactPerson,
     bool IsActive,
-    string? Address);
+    string? Address,
+    Guid? DepartmentId);
 
 public sealed record PartnerFilterRequest(
     string? Search,

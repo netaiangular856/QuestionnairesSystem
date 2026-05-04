@@ -2,6 +2,10 @@ using System.Text.Json;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using QuestionnairesSystem.Application.Common;
+using QuestionnairesSystem.Application.Features.Identity;
+using QuestionnairesSystem.Application.Features.Notifications;
+using QuestionnairesSystem.Application.Features.Notifications.DTOs;
+using QuestionnairesSystem.Application.Features.Notifications.Interfaces;
 using QuestionnairesSystem.Application.Features.Questionnaires.Surveys.DTOs;
 using QuestionnairesSystem.Application.Features.Questionnaires.Surveys.Interfaces;
 using QuestionnairesSystem.Domain.Enums;
@@ -25,6 +29,7 @@ public sealed class SurveyService : ISurveyService
     private readonly IValidator<RejectSurveyRequest> _rejectValidator;
     private readonly IValidator<PatchSurveyStatusRequest> _patchStatusValidator;
     private readonly IValidator<PublishSurveyRequest> _publishValidator;
+    private readonly IInboxNotificationDispatchService _notify;
 
     public SurveyService(
         QuestionnairesDbContext db,
@@ -34,7 +39,8 @@ public sealed class SurveyService : ISurveyService
         IValidator<SurveyFilterRequest> filterValidator,
         IValidator<RejectSurveyRequest> rejectValidator,
         IValidator<PatchSurveyStatusRequest> patchStatusValidator,
-        IValidator<PublishSurveyRequest> publishValidator)
+        IValidator<PublishSurveyRequest> publishValidator,
+        IInboxNotificationDispatchService notify)
     {
         _db = db;
         _currentUser = currentUser;
@@ -44,6 +50,7 @@ public sealed class SurveyService : ISurveyService
         _rejectValidator = rejectValidator;
         _patchStatusValidator = patchStatusValidator;
         _publishValidator = publishValidator;
+        _notify = notify;
     }
 
     public async Task<Result<SurveyDetailDto>> CreateAsync(CreateSurveyRequest request, CancellationToken cancellationToken = default)
@@ -51,6 +58,11 @@ public sealed class SurveyService : ISurveyService
         var validation = await _createValidator.ValidateAsync(request, cancellationToken).ConfigureAwait(false);
         if (!validation.IsValid)
             return Result<SurveyDetailDto>.Fail(validation.ToErrorMessages());
+
+        var audienceRef = await ValidateAudienceMemberInputsAsync(request.AudienceMembers, cancellationToken)
+            .ConfigureAwait(false);
+        if (!audienceRef.IsSuccess)
+            return Result<SurveyDetailDto>.Fail(audienceRef.Errors, audienceRef.FailureCode);
 
         var survey = new Survey
         {
@@ -79,8 +91,43 @@ public sealed class SurveyService : ISurveyService
 
         AppendOwnerQuestions(survey, request.Questions);
 
+        if (request.AudienceScope == SurveyAudienceScope.SpecificUsers && request.AudienceMembers is { Count: > 0 })
+        {
+            foreach (var m in NormalizeAudiencePayload(request.AudienceMembers))
+            {
+                if (m.UserId is { } uid)
+                    survey.AudienceMembers.Add(new SurveyAudienceMember { UserId = uid });
+                else if (!string.IsNullOrWhiteSpace(m.Email))
+                    survey.AudienceMembers.Add(new SurveyAudienceMember { Email = NormalizeAudienceEmail(m.Email) });
+            }
+        }
+
         _db.Surveys.Add(survey);
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        if (_currentUser.UserId is { } creatorId)
+        {
+            var (na, ne) = SurveyNamePair(survey);
+            var text = survey.TemplateId is null
+                ? new LocalizedInboxNotificationText(
+                    "تم إنشاء استبيان",
+                    "Survey created",
+                    $"تم إنشاء الاستبيان «{na}».",
+                    $"Survey «{ne}» was created.")
+                : new LocalizedInboxNotificationText(
+                    "تم إنشاء استبيان من قالب",
+                    "Survey created from template",
+                    $"تم إنشاء الاستبيان «{na}» من قالب.",
+                    $"Survey «{ne}» was created from a template.");
+            await _notify.DispatchAsync(
+                new[] { creatorId },
+                text,
+                NotificationRelatedEntityTypes.Survey,
+                survey.Id,
+                null,
+                cancellationToken).ConfigureAwait(false);
+        }
+
         return Result<SurveyDetailDto>.Ok(await MapDetailAsync(survey, cancellationToken).ConfigureAwait(false));
     }
 
@@ -145,6 +192,7 @@ public sealed class SurveyService : ISurveyService
 
         var s = await _db.Surveys
             .Include(x => x.Questions)
+            .Include(x => x.AudienceMembers)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken).ConfigureAwait(false);
         if (s is null)
             return Result<SurveyDetailDto>.Fail("Survey was not found.", QuestionnaireErrors.SurveyNotFound);
@@ -155,6 +203,32 @@ public sealed class SurveyService : ISurveyService
         s.DescriptionEn = string.IsNullOrWhiteSpace(request.DescriptionEn) ? null : request.DescriptionEn.Trim();
         s.Code = string.IsNullOrWhiteSpace(request.Code) ? null : request.Code.Trim();
         s.AudienceScope = request.AudienceScope;
+
+        if (request.AudienceScope != SurveyAudienceScope.SpecificUsers)
+        {
+            if (s.AudienceMembers.Count > 0)
+            {
+                _db.SurveyAudienceMembers.RemoveRange(s.AudienceMembers);
+                s.AudienceMembers.Clear();
+            }
+        }
+        else if (request.AudienceMembers is not null)
+        {
+            var audienceRef = await ValidateAudienceMemberInputsAsync(request.AudienceMembers, cancellationToken)
+                .ConfigureAwait(false);
+            if (!audienceRef.IsSuccess)
+                return Result<SurveyDetailDto>.Fail(audienceRef.Errors, audienceRef.FailureCode);
+
+            _db.SurveyAudienceMembers.RemoveRange(s.AudienceMembers);
+            s.AudienceMembers.Clear();
+            foreach (var m in NormalizeAudiencePayload(request.AudienceMembers))
+            {
+                if (m.UserId is { } uid)
+                    s.AudienceMembers.Add(new SurveyAudienceMember { SurveyId = s.Id, UserId = uid });
+                else if (!string.IsNullOrWhiteSpace(m.Email))
+                    s.AudienceMembers.Add(new SurveyAudienceMember { SurveyId = s.Id, Email = NormalizeAudienceEmail(m.Email) });
+            }
+        }
 
         if (request.Questions is not null)
         {
@@ -168,6 +242,25 @@ public sealed class SurveyService : ISurveyService
         }
 
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        var updateRecipients = new HashSet<Guid>();
+        if (_currentUser.UserId is { } actorUpd)
+            updateRecipients.Add(actorUpd);
+        if (s.OwnerUserId is { } ownerUpd)
+            updateRecipients.Add(ownerUpd);
+        var (naUpd, neUpd) = SurveyNamePair(s);
+        await _notify.DispatchAsync(
+            updateRecipients,
+            new LocalizedInboxNotificationText(
+                "تم تحديث الاستبيان",
+                "Survey updated",
+                $"تم تحديث الاستبيان «{naUpd}».",
+                $"Survey «{neUpd}» was updated."),
+            NotificationRelatedEntityTypes.Survey,
+            s.Id,
+            null,
+            cancellationToken).ConfigureAwait(false);
+
         return Result<SurveyDetailDto>.Ok(await MapDetailAsync(s, cancellationToken).ConfigureAwait(false));
     }
 
@@ -193,6 +286,25 @@ public sealed class SurveyService : ISurveyService
         }
 
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        var delRecipients = new HashSet<Guid>();
+        if (_currentUser.UserId is { } actorDel)
+            delRecipients.Add(actorDel);
+        if (s.OwnerUserId is { } ownerDel)
+            delRecipients.Add(ownerDel);
+        var (naDel, neDel) = SurveyNamePair(s);
+        await _notify.DispatchAsync(
+            delRecipients,
+            new LocalizedInboxNotificationText(
+                "تم حذف الاستبيان",
+                "Survey deleted",
+                $"تم حذف الاستبيان «{naDel}» (أرشفة).",
+                $"Survey «{neDel}» was deleted (soft)."),
+            NotificationRelatedEntityTypes.Survey,
+            s.Id,
+            null,
+            cancellationToken).ConfigureAwait(false);
+
         return Result.Ok();
     }
 
@@ -200,6 +312,7 @@ public sealed class SurveyService : ISurveyService
     {
         var source = await _db.Surveys
             .Include(x => x.Questions)
+            .Include(x => x.AudienceMembers)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
             .ConfigureAwait(false);
@@ -241,7 +354,29 @@ public sealed class SurveyService : ISurveyService
             });
         }
 
+        foreach (var m in source.AudienceMembers)
+        {
+            copy.AudienceMembers.Add(new SurveyAudienceMember { UserId = m.UserId, Email = m.Email });
+        }
+
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        if (_currentUser.UserId is { } dupActor)
+        {
+            var (naDup, neDup) = SurveyNamePair(copy);
+            await _notify.DispatchAsync(
+                new[] { dupActor },
+                new LocalizedInboxNotificationText(
+                    "تم نسخ الاستبيان",
+                    "Survey duplicated",
+                    $"تم إنشاء نسخة من الاستبيان «{naDup}».",
+                    $"A copy of survey «{neDup}» was created."),
+                NotificationRelatedEntityTypes.Survey,
+                copy.Id,
+                null,
+                cancellationToken).ConfigureAwait(false);
+        }
+
         return Result<SurveyDetailDto>.Ok(await MapDetailAsync(copy, cancellationToken).ConfigureAwait(false));
     }
 
@@ -282,6 +417,14 @@ public sealed class SurveyService : ISurveyService
             var pv = await _publishValidator.ValidateAsync(publishRequest, cancellationToken).ConfigureAwait(false);
             if (!pv.IsValid)
                 return Result<SurveyDetailDto>.Fail(pv.ToErrorMessages());
+
+            if (publishRequest.AudienceMembers is { Count: > 0 })
+            {
+                var av = await ValidateAudienceMemberInputsAsync(publishRequest.AudienceMembers, cancellationToken)
+                    .ConfigureAwait(false);
+                if (!av.IsSuccess)
+                    return Result<SurveyDetailDto>.Fail(av.Errors, av.FailureCode);
+            }
         }
 
         await ApplyPublishAudienceAsync(id, publishRequest, cancellationToken).ConfigureAwait(false);
@@ -321,7 +464,8 @@ public sealed class SurveyService : ISurveyService
         if (s is null)
             return Result<SurveyDetailDto>.Fail("Survey was not found.", QuestionnaireErrors.SurveyNotFound);
 
-        if (!IsTransitionAllowed(s.Status, target))
+        var previousStatus = s.Status;
+        if (!IsTransitionAllowed(previousStatus, target))
             return Result<SurveyDetailDto>.Fail("Status transition is not allowed.", QuestionnaireErrors.InvalidStatusTransition);
 
         s.Status = target;
@@ -337,6 +481,10 @@ public sealed class SurveyService : ISurveyService
             s.ClosedAtUtc = DateTime.UtcNow;
 
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        await NotifySurveyLifecycleAsync(s, previousStatus, target, rejectionReason, cancellationToken)
+            .ConfigureAwait(false);
+
         return Result<SurveyDetailDto>.Ok(await MapDetailAsync(s, cancellationToken).ConfigureAwait(false));
     }
 
@@ -532,6 +680,16 @@ public sealed class SurveyService : ISurveyService
 
         var now = DateTime.UtcNow;
         var userId = _currentUser.UserId;
+        string? userEmailNorm = null;
+        if (userId is { } uidForAudience)
+        {
+            var em = await _db.Users.AsNoTracking()
+                .Where(u => u.Id == uidForAudience)
+                .Select(u => u.Email)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+            userEmailNorm = string.IsNullOrWhiteSpace(em) ? null : em.Trim().ToLowerInvariant();
+        }
 
         // Base filter: Published, not closed, and within time window (if set)
         var q = _db.Surveys.AsNoTracking()
@@ -544,8 +702,10 @@ public sealed class SurveyService : ISurveyService
         q = q.Where(s =>
             s.AudienceScope == SurveyAudienceScope.Everyone ||
             s.AudienceScope == SurveyAudienceScope.AllOrganizationMembers ||
-            (s.AudienceScope == SurveyAudienceScope.SpecificUsers && s.AudienceMembers.Any(m => m.UserId == userId))
-        );
+            (s.AudienceScope == SurveyAudienceScope.SpecificUsers &&
+                ((userId != null && s.AudienceMembers.Any(m => m.UserId == userId)) ||
+                 (userEmailNorm != null &&
+                  s.AudienceMembers.Any(m => m.Email != null && m.Email.ToLower() == userEmailNorm)))));
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {            var term = request.Search.Trim();
@@ -999,6 +1159,24 @@ public sealed class SurveyService : ISurveyService
                 ownerDisplayName = UserDisplayNames.Format(ownerRow.NameAr, ownerRow.NameEn, ownerRow.UserName);
         }
 
+        var memberRows = await (
+                from m in _db.SurveyAudienceMembers.AsNoTracking()
+                where m.SurveyId == s.Id
+                join u in _db.Users.AsNoTracking() on m.UserId equals u.Id into ug
+                from u in ug.DefaultIfEmpty()
+                select new { m.UserId, m.Email, u.NameAr, u.NameEn, u.UserName })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var audienceMembers = memberRows.ConvertAll(r => new SurveyAudienceMemberDetailDto
+        {
+            UserId = r.UserId,
+            Email = r.Email,
+            DisplayName = r.UserId is not null && !string.IsNullOrEmpty(r.UserName)
+                ? UserDisplayNames.Format(r.NameAr, r.NameEn, r.UserName!)
+                : (!string.IsNullOrWhiteSpace(r.Email) ? r.Email!.Trim() : "—")
+        });
+
         return new SurveyDetailDto
         {
             Id = s.Id,
@@ -1017,7 +1195,8 @@ public sealed class SurveyService : ISurveyService
             ClosedAtUtc = s.ClosedAtUtc,
             OpensAtUtc = s.OpensAtUtc,
             ClosesAtUtc = s.ClosesAtUtc,
-            RejectionReason = s.RejectionReason
+            RejectionReason = s.RejectionReason,
+            AudienceMembers = audienceMembers
         };
     }
 
@@ -1036,7 +1215,12 @@ public sealed class SurveyService : ISurveyService
         if (pub.AudienceScope is { } ascope)
             s.AudienceScope = ascope;
 
-        if (pub.AudienceUserIds is not null)
+        var shouldReplaceAudienceRows =
+            pub.AudienceMembers is not null
+            || pub.AudienceUserIds is not null
+            || (pub.AudienceScope is not null && pub.AudienceScope != SurveyAudienceScope.SpecificUsers);
+
+        if (shouldReplaceAudienceRows)
         {
             var existing = await _db.SurveyAudienceMembers
                 .Where(m => m.SurveyId == surveyId)
@@ -1046,19 +1230,23 @@ public sealed class SurveyService : ISurveyService
 
             if (s.AudienceScope == SurveyAudienceScope.SpecificUsers)
             {
-                foreach (var uid in pub.AudienceUserIds.Distinct())
+                if (pub.AudienceMembers is { Count: > 0 })
                 {
-                    _db.SurveyAudienceMembers.Add(new SurveyAudienceMember { SurveyId = surveyId, UserId = uid });
+                    foreach (var m in NormalizeAudiencePayload(pub.AudienceMembers))
+                    {
+                        if (m.UserId is { } uid)
+                            _db.SurveyAudienceMembers.Add(new SurveyAudienceMember { SurveyId = surveyId, UserId = uid });
+                        else if (!string.IsNullOrWhiteSpace(m.Email))
+                            _db.SurveyAudienceMembers.Add(
+                                new SurveyAudienceMember { SurveyId = surveyId, Email = NormalizeAudienceEmail(m.Email) });
+                    }
+                }
+                else if (pub.AudienceUserIds is { Count: > 0 })
+                {
+                    foreach (var uid in pub.AudienceUserIds.Distinct())
+                        _db.SurveyAudienceMembers.Add(new SurveyAudienceMember { SurveyId = surveyId, UserId = uid });
                 }
             }
-        }
-        else if (pub.AudienceScope is not null && s.AudienceScope != SurveyAudienceScope.SpecificUsers)
-        {
-            var existing = await _db.SurveyAudienceMembers
-                .Where(m => m.SurveyId == surveyId)
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
-            _db.SurveyAudienceMembers.RemoveRange(existing);
         }
 
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -1097,6 +1285,159 @@ public sealed class SurveyService : ISurveyService
             });
         }
     }
+
+    private async Task NotifySurveyLifecycleAsync(
+        Survey survey,
+        SurveyStatus from,
+        SurveyStatus to,
+        string? rejectionReason,
+        CancellationToken cancellationToken)
+    {
+        if (from == to)
+            return;
+
+        var (na, ne) = SurveyNamePair(survey);
+        var surveyId = survey.Id;
+        var recipients = new HashSet<Guid>();
+        if (_currentUser.UserId is { } actor)
+            recipients.Add(actor);
+        if (survey.OwnerUserId is { } owner)
+            recipients.Add(owner);
+
+        if (to == SurveyStatus.PendingApproval)
+        {
+            var approvers = await _notify.GetActiveUserIdsWithAnyPermissionAsync(
+                    new[]
+                    {
+                        PermissionCodes.SurveyApprove,
+                        PermissionCodes.SurveyApprovalView
+                    },
+                    cancellationToken)
+                .ConfigureAwait(false);
+            foreach (var u in approvers)
+                recipients.Add(u);
+
+            await _notify.DispatchAsync(
+                recipients,
+                new LocalizedInboxNotificationText(
+                    "استبيان بانتظار الاعتماد",
+                    "Survey pending approval",
+                    $"تم إرسال الاستبيان «{na}» لاعتماد.",
+                    $"Survey «{ne}» was submitted for approval."),
+                NotificationRelatedEntityTypes.Survey,
+                surveyId,
+                null,
+                cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        if (to == SurveyStatus.Approved)
+        {
+            await _notify.DispatchAsync(
+                recipients,
+                new LocalizedInboxNotificationText(
+                    "تم اعتماد الاستبيان",
+                    "Survey approved",
+                    $"تم اعتماد الاستبيان «{na}».",
+                    $"Survey «{ne}» was approved."),
+                NotificationRelatedEntityTypes.Survey,
+                surveyId,
+                null,
+                cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        if (to == SurveyStatus.Rejected)
+        {
+            var reasonAr = string.IsNullOrWhiteSpace(rejectionReason) ? string.Empty : $" السبب: {rejectionReason.Trim()}";
+            var reasonEn = string.IsNullOrWhiteSpace(rejectionReason) ? string.Empty : $" Reason: {rejectionReason.Trim()}";
+            await _notify.DispatchAsync(
+                recipients,
+                new LocalizedInboxNotificationText(
+                    "تم رفض الاستبيان",
+                    "Survey rejected",
+                    $"تم رفض الاستبيان «{na}».{reasonAr}",
+                    $"Survey «{ne}» was rejected.{reasonEn}"),
+                NotificationRelatedEntityTypes.Survey,
+                surveyId,
+                null,
+                cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        if (to == SurveyStatus.Published)
+        {
+            var audienceUserIds = await _db.SurveyAudienceMembers.AsNoTracking()
+                .Where(m => m.SurveyId == surveyId && m.UserId != null)
+                .Select(m => m.UserId!.Value)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+            foreach (var u in audienceUserIds)
+                recipients.Add(u);
+
+            var participantUserIds = await _db.SurveyParticipants.AsNoTracking()
+                .Where(p => p.SurveyId == surveyId && p.UserId != null)
+                .Select(p => p.UserId!.Value)
+                .Distinct()
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+            foreach (var u in participantUserIds)
+                recipients.Add(u);
+
+            await _notify.DispatchAsync(
+                recipients,
+                new LocalizedInboxNotificationText(
+                    "تم نشر الاستبيان",
+                    "Survey published",
+                    $"تم نشر الاستبيان «{na}». تم إشعار المستخدمين المدعوين الذين لديهم حسابات.",
+                    $"Survey «{ne}» was published. Invited users with accounts were notified."),
+                NotificationRelatedEntityTypes.Survey,
+                surveyId,
+                null,
+                cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        if (to == SurveyStatus.Closed)
+        {
+            await _notify.DispatchAsync(
+                recipients,
+                new LocalizedInboxNotificationText(
+                    "تم إغلاق الاستبيان",
+                    "Survey closed",
+                    $"تم إغلاق الاستبيان «{na}».",
+                    $"Survey «{ne}» was closed."),
+                NotificationRelatedEntityTypes.Survey,
+                surveyId,
+                null,
+                cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        if (to == SurveyStatus.Draft && from == SurveyStatus.Rejected)
+        {
+            await _notify.DispatchAsync(
+                recipients,
+                new LocalizedInboxNotificationText(
+                    "الاستبيان عاد إلى مسودة",
+                    "Survey moved to draft",
+                    $"تمت إعادة الاستبيان «{na}» إلى مسودة بعد الرفض.",
+                    $"Survey «{ne}» was moved back to draft after rejection."),
+                NotificationRelatedEntityTypes.Survey,
+                surveyId,
+                null,
+                cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private static (string TitleAr, string TitleEn) SurveyNamePair(Survey s) =>
+    (
+        string.IsNullOrWhiteSpace(s.TitleAr) ? s.TitleEn : s.TitleAr,
+        string.IsNullOrWhiteSpace(s.TitleEn) ? s.TitleAr : s.TitleEn
+    );
+
+    private static string SurveyDisplayLabel(Survey s) =>
+        string.IsNullOrWhiteSpace(s.TitleEn) ? s.TitleAr : s.TitleEn;
 
     private static bool TryExtractNumeric(string json, out double value)
     {
@@ -1251,5 +1592,54 @@ public sealed class SurveyService : ISurveyService
         {
             /* ignore malformed template JSON */
         }
+    }
+
+    private static string NormalizeAudienceEmail(string email) => email.Trim().ToLowerInvariant();
+
+    private static List<SurveyAudienceMemberInputDto> NormalizeAudiencePayload(
+        IReadOnlyList<SurveyAudienceMemberInputDto> members)
+    {
+        var seenUsers = new HashSet<Guid>();
+        var seenEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var list = new List<SurveyAudienceMemberInputDto>();
+        foreach (var m in members)
+        {
+            if (m.UserId is { } uid)
+            {
+                if (!seenUsers.Add(uid))
+                    continue;
+                list.Add(new SurveyAudienceMemberInputDto { UserId = uid, Email = null });
+            }
+            else if (!string.IsNullOrWhiteSpace(m.Email))
+            {
+                var em = NormalizeAudienceEmail(m.Email);
+                if (!seenEmails.Add(em))
+                    continue;
+                list.Add(new SurveyAudienceMemberInputDto { UserId = null, Email = em });
+            }
+        }
+
+        return list;
+    }
+
+    private async Task<Result> ValidateAudienceMemberInputsAsync(
+        IReadOnlyList<SurveyAudienceMemberInputDto>? members,
+        CancellationToken cancellationToken)
+    {
+        if (members is null || members.Count == 0)
+            return Result.Ok();
+
+        foreach (var m in NormalizeAudiencePayload(members))
+        {
+            if (m.UserId is { } uid &&
+                !await _db.Users.AnyAsync(u => u.Id == uid && u.IsActive, cancellationToken).ConfigureAwait(false))
+            {
+                return Result.Fail(
+                    "One or more audience users were not found or are inactive.",
+                    QuestionnaireErrors.InvalidOperation);
+            }
+        }
+
+        return Result.Ok();
     }
 }

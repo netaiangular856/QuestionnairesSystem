@@ -19,7 +19,9 @@ public sealed class PartnerService : IPartnerService
 
     public async Task<Result<PartnerDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var partner = await _db.Partners.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        var partner = await _db.Partners
+            .Include(x => x.Department)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         if (partner is null)
             return Result<PartnerDto>.Fail("Partner not found.");
 
@@ -28,7 +30,9 @@ public sealed class PartnerService : IPartnerService
 
     public async Task<Result<PagedResult<PartnerListItemDto>>> GetPagedListAsync(PartnerFilterRequest request, CancellationToken cancellationToken = default)
     {
-        var query = _db.Partners.AsQueryable();
+        var query = _db.Partners
+            .Include(x => x.Department)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
@@ -57,7 +61,9 @@ public sealed class PartnerService : IPartnerService
                 x.NameEn,
                 x.Type,
                 x.Email,
-                x.IsActive))
+                x.IsActive,
+                x.Department != null ? x.Department.NameAr : null,
+                x.Department != null ? x.Department.NameEn : null))
             .ToListAsync(cancellationToken);
 
         return Result<PagedResult<PartnerListItemDto>>.Ok(new PagedResult<PartnerListItemDto>
@@ -83,7 +89,8 @@ public sealed class PartnerService : IPartnerService
             Email = request.Email?.Trim(),
             PhoneNumber = request.PhoneNumber?.Trim(),
             ContactPerson = request.ContactPerson?.Trim(),
-            Address = request.Address?.Trim()
+            Address = request.Address?.Trim(),
+            DepartmentId = request.DepartmentId
         };
 
         _db.Partners.Add(partner);
@@ -111,6 +118,7 @@ public sealed class PartnerService : IPartnerService
         partner.ContactPerson = request.ContactPerson?.Trim();
         partner.Address = request.Address?.Trim();
         partner.IsActive = request.IsActive;
+        partner.DepartmentId = request.DepartmentId;
 
         await _db.SaveChangesAsync(cancellationToken);
 
@@ -139,5 +147,8 @@ public sealed class PartnerService : IPartnerService
         x.PhoneNumber,
         x.ContactPerson,
         x.IsActive,
-        x.Address);
+        x.Address,
+        x.DepartmentId,
+        x.Department?.NameAr,
+        x.Department?.NameEn);
 }

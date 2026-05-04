@@ -54,6 +54,12 @@ public static class CrossSurveyAnalyticsReportLocalization
     public static string TranslateDayOfWeek(string lang, string key) =>
         TryTranslate(lang, DayOfWeekMap, key);
 
+    public static string TranslateActionPlanStatus(string lang, string key) =>
+        TryTranslate(lang, ActionPlanStatusMap, key);
+
+    public static string TranslateInitiativeStatus(string lang, string key) =>
+        TryTranslate(lang, InitiativeStatusMap, key);
+
     private static string TryTranslate(string lang, IReadOnlyDictionary<string, (string Ar, string En)> map, string key)
     {
         if (!map.TryGetValue(key, out var t))
@@ -130,6 +136,20 @@ public static class CrossSurveyAnalyticsReportLocalization
         [ReportMessageId.NoAnswerDetails] = "لا توجد إجابات في هذا النطاق.",
         [ReportMessageId.PdfAnswersTruncated] =
             "تم اقتصار جدول الإجابات في PDF على أول {0} صفًا. افتح ملف Excel لعرض كل الإجابات.",
+        [ReportMessageId.ActionPlanStatusTitle] = "حالة خطط العمل",
+        [ReportMessageId.InitiativeStatusTitle] = "حالة المبادرات",
+        [ReportMessageId.ActionPlansSection] = "خطط العمل (في النطاق)",
+        [ReportMessageId.InitiativesSection] = "المبادرات (في النطاق)",
+        [ReportMessageId.SheetActionPlans] = "خطط العمل",
+        [ReportMessageId.SheetInitiatives] = "المبادرات",
+        [ReportMessageId.ActionPlanTitleCol] = "عنوان الخطة",
+        [ReportMessageId.InitiativeTitleCol] = "عنوان المبادرة",
+        [ReportMessageId.LinkedSurveyCol] = "الاستبيان المرتبط",
+        [ReportMessageId.ParentActionPlanCol] = "خطة العمل",
+        [ReportMessageId.TargetDateCol] = "الهدف (UTC)",
+        [ReportMessageId.CreatedOnCol] = "تاريخ الإنشاء (UTC)",
+        [ReportMessageId.NoActionPlans] = "لا توجد خطط عمل في هذا النطاق.",
+        [ReportMessageId.NoInitiatives] = "لا توجد مبادرات في هذا النطاق.",
     };
 
     private static readonly Dictionary<ReportMessageId, string> MessagesEn = new()
@@ -198,6 +218,20 @@ public static class CrossSurveyAnalyticsReportLocalization
         [ReportMessageId.NoAnswerDetails] = "No answers in this scope.",
         [ReportMessageId.PdfAnswersTruncated] =
             "The PDF answer table shows only the first {0} rows. Open the Excel file for the full dataset.",
+        [ReportMessageId.ActionPlanStatusTitle] = "Action plan status",
+        [ReportMessageId.InitiativeStatusTitle] = "Initiative status",
+        [ReportMessageId.ActionPlansSection] = "Action plans (in scope)",
+        [ReportMessageId.InitiativesSection] = "Initiatives (in scope)",
+        [ReportMessageId.SheetActionPlans] = "Action plans",
+        [ReportMessageId.SheetInitiatives] = "Initiatives",
+        [ReportMessageId.ActionPlanTitleCol] = "Plan title",
+        [ReportMessageId.InitiativeTitleCol] = "Initiative title",
+        [ReportMessageId.LinkedSurveyCol] = "Linked survey",
+        [ReportMessageId.ParentActionPlanCol] = "Action plan",
+        [ReportMessageId.TargetDateCol] = "Target (UTC)",
+        [ReportMessageId.CreatedOnCol] = "Created (UTC)",
+        [ReportMessageId.NoActionPlans] = "No action plans in this scope.",
+        [ReportMessageId.NoInitiatives] = "No initiatives in this scope.",
     };
 
     private static readonly Dictionary<string, (string Ar, string En)> SurveyStatusMap = new(StringComparer.Ordinal)
@@ -257,6 +291,23 @@ public static class CrossSurveyAnalyticsReportLocalization
         ["Saturday"] = ("السبت", "Saturday"),
     };
 
+    private static readonly Dictionary<string, (string Ar, string En)> ActionPlanStatusMap = new(StringComparer.Ordinal)
+    {
+        ["Draft"] = ("مسودة", "Draft"),
+        ["Active"] = ("نشط", "Active"),
+        ["Completed"] = ("مكتمل", "Completed"),
+        ["Cancelled"] = ("ملغى", "Cancelled"),
+    };
+
+    private static readonly Dictionary<string, (string Ar, string En)> InitiativeStatusMap = new(StringComparer.Ordinal)
+    {
+        ["Planned"] = ("مخطط", "Planned"),
+        ["InProgress"] = ("قيد التنفيذ", "In progress"),
+        ["Completed"] = ("مكتمل", "Completed"),
+        ["AtRisk"] = ("معرّض للخطر", "At risk"),
+        ["Cancelled"] = ("ملغى", "Cancelled"),
+    };
+
     private static readonly Dictionary<OverviewMetricId, string> OverviewMetricsAr = new()
     {
         [OverviewMetricId.SurveysInScope] = "استبيانات في النطاق",
@@ -270,6 +321,8 @@ public static class CrossSurveyAnalyticsReportLocalization
         [OverviewMetricId.ParticipantsCompleted] = "مشاركون أكملوا",
         [OverviewMetricId.ParticipantsDeclined] = "رفضوا المشاركة",
         [OverviewMetricId.AvgMinutesToSubmit] = "متوسط وقت الإكمال (دقيقة)",
+        [OverviewMetricId.ActionPlansInScope] = "خطط العمل (النطاق)",
+        [OverviewMetricId.InitiativesInScope] = "المبادرات (النطاق)",
     };
 
     private static readonly Dictionary<OverviewMetricId, string> OverviewMetricsEn = new()
@@ -285,6 +338,8 @@ public static class CrossSurveyAnalyticsReportLocalization
         [OverviewMetricId.ParticipantsCompleted] = "Participants completed",
         [OverviewMetricId.ParticipantsDeclined] = "Participants declined",
         [OverviewMetricId.AvgMinutesToSubmit] = "Avg. minutes to submit (period)",
+        [OverviewMetricId.ActionPlansInScope] = "Action plans (scope)",
+        [OverviewMetricId.InitiativesInScope] = "Initiatives (scope)",
     };
 
     public static string OverviewMetric(string lang, OverviewMetricId id)
@@ -359,6 +414,20 @@ public enum ReportMessageId
     SheetAnswers,
     NoAnswerDetails,
     PdfAnswersTruncated,
+    ActionPlanStatusTitle,
+    InitiativeStatusTitle,
+    ActionPlansSection,
+    InitiativesSection,
+    SheetActionPlans,
+    SheetInitiatives,
+    ActionPlanTitleCol,
+    InitiativeTitleCol,
+    LinkedSurveyCol,
+    ParentActionPlanCol,
+    TargetDateCol,
+    CreatedOnCol,
+    NoActionPlans,
+    NoInitiatives,
 }
 
 public enum OverviewMetricId
@@ -374,4 +443,6 @@ public enum OverviewMetricId
     ParticipantsCompleted,
     ParticipantsDeclined,
     AvgMinutesToSubmit,
+    ActionPlansInScope,
+    InitiativesInScope,
 }

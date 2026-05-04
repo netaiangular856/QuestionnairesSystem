@@ -1,6 +1,9 @@
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using QuestionnairesSystem.Application.Common;
+using QuestionnairesSystem.Application.Features.Notifications;
+using QuestionnairesSystem.Application.Features.Notifications.DTOs;
+using QuestionnairesSystem.Application.Features.Notifications.Interfaces;
 using QuestionnairesSystem.Application.Features.Questionnaires.Participation.DTOs;
 using QuestionnairesSystem.Application.Features.Questionnaires.Participation.Interfaces;
 using QuestionnairesSystem.Domain.Enums;
@@ -21,17 +24,20 @@ public sealed class ParticipantResponseService : IParticipantResponseService
     private readonly IValidator<CreateParticipantRequest> _participantValidator;
     private readonly IValidator<CreateResponseRequest> _responseValidator;
     private readonly ICurrentUserService _currentUser;
+    private readonly IInboxNotificationDispatchService _notify;
 
     public ParticipantResponseService(
         QuestionnairesDbContext db,
         IValidator<CreateParticipantRequest> participantValidator,
         IValidator<CreateResponseRequest> responseValidator,
-        ICurrentUserService currentUser)
+        ICurrentUserService currentUser,
+        IInboxNotificationDispatchService notify)
     {
         _db = db;
         _participantValidator = participantValidator;
         _responseValidator = responseValidator;
         _currentUser = currentUser;
+        _notify = notify;
     }
 
     public async Task<Result<ParticipantDto>> AddParticipantAsync(
@@ -61,6 +67,32 @@ public sealed class ParticipantResponseService : IParticipantResponseService
         var created = await SelectParticipantDto(_db.SurveyParticipants.AsNoTracking().Where(x => x.Id == p.Id))
             .FirstAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        var surveyMeta = await _db.Surveys.AsNoTracking()
+            .Where(s => s.Id == surveyId)
+            .Select(s => new { s.TitleAr, s.TitleEn, s.OwnerUserId })
+            .FirstAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var (sa, sen) = SurveyTitles(surveyMeta.TitleAr, surveyMeta.TitleEn);
+        var partRecipients = new HashSet<Guid>();
+        if (_currentUser.UserId is { } partActor)
+            partRecipients.Add(partActor);
+        if (surveyMeta.OwnerUserId is { } partOwner)
+            partRecipients.Add(partOwner);
+        if (request.UserId is { } invitedUser)
+            partRecipients.Add(invitedUser);
+        await _notify.DispatchAsync(
+            partRecipients,
+            new LocalizedInboxNotificationText(
+                "تمت إضافة مشارك",
+                "Survey participant added",
+                $"تمت إضافة مشارك إلى الاستبيان «{sa}».",
+                $"A participant was added to survey «{sen}»."),
+            NotificationRelatedEntityTypes.SurveyParticipant,
+            p.Id,
+            surveyId,
+            cancellationToken).ConfigureAwait(false);
+
         return Result<ParticipantDto>.Ok(created);
     }
 
@@ -274,6 +306,39 @@ public sealed class ParticipantResponseService : IParticipantResponseService
         }
 
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        var subMeta = await _db.SurveyResponses.AsNoTracking()
+            .Where(x => x.Id == responseId)
+            .Select(x => new
+            {
+                x.SurveyId,
+                SurveyTitleEn = x.Survey.TitleEn,
+                SurveyTitleAr = x.Survey.TitleAr,
+                x.Survey.OwnerUserId,
+                x.RespondentUserId
+            })
+            .FirstAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var (suba, suben) = SurveyTitles(subMeta.SurveyTitleAr, subMeta.SurveyTitleEn);
+        var subRecipients = new HashSet<Guid>();
+        if (_currentUser.UserId is { } subActor)
+            subRecipients.Add(subActor);
+        if (subMeta.OwnerUserId is { } subOwner)
+            subRecipients.Add(subOwner);
+        if (subMeta.RespondentUserId is { } respUser)
+            subRecipients.Add(respUser);
+        await _notify.DispatchAsync(
+            subRecipients,
+            new LocalizedInboxNotificationText(
+                "تم إرسال إجابة",
+                "Survey response submitted",
+                $"تم إرسال إجابة للاستبيان «{suba}».",
+                $"A response was submitted for survey «{suben}»."),
+            NotificationRelatedEntityTypes.SurveyResponse,
+            responseId,
+            subMeta.SurveyId,
+            cancellationToken).ConfigureAwait(false);
+
         return Result<ResponseDetailDto>.Ok(await LoadResponseDetailAsync(responseId, cancellationToken).ConfigureAwait(false));
     }
 
@@ -322,6 +387,12 @@ public sealed class ParticipantResponseService : IParticipantResponseService
             Answers = answers
         };
     }
+
+    private static (string Ar, string En) SurveyTitles(string titleAr, string titleEn) =>
+    (
+        string.IsNullOrWhiteSpace(titleAr) ? titleEn : titleAr,
+        string.IsNullOrWhiteSpace(titleEn) ? titleAr : titleEn
+    );
 
     private static IQueryable<ParticipantDto> SelectParticipantDto(IQueryable<SurveyParticipant> query) =>
         query.Select(p => new ParticipantDto

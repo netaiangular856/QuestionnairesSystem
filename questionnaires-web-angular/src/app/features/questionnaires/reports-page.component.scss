@@ -441,6 +441,18 @@
   color: var(--color-accent);
 }
 
+.rp-plans-before-charts {
+  display: grid;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.rp-section__head--sub {
+  padding-top: 0.35rem;
+  margin-top: 0.15rem;
+  border-top: 1px solid var(--color-border);
+}
+
 /* —— KPI grid —— */
 .rp-kpi-grid {
   display: grid;
@@ -518,6 +530,177 @@
 }
 
 /* —— Chart grids —— */
+/** مخططان جنبًا (خطط العمل / المبادرات حسب الحالة) */
+.rp-chart-grid-two {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+@media (min-width: 768px) {
+  .rp-chart-grid-two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .rp-chart-grid-two {
+    gap: 1.1rem;
+  }
+}
+
+/* —— Action plans / initiatives: strip list (no table), two columns on wide screens —— */
+.rp-strip-stack {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1.1rem;
+  align-items: stretch;
+}
+
+@media (min-width: 900px) {
+  .rp-strip-stack {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem;
+  }
+}
+
+.rp-strip-stack > .rp-strip-panel {
+  min-width: 0;
+}
+
+.rp-strip-panel {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.rp-strip-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.06), transparent);
+}
+
+.rp-strip-panel__icon {
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: 1rem;
+}
+
+.rp-strip-panel__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.rp-strip-panel__body {
+  padding: 0.35rem 0.85rem 0.75rem;
+  flex: 1 1 auto;
+  max-height: min(58vh, 560px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rp-strip-item {
+  padding: 0.75rem 0.35rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rp-strip-item:last-child {
+  border-bottom: none;
+}
+
+.rp-strip-item__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.45rem;
+}
+
+.rp-strip-item__title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  color: var(--color-text);
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.rp-strip-item__track {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-border);
+  overflow: hidden;
+  margin-bottom: 0.4rem;
+}
+
+.rp-strip-item__fill {
+  display: block;
+  height: 100%;
+  min-width: 6px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--rp-c-2), var(--rp-c-3));
+  transition: width 0.35s var(--rp-ease);
+}
+
+.rp-strip-item--ap-draft .rp-strip-item__fill,
+.rp-strip-item--in-planned .rp-strip-item__fill {
+  background: linear-gradient(90deg, #94a3b8, #cbd5e1);
+}
+
+.rp-strip-item--ap-cancelled .rp-strip-item__fill,
+.rp-strip-item--in-cancelled .rp-strip-item__fill {
+  background: linear-gradient(90deg, #fca5a5, #fecaca);
+}
+
+.rp-strip-item--ap-completed .rp-strip-item__fill,
+.rp-strip-item--in-completed .rp-strip-item__fill {
+  background: linear-gradient(90deg, #34d399, #6ee7b7);
+}
+
+.rp-strip-item--in-inprogress .rp-strip-item__fill {
+  background: linear-gradient(90deg, var(--rp-c-primary), var(--rp-c-2));
+}
+
+.rp-strip-item--in-atrisk .rp-strip-item__fill {
+  background: linear-gradient(90deg, #fb923c, #fdba74);
+}
+
+.rp-strip-item__meta {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.35rem;
+}
+
+.rp-strip-item__dot {
+  opacity: 0.55;
+  user-select: none;
+}
+
+.rp-strip-empty {
+  margin: 0.75rem 0.35rem 0.5rem;
+  font-size: 0.9rem;
+}
+
 /**
  * صف المخططات الثلاثة (جمهور / تقييمات / أيام الأسبوع):
  * لا تدمج مع `.rp-chart-grid` لأن الأخيرة تستخدم شبكة 12 عمودًا وتفسد التوزيع.
@@ -569,47 +752,48 @@
 }
 
 @media (min-width: 900px) {
+  /* grid-area يطبّق فقط داخل .rp-chart-grid — وإلا تتكدس كل البطاقات بنفس المنطقة في صفحات أخرى (مثل لوحة التحكم) */
   .rp-chart-grid {
     grid-template-columns: repeat(12, minmax(0, 1fr));
     grid-template-areas:
       'topbar topbar topbar topbar topbar topbar line line line line line line'
       'donS donS donS donS donS donS donR donR donR donR donR donR'
       'insight insight insight insight insight insight insight insight insight insight insight insight';
-  }
 
-  .rp-chart-card--top-bar {
-    grid-area: topbar;
-  }
+    .rp-chart-card--top-bar {
+      grid-area: topbar;
+    }
 
-  .rp-chart-card--line {
-    grid-area: line;
-  }
+    .rp-chart-card--line {
+      grid-area: line;
+    }
 
-  .rp-chart-card--donut-survey {
-    grid-area: donS;
-  }
+    .rp-chart-card--donut-survey {
+      grid-area: donS;
+    }
 
-  .rp-chart-card--donut-response {
-    grid-area: donR;
-  }
+    .rp-chart-card--donut-response {
+      grid-area: donR;
+    }
 
-  .rp-chart-card--insight-mix {
-    grid-area: insight;
-  }
+    .rp-chart-card--insight-mix {
+      grid-area: insight;
+    }
 
-  .rp-chart-card--line .rp-chart-card__canvas,
-  .rp-chart-card--top-bar .rp-chart-card__canvas--bar {
-    height: min(300px, 44vh);
-    min-height: 240px;
-  }
+    .rp-chart-card--line .rp-chart-card__canvas,
+    .rp-chart-card--top-bar .rp-chart-card__canvas--bar {
+      height: min(300px, 44vh);
+      min-height: 240px;
+    }
 
-  .rp-chart-card--top-bar .rp-chart-card__canvas--bar {
-    max-height: 340px;
-  }
+    .rp-chart-card--top-bar .rp-chart-card__canvas--bar {
+      max-height: 340px;
+    }
 
-  .rp-chart-card--insight-mix .rp-chart-card__canvas--hbar {
-    height: min(260px, 40vh);
-    min-height: 200px;
+    .rp-chart-card--insight-mix .rp-chart-card__canvas--hbar {
+      height: min(260px, 40vh);
+      min-height: 200px;
+    }
   }
 }
 

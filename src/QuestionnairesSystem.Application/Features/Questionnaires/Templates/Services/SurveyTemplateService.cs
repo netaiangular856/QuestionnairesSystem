@@ -4,11 +4,15 @@ using QuestionnairesSystem.Application.Common;
 using QuestionnairesSystem.Application.Features.Questionnaires.Surveys.DTOs;
 using QuestionnairesSystem.Application.Features.Questionnaires.Surveys.Interfaces;
 using QuestionnairesSystem.Application.Features.Questionnaires.Templates.DTOs;
+using QuestionnairesSystem.Application.Features.Notifications;
+using QuestionnairesSystem.Application.Features.Notifications.DTOs;
+using QuestionnairesSystem.Application.Features.Notifications.Interfaces;
 using QuestionnairesSystem.Application.Features.Questionnaires.Templates.Interfaces;
 using QuestionnairesSystem.Application.Features.Questionnaires.Templates;
 using QuestionnairesSystem.Domain.Enums;
 using QuestionnairesSystem.Domain.Templates;
 using QuestionnairesSystem.Persistence;
+using QuestionnairesSystem.Shared.Identity;
 using QuestionnairesSystem.Shared.Results;
 
 namespace QuestionnairesSystem.Application.Features.Questionnaires.Templates.Services;
@@ -19,17 +23,23 @@ public sealed class SurveyTemplateService : ISurveyTemplateService
     private readonly ISurveyService _surveys;
     private readonly IValidator<CreateTemplateRequest> _createValidator;
     private readonly IValidator<UpdateTemplateRequest> _updateValidator;
+    private readonly ICurrentUserService _currentUser;
+    private readonly IInboxNotificationDispatchService _notify;
 
     public SurveyTemplateService(
         QuestionnairesDbContext db,
         ISurveyService surveys,
         IValidator<CreateTemplateRequest> createValidator,
-        IValidator<UpdateTemplateRequest> updateValidator)
+        IValidator<UpdateTemplateRequest> updateValidator,
+        ICurrentUserService currentUser,
+        IInboxNotificationDispatchService notify)
     {
         _db = db;
         _surveys = surveys;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+        _currentUser = currentUser;
+        _notify = notify;
     }
 
     public async Task<Result<TemplateDetailDto>> CreateAsync(CreateTemplateRequest request, CancellationToken cancellationToken = default)
@@ -50,6 +60,23 @@ public sealed class SurveyTemplateService : ISurveyTemplateService
         };
         _db.SurveyTemplates.Add(t);
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        if (_currentUser.UserId is { } uidCreateTpl)
+        {
+            var (na, ne) = TemplateNamePair(t);
+            await _notify.DispatchAsync(
+                new[] { uidCreateTpl },
+                new LocalizedInboxNotificationText(
+                    "تم إنشاء قالب",
+                    "Template created",
+                    $"تم إنشاء القالب «{na}».",
+                    $"Template «{ne}» was created."),
+                NotificationRelatedEntityTypes.SurveyTemplate,
+                t.Id,
+                null,
+                cancellationToken).ConfigureAwait(false);
+        }
+
         return Result<TemplateDetailDto>.Ok(Map(t));
     }
 
@@ -114,6 +141,23 @@ public sealed class SurveyTemplateService : ISurveyTemplateService
         t.DescriptionEn = string.IsNullOrWhiteSpace(request.DescriptionEn) ? null : request.DescriptionEn.Trim();
         t.StructureJson = structureJson;
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        if (_currentUser.UserId is { } uidUpdTpl)
+        {
+            var (na, ne) = TemplateNamePair(t);
+            await _notify.DispatchAsync(
+                new[] { uidUpdTpl },
+                new LocalizedInboxNotificationText(
+                    "تم تحديث قالب",
+                    "Template updated",
+                    $"تم تحديث القالب «{na}».",
+                    $"Template «{ne}» was updated."),
+                NotificationRelatedEntityTypes.SurveyTemplate,
+                t.Id,
+                null,
+                cancellationToken).ConfigureAwait(false);
+        }
+
         return Result<TemplateDetailDto>.Ok(Map(t));
     }
 
@@ -125,6 +169,23 @@ public sealed class SurveyTemplateService : ISurveyTemplateService
 
         t.RecordStatus = RecordStatus.Deleted;
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        if (_currentUser.UserId is { } uidDelTpl)
+        {
+            var (na, ne) = TemplateNamePair(t);
+            await _notify.DispatchAsync(
+                new[] { uidDelTpl },
+                new LocalizedInboxNotificationText(
+                    "تم حذف قالب",
+                    "Template deleted",
+                    $"تم حذف القالب «{na}».",
+                    $"Template «{ne}» was deleted."),
+                NotificationRelatedEntityTypes.SurveyTemplate,
+                t.Id,
+                null,
+                cancellationToken).ConfigureAwait(false);
+        }
+
         return Result.Ok();
     }
 
@@ -164,8 +225,31 @@ public sealed class SurveyTemplateService : ISurveyTemplateService
 
         t.IsArchived = true;
         await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        if (_currentUser.UserId is { } uidArchTpl)
+        {
+            var (na, ne) = TemplateNamePair(t);
+            await _notify.DispatchAsync(
+                new[] { uidArchTpl },
+                new LocalizedInboxNotificationText(
+                    "تم أرشفة قالب",
+                    "Template archived",
+                    $"تم أرشفة القالب «{na}».",
+                    $"Template «{ne}» was archived."),
+                NotificationRelatedEntityTypes.SurveyTemplate,
+                t.Id,
+                null,
+                cancellationToken).ConfigureAwait(false);
+        }
+
         return Result<TemplateDetailDto>.Ok(Map(t));
     }
+
+    private static (string Ar, string En) TemplateNamePair(SurveyTemplate t) =>
+    (
+        string.IsNullOrWhiteSpace(t.NameAr) ? t.NameEn : t.NameAr,
+        string.IsNullOrWhiteSpace(t.NameEn) ? t.NameAr : t.NameEn
+    );
 
     private static TemplateDetailDto Map(SurveyTemplate t)
     {

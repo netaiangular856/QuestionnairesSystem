@@ -24,4 +24,6 @@ public sealed class SurveyDetailDto
     public DateTime? OpensAtUtc { get; init; }
     public DateTime? ClosesAtUtc { get; init; }
     public string? RejectionReason { get; init; }
+
+    public IReadOnlyList<SurveyAudienceMemberDetailDto> AudienceMembers { get; init; } = Array.Empty<SurveyAudienceMemberDetailDto>();
 }

@@ -27,6 +27,11 @@ public sealed class CrossSurveyAnalyticsDto
     public IReadOnlyList<TimelinePointDto> SubmissionsByDay { get; init; } = Array.Empty<TimelinePointDto>();
     public IReadOnlyList<TopSurveyRowDto> TopSurveysBySubmissions { get; init; } = Array.Empty<TopSurveyRowDto>();
 
+    public IReadOnlyList<NamedCountDto> ActionPlanStatusDistribution { get; init; } = Array.Empty<NamedCountDto>();
+    public IReadOnlyList<NamedCountDto> InitiativeStatusDistribution { get; init; } = Array.Empty<NamedCountDto>();
+    public IReadOnlyList<CrossSurveyActionPlanReportRowDto> ActionPlans { get; init; } = Array.Empty<CrossSurveyActionPlanReportRowDto>();
+    public IReadOnlyList<CrossSurveyInitiativeReportRowDto> Initiatives { get; init; } = Array.Empty<CrossSurveyInitiativeReportRowDto>();
+
     /// <summary>Aggregate rating/scale values across submitted responses in scope.</summary>
     public IReadOnlyList<RatingAnalyticsDto> RatingsDistribution { get; init; } = Array.Empty<RatingAnalyticsDto>();
 
@@ -79,6 +84,35 @@ public sealed class CrossSurveyOverviewDto
     public int CompletedParticipantsInScope { get; init; }
     public int DeclinedParticipantsInScope { get; init; }
     public double AverageMinutesToSubmitInPeriod { get; init; }
+
+    /// <summary>Action plans matching report scope (survey + created date filter).</summary>
+    public int ActionPlansInScope { get; init; }
+
+    /// <summary>Initiatives under action plans in scope (survey + created date filter).</summary>
+    public int InitiativesInScope { get; init; }
+}
+
+public sealed class CrossSurveyActionPlanReportRowDto
+{
+    public string TitleAr { get; init; } = string.Empty;
+    public string TitleEn { get; init; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
+    public string? LinkedSurveyTitleAr { get; init; }
+    public string? LinkedSurveyTitleEn { get; init; }
+    public DateTime CreatedOnUtc { get; init; }
+}
+
+public sealed class CrossSurveyInitiativeReportRowDto
+{
+    public string TitleAr { get; init; } = string.Empty;
+    public string TitleEn { get; init; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
+    public string ActionPlanTitleAr { get; init; } = string.Empty;
+    public string ActionPlanTitleEn { get; init; } = string.Empty;
+    public string? LinkedSurveyTitleAr { get; init; }
+    public string? LinkedSurveyTitleEn { get; init; }
+    public DateTime? TargetDateUtc { get; init; }
+    public DateTime CreatedOnUtc { get; init; }
 }
 
 public sealed class NamedCountDto

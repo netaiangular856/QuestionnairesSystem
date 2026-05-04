@@ -527,7 +527,7 @@
   }
 }
 
-/* صف منفصل: جمهور / تقييمات / أيام الأسبوع — لا يدمج مع شبكة الـ 12 عمودًا */
+/* جمهور / تقييمات / يوم الأسبوع — صف واحد (3 أعمدة) من الشاشات المتوسطة فما فوق */
 .sa-chart-grid-triple {
   display: grid;
   grid-template-columns: 1fr;
@@ -535,22 +535,15 @@
   align-items: stretch;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 768px) {
   .sa-chart-grid-triple {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .sa-chart-grid-triple .sa-chart-card--triple:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-    max-width: min(100%, 520px);
-    justify-self: center;
-    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
   }
 }
 
 @media (min-width: 1024px) {
   .sa-chart-grid-triple {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1.1rem;
   }
 }
