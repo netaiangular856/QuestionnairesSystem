@@ -82,6 +82,12 @@ export class SidebarComponent {
         { path: '/employees', labelKey: 'nav.employees', permissions: [PermissionCodes.EmployeeView], icon: 'users' },
         { path: '/departments', labelKey: 'nav.departments', permissions: [PermissionCodes.DepartmentView], icon: 'template' },
         { path: '/partners', labelKey: 'nav.partners', permissions: [PermissionCodes.PartnerView], icon: 'audit' },
+        {
+          path: '/data-import',
+          labelKey: 'nav.dataImport',
+          permissions: [PermissionCodes.DataBulkImport],
+          icon: 'report',
+        },
         { path: '/roles', labelKey: 'nav.roles', permissions: [PermissionCodes.RoleManage], icon: 'roles' },
         { path: '/audit-logs', labelKey: 'nav.auditLogs', permissions: [PermissionCodes.AuditLogView], icon: 'audit' },
       ],

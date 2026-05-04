@@ -17,13 +17,14 @@ import {
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { I18nService } from '../../shared/services/i18n.service';
 import { SurveyAudiencePickerComponent } from '../../shared/questionnaires/survey-audience-picker/survey-audience-picker.component';
+import { PublicArticleEditorComponent } from '../../shared/questionnaires/public-article-editor/public-article-editor.component';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-survey-editor-page',
   standalone: true,
-  imports: [FormsModule, TranslatePipe, SurveyAudiencePickerComponent],
+  imports: [FormsModule, TranslatePipe, SurveyAudiencePickerComponent, PublicArticleEditorComponent],
   templateUrl: './survey-editor-page.component.html',
   styleUrl: './survey-editor-page.component.scss',
 })
@@ -45,6 +46,12 @@ export class SurveyEditorPageComponent implements OnInit {
   descriptionAr = '';
   descriptionEn = '';
   code = '';
+  showOnPublicPortal = false;
+  publicArticleEnabled = false;
+  publicArticleTitleAr = '';
+  publicArticleTitleEn = '';
+  publicArticleBodyAr = '';
+  publicArticleBodyEn = '';
   audienceScope = SurveyAudienceScope.AllOrganizationMembers;
   audienceSelection: SurveyAudiencePickItem[] = [];
   questions: CreateSurveyQuestionItem[] = [this.emptyQuestion()];
@@ -172,6 +179,12 @@ export class SurveyEditorPageComponent implements OnInit {
         questions: qs,
         audienceMembers:
           this.audienceScope === SurveyAudienceScope.SpecificUsers ? this.mapAudienceToApi() : undefined,
+        showOnPublicPortal: this.showOnPublicPortal,
+        publicArticleEnabled: this.publicArticleEnabled,
+        publicArticleTitleAr: this.publicArticleTitleAr.trim() || null,
+        publicArticleTitleEn: this.publicArticleTitleEn.trim() || null,
+        publicArticleBodyAr: this.normalizeArticleHtml(this.publicArticleBodyAr),
+        publicArticleBodyEn: this.normalizeArticleHtml(this.publicArticleBodyEn),
       };
       this.saveBusy.set(true);
       this.api.update(this.surveyId, body).subscribe({
@@ -200,6 +213,12 @@ export class SurveyEditorPageComponent implements OnInit {
         this.descriptionAr = survey.descriptionAr ?? '';
         this.descriptionEn = survey.descriptionEn ?? '';
         this.code = survey.code ?? '';
+        this.showOnPublicPortal = survey.showOnPublicPortal ?? false;
+        this.publicArticleEnabled = survey.publicArticleEnabled ?? false;
+        this.publicArticleTitleAr = survey.publicArticleTitleAr ?? '';
+        this.publicArticleTitleEn = survey.publicArticleTitleEn ?? '';
+        this.publicArticleBodyAr = survey.publicArticleBodyAr ?? '';
+        this.publicArticleBodyEn = survey.publicArticleBodyEn ?? '';
         this.audienceScope = survey.audienceScope;
         this.audienceSelection = (survey.audienceMembers ?? []).map((m) => ({
           userId: m.userId,
@@ -255,5 +274,11 @@ export class SurveyEditorPageComponent implements OnInit {
         displayOrder: index + 1,
       }))
       .filter((q) => q.titleAr.length > 0 && q.titleEn.length > 0);
+  }
+
+  private normalizeArticleHtml(raw: string): string | null {
+    const t = raw.trim();
+    if (!t || t === '<p><br></p>' || t === '<p></p>') return null;
+    return t;
   }
 }

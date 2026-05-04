@@ -1,0 +1,59 @@
+@if (busy()) {
+  <div class="pis pis--loading" [attr.dir]="i18n.lang() === 'ar' ? 'rtl' : 'ltr'">
+    <div class="pis__loading">{{ 'common.loading' | t }}</div>
+  </div>
+} @else if (survey()) {
+  @let s = survey()!;
+  <div class="pis" [attr.dir]="i18n.lang() === 'ar' ? 'rtl' : 'ltr'">
+    <div class="pis__ambient" aria-hidden="true">
+      <span class="pis__orb pis__orb--1"></span>
+      <span class="pis__orb pis__orb--2"></span>
+      <span class="pis__orb pis__orb--3"></span>
+      <div class="pis__mesh"></div>
+    </div>
+
+    <header class="pis-header">
+      <div class="pis-header__inner">
+        <a routerLink="/portal" class="pis-brand">
+          <span class="pis-brand__icon" aria-hidden="true">
+            <i class="pi pi-file-edit"></i>
+          </span>
+          <span class="pis-brand__text">{{ 'public.portal.brand' | t }}</span>
+        </a>
+        <div class="pis-header__actions">
+          <button type="button" class="pis-lang" (click)="toggleLang()">{{ 'landing.lang' | t }}</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="pis-main">
+      <div class="pis-container">
+        <a routerLink="/portal" class="pis-back">
+          <i class="pi pi-arrow-left" aria-hidden="true"></i>
+          {{ 'public.intro.backPortal' | t }}
+        </a>
+
+        <section class="pis-hero">
+          <span class="pis-eyebrow">{{ 'public.intro.eyebrow' | t }}</span>
+          <h1 class="pis-hero__title">{{ articleTitle(s) }}</h1>
+          <p class="pis-hero__survey-name">{{ surveyDisplayTitle(s) }}</p>
+        </section>
+
+        <article class="pis-sheet">
+          <div class="pis-sheet__glow" aria-hidden="true"></div>
+          <div class="pis-sheet__body rte pub-rte-article pub-quill-html" [innerHTML]="articleHtml()"></div>
+        </article>
+
+        <section class="pis-cta" aria-label="actions">
+          <div class="pis-cta__card">
+            <p class="pis-cta__lead">{{ 'public.intro.ctaLead' | t }}</p>
+            <a [routerLink]="['/portal', 's', s.code, 'fill']" class="pis-btn">
+              <i class="pi pi-pencil" aria-hidden="true"></i>
+              {{ 'public.intro.ctaFill' | t }}
+            </a>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+}

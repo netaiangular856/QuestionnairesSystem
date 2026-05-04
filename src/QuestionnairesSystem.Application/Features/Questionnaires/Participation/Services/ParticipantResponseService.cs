@@ -342,6 +342,81 @@ public sealed class ParticipantResponseService : IParticipantResponseService
         return Result<ResponseDetailDto>.Ok(await LoadResponseDetailAsync(responseId, cancellationToken).ConfigureAwait(false));
     }
 
+    public async Task<Result<ResponseDetailDto>> CreatePublicResponseAsync(
+        string surveyCode,
+        CreateResponseRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var surveyId = await RequireAnonymousPublicSurveyIdAsync(surveyCode, cancellationToken).ConfigureAwait(false);
+        if (!surveyId.IsSuccess)
+            return Result<ResponseDetailDto>.Fail(surveyId.Errors, surveyId.FailureCode);
+
+        return await CreateResponseAsync(surveyId.Value, request, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<Result<ResponseDetailDto>> SubmitPublicResponseAsync(
+        string surveyCode,
+        Guid responseId,
+        CancellationToken cancellationToken = default)
+    {
+        var surveyId = await RequireAnonymousPublicSurveyIdAsync(surveyCode, cancellationToken).ConfigureAwait(false);
+        if (!surveyId.IsSuccess)
+            return Result<ResponseDetailDto>.Fail(surveyId.Errors, surveyId.FailureCode);
+
+        var row = await _db.SurveyResponses.AsNoTracking()
+            .Where(x => x.Id == responseId)
+            .Select(x => new { x.SurveyId })
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (row is null)
+            return Result<ResponseDetailDto>.Fail("Response was not found.", QuestionnaireErrors.ResponseNotFound);
+
+        if (row.SurveyId != surveyId.Value)
+            return Result<ResponseDetailDto>.Fail("Response does not belong to this survey.", QuestionnaireErrors.InvalidOperation);
+
+        return await SubmitResponseAsync(responseId, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<Result<Guid>> RequireAnonymousPublicSurveyIdAsync(string surveyCode, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(surveyCode))
+            return Result<Guid>.Fail("Survey code is required.", QuestionnaireErrors.SurveyNotFound);
+
+        var norm = surveyCode.Trim();
+        var now = DateTime.UtcNow;
+        var row = await _db.Surveys.AsNoTracking()
+            .Where(s => s.Code != null && s.Code.ToLower() == norm.ToLower())
+            .Select(s => new
+            {
+                s.Id,
+                s.Status,
+                s.ClosedAtUtc,
+                s.OpensAtUtc,
+                s.ClosesAtUtc,
+                s.AudienceScope
+            })
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (row is null)
+            return Result<Guid>.Fail("Survey was not found.", QuestionnaireErrors.SurveyNotFound);
+
+        if (row.Status != SurveyStatus.Published || row.ClosedAtUtc != null)
+            return Result<Guid>.Fail("Survey is not open for participation.", QuestionnaireErrors.InvalidOperation);
+
+        if (row.OpensAtUtc is { } op && op > now)
+            return Result<Guid>.Fail("Survey is not open yet.", QuestionnaireErrors.InvalidOperation);
+
+        if (row.ClosesAtUtc is { } cl && cl < now)
+            return Result<Guid>.Fail("Survey is closed.", QuestionnaireErrors.InvalidOperation);
+
+        if (row.AudienceScope != SurveyAudienceScope.Everyone && row.AudienceScope != SurveyAudienceScope.Guest)
+            return Result<Guid>.Fail("Survey is not available for public participation.", QuestionnaireErrors.InvalidOperation);
+
+        return Result<Guid>.Ok(row.Id);
+    }
+
     private async Task<ResponseDetailDto> LoadResponseDetailAsync(Guid responseId, CancellationToken cancellationToken)
     {
         var head = await _db.SurveyResponses.AsNoTracking()

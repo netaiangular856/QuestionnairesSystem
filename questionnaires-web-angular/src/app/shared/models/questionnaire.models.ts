@@ -132,7 +132,41 @@ export interface SurveyDetailDto {
   opensAtUtc: string | null;
   closesAtUtc: string | null;
   rejectionReason: string | null;
+  showOnPublicPortal?: boolean;
+  publicArticleEnabled?: boolean;
+  publicArticleTitleAr?: string | null;
+  publicArticleTitleEn?: string | null;
+  publicArticleBodyAr?: string | null;
+  publicArticleBodyEn?: string | null;
   audienceMembers?: SurveyAudienceMemberDetailDto[] | null;
+}
+
+/** GET /api/public/surveys — عنصر قائمة البورتال العام. */
+export interface PublicSurveyListItemDto {
+  id: string;
+  titleAr: string;
+  titleEn: string;
+  code: string;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
+  closesAtUtc: string | null;
+}
+
+/** GET /api/public/surveys/{code} — صفحة مقدّمة / تعريف للاستبيان العام. */
+export interface PublicSurveyPageDto {
+  id: string;
+  titleAr: string;
+  titleEn: string;
+  descriptionAr: string | null;
+  descriptionEn: string | null;
+  code: string;
+  opensAtUtc: string | null;
+  closesAtUtc: string | null;
+  publicArticleEnabled: boolean;
+  publicArticleTitleAr: string | null;
+  publicArticleTitleEn: string | null;
+  publicArticleBodyAr: string | null;
+  publicArticleBodyEn: string | null;
 }
 
 export interface SurveyFilterRequest {
@@ -168,6 +202,12 @@ export interface CreateSurveyRequest {
   opensAtUtc?: string | null;
   closesAtUtc?: string | null;
   audienceMembers?: SurveyAudienceMemberInputDto[] | null;
+  showOnPublicPortal?: boolean;
+  publicArticleEnabled?: boolean;
+  publicArticleTitleAr?: string | null;
+  publicArticleTitleEn?: string | null;
+  publicArticleBodyAr?: string | null;
+  publicArticleBodyEn?: string | null;
 }
 
 /** Optional body for POST /publish — audience at publish time. */
@@ -186,6 +226,12 @@ export interface UpdateSurveyRequest {
   audienceScope: SurveyAudienceScope;
   questions?: CreateSurveyQuestionItem[] | null;
   audienceMembers?: SurveyAudienceMemberInputDto[] | null;
+  showOnPublicPortal?: boolean;
+  publicArticleEnabled?: boolean;
+  publicArticleTitleAr?: string | null;
+  publicArticleTitleEn?: string | null;
+  publicArticleBodyAr?: string | null;
+  publicArticleBodyEn?: string | null;
 }
 
 export interface PatchSurveyStatusRequest {

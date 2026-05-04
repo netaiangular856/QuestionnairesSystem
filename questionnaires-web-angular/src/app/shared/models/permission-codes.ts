@@ -29,4 +29,5 @@ export const PermissionCodes = {
   DepartmentManage: 'DEPARTMENT_MANAGE',
   PartnerView: 'PARTNER_VIEW',
   PartnerManage: 'PARTNER_MANAGE',
+  DataBulkImport: 'DATA_BULK_IMPORT',
 } as const;

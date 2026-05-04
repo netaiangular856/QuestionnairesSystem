@@ -12,8 +12,8 @@ public sealed class QuestionConfiguration : IEntityTypeConfiguration<Question>
 
         builder.HasKey(x => x.Id);
 
-        builder.Property(x => x.TitleAr).IsRequired().HasMaxLength(1000);
-        builder.Property(x => x.TitleEn).IsRequired().HasMaxLength(1000);
+        builder.Property(x => x.TitleAr).IsRequired().HasMaxLength(4000);
+        builder.Property(x => x.TitleEn).IsRequired().HasMaxLength(4000);
         builder.Property(x => x.HelpTextAr).HasMaxLength(2000);
         builder.Property(x => x.HelpTextEn).HasMaxLength(2000);
         builder.Property(x => x.OptionsJson).HasColumnType("nvarchar(max)");

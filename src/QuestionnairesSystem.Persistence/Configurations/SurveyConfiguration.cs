@@ -18,6 +18,10 @@ public sealed class SurveyConfiguration : IEntityTypeConfiguration<Survey>
         builder.Property(x => x.DescriptionEn).HasMaxLength(4000);
         builder.Property(x => x.Code).HasMaxLength(64);
         builder.Property(x => x.RejectionReason).HasMaxLength(2000);
+        builder.Property(x => x.PublicArticleTitleAr).HasMaxLength(500);
+        builder.Property(x => x.PublicArticleTitleEn).HasMaxLength(500);
+        builder.Property(x => x.PublicArticleBodyAr);
+        builder.Property(x => x.PublicArticleBodyEn);
 
         builder.HasIndex(x => x.Status);
         builder.HasIndex(x => x.AudienceScope);

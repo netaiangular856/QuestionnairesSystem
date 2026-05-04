@@ -26,6 +26,17 @@ public sealed class Survey : AuditableDomainEntity
     public DateTime? ClosesAtUtc { get; set; }
     public string? RejectionReason { get; set; }
 
+    /// <summary>يظهر في صفحة الجمهور العامة ضمن قائمة الاستبيانات المتاحة (مع استيفاء شروط النشر والجمهور).</summary>
+    public bool ShowOnPublicPortal { get; set; }
+
+    /// <summary>تفعيل صفحة مقدّمة (مقال) قبل الدخول لملء الاستبيان من الرابط العام.</summary>
+    public bool PublicArticleEnabled { get; set; }
+
+    public string? PublicArticleTitleAr { get; set; }
+    public string? PublicArticleTitleEn { get; set; }
+    public string? PublicArticleBodyAr { get; set; }
+    public string? PublicArticleBodyEn { get; set; }
+
     public User? Owner { get; set; }
     public SurveyTemplate? Template { get; set; }
     public ICollection<Question> Questions { get; set; } = new List<Question>();

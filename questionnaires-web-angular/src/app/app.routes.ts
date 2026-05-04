@@ -9,6 +9,20 @@ export const routes: Routes = [
     path: 'home',
     loadComponent: () => import('./features/landing/landing-page.component').then((m) => m.LandingPageComponent),
   },
+  {
+    path: 'portal',
+    loadComponent: () => import('./features/portal/portal-public-page.component').then((m) => m.PortalPublicPageComponent),
+  },
+  {
+    path: 'portal/s/:code/fill',
+    loadComponent: () =>
+      import('./features/portal/public-survey-fill-page.component').then((m) => m.PublicSurveyFillPageComponent),
+  },
+  {
+    path: 'portal/s/:code',
+    loadComponent: () =>
+      import('./features/portal/public-survey-intro-page.component').then((m) => m.PublicSurveyIntroPageComponent),
+  },
   { path: '', pathMatch: 'full', redirectTo: 'home' },
   {
     path: 'login',
@@ -98,6 +112,13 @@ export const routes: Routes = [
         data: { permissions: [PermissionCodes.PartnerView] },
         loadComponent: () =>
           import('./features/partners/partners-list.component').then((m) => m.PartnersListComponent),
+      },
+      {
+        path: 'data-import',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.DataBulkImport] },
+        loadComponent: () =>
+          import('./features/data-import/data-import-page.component').then((m) => m.DataImportPageComponent),
       },
       {
         path: 'surveys-approval',

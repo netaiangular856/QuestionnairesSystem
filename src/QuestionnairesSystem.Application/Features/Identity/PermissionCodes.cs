@@ -46,4 +46,7 @@ public static class PermissionCodes
     public const string SettingsManage = "SETTINGS_MANAGE";
     public const string LookupView = "LOOKUP_VIEW";
     public const string IntegrationManage = "INTEGRATION_MANAGE";
+
+    /// <summary>تنزيل قوالب Excel واستيراد بيانات المنظمة والاستبيانات.</summary>
+    public const string DataBulkImport = "DATA_BULK_IMPORT";
 }

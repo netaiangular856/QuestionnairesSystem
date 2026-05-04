@@ -25,4 +25,15 @@ public interface IParticipantResponseService
         CancellationToken cancellationToken = default);
     Task<Result<ResponseDetailDto>> GetResponseByIdAsync(Guid responseId, CancellationToken cancellationToken = default);
     Task<Result<ResponseDetailDto>> SubmitResponseAsync(Guid responseId, CancellationToken cancellationToken = default);
+
+    /// <summary>إنشاء رد لاستبيان يُشار إليه بالرمز العام (Everyone/Guest، منشور، ضمن النافذة الزمنية).</summary>
+    Task<Result<ResponseDetailDto>> CreatePublicResponseAsync(
+        string surveyCode,
+        CreateResponseRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<ResponseDetailDto>> SubmitPublicResponseAsync(
+        string surveyCode,
+        Guid responseId,
+        CancellationToken cancellationToken = default);
 }

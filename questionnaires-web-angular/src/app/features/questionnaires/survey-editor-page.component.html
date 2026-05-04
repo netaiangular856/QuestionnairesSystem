@@ -69,6 +69,38 @@
                   />
                 </div>
               }
+              @if (audienceScope === SurveyAudienceScope.Everyone || audienceScope === SurveyAudienceScope.Guest) {
+                <label class="field sv-field sv-field--full sv-field--check">
+                  <input type="checkbox" [(ngModel)]="showOnPublicPortal" [disabled]="saveBusy()" />
+                  <span>{{ 'q.surveys.form.showOnPublicPortal' | t }}</span>
+                </label>
+                <p class="muted sv-field sv-field--full" style="margin-top: -0.5rem">{{ 'q.surveys.form.showOnPublicPortalHelp' | t }}</p>
+                <h3 class="sv-panel__h sv-field sv-field--full" style="margin-top: 0.5rem">{{ 'q.surveys.form.publicArticle' | t }}</h3>
+                <label class="field sv-field sv-field--full sv-field--check">
+                  <input type="checkbox" [(ngModel)]="publicArticleEnabled" [disabled]="saveBusy()" />
+                  <span>{{ 'q.surveys.form.publicArticleEnabled' | t }}</span>
+                </label>
+                @if (publicArticleEnabled) {
+                  <label class="field sv-field">
+                    <span>{{ 'q.surveys.form.publicArticleTitleAr' | t }}</span>
+                    <input [(ngModel)]="publicArticleTitleAr" />
+                  </label>
+                  <label class="field sv-field">
+                    <span>{{ 'q.surveys.form.publicArticleTitleEn' | t }}</span>
+                    <input [(ngModel)]="publicArticleTitleEn" />
+                  </label>
+                  <div class="field sv-field sv-field--full">
+                    <span>{{ 'q.surveys.form.publicArticleBodyAr' | t }}</span>
+                    <p class="muted sv-field--hint" style="margin: 0 0 0.35rem">{{ 'q.surveys.form.publicArticleEditorHint' | t }}</p>
+                    <app-public-article-editor [(ngModel)]="publicArticleBodyAr" lang="ar" [disabled]="saveBusy()" />
+                  </div>
+                  <div class="field sv-field sv-field--full">
+                    <span>{{ 'q.surveys.form.publicArticleBodyEn' | t }}</span>
+                    <p class="muted sv-field--hint" style="margin: 0 0 0.35rem">{{ 'q.surveys.form.publicArticleEditorHint' | t }}</p>
+                    <app-public-article-editor [(ngModel)]="publicArticleBodyEn" lang="en" [disabled]="saveBusy()" />
+                  </div>
+                }
+              }
             </div>
           </section>
         }

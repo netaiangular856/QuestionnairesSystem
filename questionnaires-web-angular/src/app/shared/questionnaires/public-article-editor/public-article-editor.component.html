@@ -1,0 +1,24 @@
+<div class="pub-article-editor">
+  @if (!disabled) {
+    <div class="pub-article-editor__snips" role="toolbar" [attr.aria-label]="'q.surveys.form.publicArticleSnippetsAria' | t">
+      <button type="button" class="pub-article-editor__snip" (click)="insertSection()">
+        {{ 'q.surveys.form.publicArticleInsertSection' | t }}
+      </button>
+      <button type="button" class="pub-article-editor__snip" (click)="insertCallout()">
+        {{ 'q.surveys.form.publicArticleInsertCallout' | t }}
+      </button>
+      <button type="button" class="pub-article-editor__snip pub-article-editor__snip--accent" (click)="insertFullTemplate()">
+        {{ 'q.surveys.form.publicArticleInsertFullTemplate' | t }}
+      </button>
+    </div>
+  }
+  <p-editor
+    [ngModel]="value"
+    (ngModelChange)="onEditorChange($event)"
+    [readonly]="disabled"
+    [placeholder]="placeholderKey | t"
+    [style]="{ minHeight: '280px', height: '320px' }"
+    styleClass="pub-article-editor__surface"
+    (onInit)="onEditorInit($event)"
+  />
+</div>

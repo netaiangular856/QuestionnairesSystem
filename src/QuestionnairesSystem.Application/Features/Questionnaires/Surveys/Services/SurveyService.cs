@@ -76,7 +76,13 @@ public sealed class SurveyService : ISurveyService
             OwnerUserId = _currentUser.UserId,
             TemplateId = request.TemplateId,
             OpensAtUtc = request.OpensAtUtc,
-            ClosesAtUtc = request.ClosesAtUtc
+            ClosesAtUtc = request.ClosesAtUtc,
+            ShowOnPublicPortal = request.ShowOnPublicPortal,
+            PublicArticleEnabled = request.PublicArticleEnabled,
+            PublicArticleTitleAr = string.IsNullOrWhiteSpace(request.PublicArticleTitleAr) ? null : request.PublicArticleTitleAr.Trim(),
+            PublicArticleTitleEn = string.IsNullOrWhiteSpace(request.PublicArticleTitleEn) ? null : request.PublicArticleTitleEn.Trim(),
+            PublicArticleBodyAr = string.IsNullOrWhiteSpace(request.PublicArticleBodyAr) ? null : request.PublicArticleBodyAr.Trim(),
+            PublicArticleBodyEn = string.IsNullOrWhiteSpace(request.PublicArticleBodyEn) ? null : request.PublicArticleBodyEn.Trim()
         };
 
         if (request.TemplateId is { } tid)
@@ -203,6 +209,12 @@ public sealed class SurveyService : ISurveyService
         s.DescriptionEn = string.IsNullOrWhiteSpace(request.DescriptionEn) ? null : request.DescriptionEn.Trim();
         s.Code = string.IsNullOrWhiteSpace(request.Code) ? null : request.Code.Trim();
         s.AudienceScope = request.AudienceScope;
+        s.ShowOnPublicPortal = request.ShowOnPublicPortal;
+        s.PublicArticleEnabled = request.PublicArticleEnabled;
+        s.PublicArticleTitleAr = string.IsNullOrWhiteSpace(request.PublicArticleTitleAr) ? null : request.PublicArticleTitleAr.Trim();
+        s.PublicArticleTitleEn = string.IsNullOrWhiteSpace(request.PublicArticleTitleEn) ? null : request.PublicArticleTitleEn.Trim();
+        s.PublicArticleBodyAr = string.IsNullOrWhiteSpace(request.PublicArticleBodyAr) ? null : request.PublicArticleBodyAr.Trim();
+        s.PublicArticleBodyEn = string.IsNullOrWhiteSpace(request.PublicArticleBodyEn) ? null : request.PublicArticleBodyEn.Trim();
 
         if (request.AudienceScope != SurveyAudienceScope.SpecificUsers)
         {
@@ -332,7 +344,13 @@ public sealed class SurveyService : ISurveyService
             OwnerUserId = _currentUser.UserId,
             TemplateId = source.TemplateId,
             OpensAtUtc = source.OpensAtUtc,
-            ClosesAtUtc = source.ClosesAtUtc
+            ClosesAtUtc = source.ClosesAtUtc,
+            ShowOnPublicPortal = source.ShowOnPublicPortal,
+            PublicArticleEnabled = source.PublicArticleEnabled,
+            PublicArticleTitleAr = source.PublicArticleTitleAr,
+            PublicArticleTitleEn = source.PublicArticleTitleEn,
+            PublicArticleBodyAr = source.PublicArticleBodyAr,
+            PublicArticleBodyEn = source.PublicArticleBodyEn
         };
 
         _db.Surveys.Add(copy);
@@ -1196,6 +1214,12 @@ public sealed class SurveyService : ISurveyService
             OpensAtUtc = s.OpensAtUtc,
             ClosesAtUtc = s.ClosesAtUtc,
             RejectionReason = s.RejectionReason,
+            ShowOnPublicPortal = s.ShowOnPublicPortal,
+            PublicArticleEnabled = s.PublicArticleEnabled,
+            PublicArticleTitleAr = s.PublicArticleTitleAr,
+            PublicArticleTitleEn = s.PublicArticleTitleEn,
+            PublicArticleBodyAr = s.PublicArticleBodyAr,
+            PublicArticleBodyEn = s.PublicArticleBodyEn,
             AudienceMembers = audienceMembers
         };
     }

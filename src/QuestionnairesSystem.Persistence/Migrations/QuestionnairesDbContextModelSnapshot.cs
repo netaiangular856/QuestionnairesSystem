@@ -1166,13 +1166,13 @@ namespace QuestionnairesSystem.Persistence.Migrations
 
                     b.Property<string>("TitleAr")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
 
                     b.Property<string>("TitleEn")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
 
                     b.Property<byte>("Type")
                         .HasColumnType("tinyint");
@@ -1235,6 +1235,23 @@ namespace QuestionnairesSystem.Persistence.Migrations
                     b.Property<Guid?>("OwnerUserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("PublicArticleBodyAr")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PublicArticleBodyEn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("PublicArticleEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PublicArticleTitleAr")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PublicArticleTitleEn")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<DateTime?>("PublishedAtUtc")
                         .HasColumnType("datetime2");
 
@@ -1244,6 +1261,9 @@ namespace QuestionnairesSystem.Persistence.Migrations
                     b.Property<string>("RejectionReason")
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("ShowOnPublicPortal")
+                        .HasColumnType("bit");
 
                     b.Property<byte>("Status")
                         .HasColumnType("tinyint");

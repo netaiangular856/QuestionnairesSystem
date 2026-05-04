@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using QuestionnairesSystem.Application.Features.AuditLogs.Interfaces;
 using QuestionnairesSystem.Application.Features.AuditLogs.Services;
+using QuestionnairesSystem.Application.Features.DataBulk;
 using QuestionnairesSystem.Application.Features.Identity.Interfaces;
 using QuestionnairesSystem.Application.Features.Identity.Services;
 using QuestionnairesSystem.Application.Features.Identity.Validators;
@@ -9,6 +10,8 @@ using QuestionnairesSystem.Application.Features.Questionnaires.ActionPlans.Inter
 using QuestionnairesSystem.Application.Features.Questionnaires.ActionPlans.Services;
 using QuestionnairesSystem.Application.Features.Questionnaires.Participation.Interfaces;
 using QuestionnairesSystem.Application.Features.Questionnaires.Participation.Services;
+using QuestionnairesSystem.Application.Features.Questionnaires.PublicPortal.Interfaces;
+using QuestionnairesSystem.Application.Features.Questionnaires.PublicPortal.Services;
 using QuestionnairesSystem.Application.Features.Questionnaires.Questions.Interfaces;
 using QuestionnairesSystem.Application.Features.Questionnaires.Questions.Services;
 using QuestionnairesSystem.Application.Features.Questionnaires.Recommendations.Interfaces;
@@ -51,6 +54,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<ISurveyTemplateService, SurveyTemplateService>();
         services.AddScoped<IQuestionnaireQuestionService, QuestionnaireQuestionService>();
         services.AddScoped<IParticipantResponseService, ParticipantResponseService>();
+        services.AddScoped<IPublicSurveyPortalService, PublicSurveyPortalService>();
         services.AddScoped<IQuestionnaireReportService, QuestionnaireReportService>();
         services.AddScoped<IRecommendationCrudService, RecommendationCrudService>();
         services.AddScoped<IActionPlanCrudService, ActionPlanCrudService>();
@@ -58,6 +62,8 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<IDepartmentService, DepartmentService>();
         services.AddScoped<IEmployeeService, EmployeeService>();
         services.AddScoped<IPartnerService, PartnerService>();
+
+        services.AddScoped<IExcelBulkDataService, ExcelBulkDataService>();
 
         return services;
     }

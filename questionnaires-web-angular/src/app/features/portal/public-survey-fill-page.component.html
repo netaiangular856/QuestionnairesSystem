@@ -1,0 +1,149 @@
+<div class="sv-wizard survey-fill-page">
+  <div class="sv-wizard__mesh" aria-hidden="true"></div>
+
+  @if (busy()) {
+    <div class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <p>{{ 'common.loading' | t }}</p>
+    </div>
+  } @else if (survey()) {
+    <header class="sv-wizard__hero">
+      <a [routerLink]="['/portal/s', survey()!.code]" class="sv-wizard__back">{{ 'public.fill.backToIntro' | t }}</a>
+      <p class="sv-wizard__kicker">{{ 'public.fill.kicker' | t }}</p>
+      <h1 class="sv-wizard__title">{{ i18n.lang() === 'ar' ? survey()?.titleAr : survey()?.titleEn }}</h1>
+      @if (i18n.lang() === 'ar' ? survey()?.descriptionAr : survey()?.descriptionEn) {
+        <p class="sv-wizard__lead">{{ i18n.lang() === 'ar' ? survey()?.descriptionAr : survey()?.descriptionEn }}</p>
+      }
+    </header>
+
+    <div class="sv-wizard__layout">
+      <main class="sv-wizard__main">
+        <form (submit)="$event.preventDefault(); submit()" class="sv-q-list">
+          @for (q of questions(); track q.id; let i = $index) {
+            <article class="sv-q-card" [class.sv-q-card--error]="q.isRequired && !answers[q.id]">
+              <div class="sv-q-card__top">
+                <span class="sv-q-card__badge">{{ i + 1 }}</span>
+                <h3 class="sv-q-card__title">
+                  {{ getLocalizedTitle(q) }}
+                  @if (q.isRequired) {
+                    <span class="required-star">*</span>
+                  }
+                </h3>
+              </div>
+
+              @if (getLocalizedHelpText(q)) {
+                <p class="sv-q-card__hint muted">{{ getLocalizedHelpText(q) }}</p>
+              }
+
+              <div class="sv-q-card__fields">
+                <div class="sv-field sv-field--full">
+                  @switch (q.type) {
+                    @case (QuestionType.ShortText) {
+                      <input type="text" [(ngModel)]="answers[q.id]" [name]="q.id" [placeholder]="'q.fill.shortTextPlaceholder' | t" />
+                    }
+                    @case (QuestionType.LongText) {
+                      <textarea [(ngModel)]="answers[q.id]" [name]="q.id" rows="4" [placeholder]="'q.fill.longTextPlaceholder' | t"></textarea>
+                    }
+                    @case (QuestionType.SingleChoice) {
+                      <div class="options-grid">
+                        @for (opt of getOptions(q); track opt.value) {
+                          <label class="option-pill" [class.option-pill--active]="answers[q.id] === opt.value">
+                            <input type="radio" [name]="q.id" [value]="opt.value" [(ngModel)]="answers[q.id]" />
+                            <span class="option-pill__label">{{ i18n.lang() === 'ar' ? opt.labelAr : opt.labelEn }}</span>
+                          </label>
+                        }
+                      </div>
+                    }
+                    @case (QuestionType.MultipleChoice) {
+                      <div class="options-grid">
+                        @for (opt of getOptions(q); track opt.value) {
+                          <label class="option-pill" [class.option-pill--active]="isMultiSelected(q.id, opt.value)">
+                            <input type="checkbox" [name]="q.id" [value]="opt.value" (change)="onMultiChange(q.id, opt.value, $event)" />
+                            <span class="option-pill__label">{{ i18n.lang() === 'ar' ? opt.labelAr : opt.labelEn }}</span>
+                          </label>
+                        }
+                      </div>
+                    }
+                    @case (QuestionType.Rating) {
+                      <div class="rating-stars">
+                        @for (star of [1, 2, 3, 4, 5]; track star) {
+                          <button
+                            type="button"
+                            class="star-btn"
+                            [class.star-btn--active]="ratingValue(q.id) >= star"
+                            (click)="answers[q.id] = star"
+                          >
+                            <i class="pi" [class.pi-star-fill]="ratingValue(q.id) >= star" [class.pi-star]="ratingValue(q.id) < star"></i>
+                          </button>
+                        }
+                      </div>
+                    }
+                    @case (QuestionType.Scale) {
+                      <div class="scale-modern">
+                        @for (val of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; track val) {
+                          <button
+                            type="button"
+                            class="scale-modern__btn"
+                            [class.scale-modern__btn--active]="answers[q.id] === val"
+                            (click)="answers[q.id] = val"
+                          >
+                            {{ val }}
+                          </button>
+                        }
+                      </div>
+                    }
+                    @case (QuestionType.YesNo) {
+                      <div class="yesno-toggle">
+                        <button type="button" class="yn-btn yn-btn--yes" [class.active]="answers[q.id] === true" (click)="answers[q.id] = true">
+                          <i class="pi pi-check"></i> {{ 'common.yes' | t }}
+                        </button>
+                        <button type="button" class="yn-btn yn-btn--no" [class.active]="answers[q.id] === false" (click)="answers[q.id] = false">
+                          <i class="pi pi-times"></i> {{ 'common.no' | t }}
+                        </button>
+                      </div>
+                    }
+                    @case (QuestionType.Date) {
+                      <div class="sv-datetime-wrap">
+                        <input type="date" [(ngModel)]="answers[q.id]" [name]="q.id" />
+                        <button type="button" class="sv-datetime-wrap__btn" (click)="openNativeDatePicker($event)" [attr.aria-label]="'q.fill.pickDate' | t">
+                          <i class="pi pi-calendar" aria-hidden="true"></i>
+                        </button>
+                      </div>
+                    }
+                    @case (QuestionType.Number) {
+                      <input type="number" [(ngModel)]="answers[q.id]" [name]="q.id" />
+                    }
+                  }
+                </div>
+              </div>
+            </article>
+          }
+
+          <footer class="sv-wizard__foot card card--interactive">
+            <button type="button" class="btn-ghost" (click)="router.navigate(['/portal'])" [disabled]="submitting()">
+              {{ 'public.fill.cancel' | t }}
+            </button>
+            <button type="submit" class="btn-primary" [disabled]="submitting()">
+              @if (submitting()) {
+                <span class="spinner-sm"></span> {{ 'common.submitting' | t }}
+              } @else {
+                {{ 'q.fill.submit' | t }}
+              }
+            </button>
+          </footer>
+        </form>
+      </main>
+
+      <aside class="sv-wizard__aside">
+        <div class="sv-wizard__aside-glow" aria-hidden="true"></div>
+        <h3 class="sv-wizard__aside-title">{{ 'q.fill.hints.title' | t }}</h3>
+        <ul class="sv-wizard__aside-list">
+          <li>{{ 'q.fill.hints.1' | t }}</li>
+          <li>{{ 'q.fill.hints.2' | t }}</li>
+          <li>{{ 'public.fill.hint3' | t }}</li>
+        </ul>
+        <p class="sv-wizard__aside-note muted">{{ 'public.fill.hintNote' | t }}</p>
+      </aside>
+    </div>
+  }
+</div>

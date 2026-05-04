@@ -18,13 +18,14 @@ import { qLocalizedTitle } from '../../shared/questionnaires/q-display';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { I18nService } from '../../shared/services/i18n.service';
 import { SurveyAudiencePickerComponent } from '../../shared/questionnaires/survey-audience-picker/survey-audience-picker.component';
+import { PublicArticleEditorComponent } from '../../shared/questionnaires/public-article-editor/public-article-editor.component';
 
 type SourceMode = 'blank' | 'template';
 
 @Component({
   selector: 'app-survey-create-wizard-page',
   standalone: true,
-  imports: [FormsModule, RouterLink, TranslatePipe, SurveyAudiencePickerComponent],
+  imports: [FormsModule, RouterLink, TranslatePipe, SurveyAudiencePickerComponent, PublicArticleEditorComponent],
   templateUrl: './survey-create-wizard-page.component.html',
   styleUrl: './survey-create-wizard-page.component.scss',
 })
@@ -53,6 +54,12 @@ export class SurveyCreateWizardPageComponent implements OnInit {
   descriptionAr = '';
   descriptionEn = '';
   code = '';
+  showOnPublicPortal = false;
+  publicArticleEnabled = false;
+  publicArticleTitleAr = '';
+  publicArticleTitleEn = '';
+  publicArticleBodyAr = '';
+  publicArticleBodyEn = '';
   audienceScope = SurveyAudienceScope.AllOrganizationMembers;
   /** When audience is SpecificUsers — chips from unified lookup. */
   audienceSelection: SurveyAudiencePickItem[] = [];
@@ -301,6 +308,12 @@ export class SurveyCreateWizardPageComponent implements OnInit {
     | 'opensAtUtc'
     | 'closesAtUtc'
     | 'audienceMembers'
+    | 'showOnPublicPortal'
+    | 'publicArticleEnabled'
+    | 'publicArticleTitleAr'
+    | 'publicArticleTitleEn'
+    | 'publicArticleBodyAr'
+    | 'publicArticleBodyEn'
   > {
     const base: Pick<
       CreateSurveyRequest,
@@ -313,6 +326,12 @@ export class SurveyCreateWizardPageComponent implements OnInit {
       | 'opensAtUtc'
       | 'closesAtUtc'
       | 'audienceMembers'
+      | 'showOnPublicPortal'
+      | 'publicArticleEnabled'
+      | 'publicArticleTitleAr'
+      | 'publicArticleTitleEn'
+      | 'publicArticleBodyAr'
+      | 'publicArticleBodyEn'
     > = {
       titleAr: this.titleAr.trim(),
       titleEn: this.titleEn.trim(),
@@ -324,8 +343,21 @@ export class SurveyCreateWizardPageComponent implements OnInit {
       closesAtUtc: this.toIsoOrNull(this.closesAtLocal),
       audienceMembers:
         this.audienceScope === SurveyAudienceScope.SpecificUsers ? this.mapAudienceToApi() : null,
+      showOnPublicPortal: this.showOnPublicPortal,
+      publicArticleEnabled: this.publicArticleEnabled,
+      publicArticleTitleAr: this.publicArticleTitleAr.trim() || null,
+      publicArticleTitleEn: this.publicArticleTitleEn.trim() || null,
+      publicArticleBodyAr: this.normalizeArticleHtml(this.publicArticleBodyAr),
+      publicArticleBodyEn: this.normalizeArticleHtml(this.publicArticleBodyEn),
     };
     return base;
+  }
+
+  /** Treat empty Quill output as null when saving. */
+  private normalizeArticleHtml(raw: string): string | null {
+    const t = raw.trim();
+    if (!t || t === '<p><br></p>' || t === '<p></p>') return null;
+    return t;
   }
 
   private toIsoOrNull(local: string): string | null {

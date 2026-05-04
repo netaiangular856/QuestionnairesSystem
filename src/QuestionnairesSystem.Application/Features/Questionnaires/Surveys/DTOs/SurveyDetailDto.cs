@@ -25,5 +25,12 @@ public sealed class SurveyDetailDto
     public DateTime? ClosesAtUtc { get; init; }
     public string? RejectionReason { get; init; }
 
+    public bool ShowOnPublicPortal { get; init; }
+    public bool PublicArticleEnabled { get; init; }
+    public string? PublicArticleTitleAr { get; init; }
+    public string? PublicArticleTitleEn { get; init; }
+    public string? PublicArticleBodyAr { get; init; }
+    public string? PublicArticleBodyEn { get; init; }
+
     public IReadOnlyList<SurveyAudienceMemberDetailDto> AudienceMembers { get; init; } = Array.Empty<SurveyAudienceMemberDetailDto>();
 }

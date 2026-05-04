@@ -46,6 +46,7 @@ internal static class PermissionDefinitions
         new(PermissionCodes.SettingsView, "عرض الإعدادات", "View settings", null, "View system settings", "Settings"),
         new(PermissionCodes.SettingsManage, "إدارة الإعدادات", "Manage settings", null, "Update system settings", "Settings"),
         new(PermissionCodes.LookupView, "عرض القوائم المرجعية", "View lookups", null, "Access lookups endpoint", "Lookup"),
-        new(PermissionCodes.IntegrationManage, "إدارة التكاملات", "Manage integrations", null, "Import/export integrations and webhooks", "Integration")
+        new(PermissionCodes.IntegrationManage, "إدارة التكاملات", "Manage integrations", null, "Import/export integrations and webhooks", "Integration"),
+        new(PermissionCodes.DataBulkImport, "استيراد وتصدير Excel", "Excel bulk import/export", null, "Download templates and bulk-import departments, employees, partners, users, surveys, and responses", "Integration")
     ];
 }

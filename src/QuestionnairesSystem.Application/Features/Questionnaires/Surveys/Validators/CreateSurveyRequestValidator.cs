@@ -15,6 +15,10 @@ public sealed class CreateSurveyRequestValidator : AbstractValidator<CreateSurve
         RuleFor(x => x.DescriptionAr).MaximumLength(4000);
         RuleFor(x => x.DescriptionEn).MaximumLength(4000);
         RuleFor(x => x.Code).MaximumLength(64);
+        RuleFor(x => x.PublicArticleTitleAr).MaximumLength(500);
+        RuleFor(x => x.PublicArticleTitleEn).MaximumLength(500);
+        RuleFor(x => x.PublicArticleBodyAr).MaximumLength(100_000);
+        RuleFor(x => x.PublicArticleBodyEn).MaximumLength(100_000);
         When(x => x.Questions is { Count: > 0 }, () =>
         {
             RuleForEach(x => x.Questions!).SetValidator(questionItemValidator);

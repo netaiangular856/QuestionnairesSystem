@@ -1,0 +1,320 @@
+<div class="sp" [attr.dir]="i18n.lang() === 'ar' ? 'rtl' : 'ltr'">
+  <div class="sp__ambient" aria-hidden="true">
+    <span class="sp__orb sp__orb--1"></span>
+    <span class="sp__orb sp__orb--2"></span>
+    <span class="sp__orb sp__orb--3"></span>
+    <div class="sp__mesh"></div>
+  </div>
+
+  <header class="sp-header">
+    <div class="sp-header__inner">
+      <a routerLink="/portal" class="sp-brand">
+        <span class="sp-brand__icon" aria-hidden="true">
+          <i class="pi pi-file-edit"></i>
+        </span>
+        <span class="sp-brand__text">{{ 'public.portal.brand' | t }}</span>
+      </a>
+
+      <nav class="sp-nav" aria-label="Portal">
+        <a class="sp-nav__link" routerLink="/portal" fragment="howitworks" (click)="jumpToSection('howitworks', $event)">{{ 'public.portal.nav.how' | t }}</a>
+        <a class="sp-nav__link" routerLink="/portal" fragment="values" (click)="jumpToSection('values', $event)">{{ 'public.portal.nav.values' | t }}</a>
+        <a class="sp-nav__link" routerLink="/portal" fragment="about" (click)="jumpToSection('about', $event)">{{ 'public.portal.nav.about' | t }}</a>
+        <a class="sp-nav__link" routerLink="/portal" fragment="mission" (click)="jumpToSection('mission', $event)">{{ 'public.portal.nav.mission' | t }}</a>
+        <a class="sp-nav__link sp-nav__link--accent" routerLink="/portal" fragment="surveys" (click)="jumpToSection('surveys', $event)">{{ 'public.portal.nav.surveys' | t }}</a>
+      </nav>
+
+      <div class="sp-header__actions">
+        <button type="button" class="sp-lang" (click)="toggleLang()">{{ 'landing.lang' | t }}</button>
+        @if (isLoggedIn()) {
+          <a routerLink="/dashboard" class="sp-btn sp-btn--solid">{{ 'landing.header.dashboard' | t }}</a>
+        } @else {
+          <a routerLink="/login" class="sp-btn sp-btn--ghost">{{ 'landing.header.login' | t }}</a>
+        }
+      </div>
+    </div>
+  </header>
+
+  <main class="sp-main">
+    <!-- Hero -->
+    <section class="sp-hero">
+      <div class="sp-hero__grid">
+        <div class="sp-hero__copy sp-reveal">
+          <span class="sp-pill">
+            <i class="pi pi-sparkles" aria-hidden="true"></i>
+            {{ 'public.portal.hero.badge' | t }}
+          </span>
+          <h1 class="sp-hero__title">{{ 'public.portal.hero.title' | t }}</h1>
+          <p class="sp-hero__lead">{{ 'public.portal.hero.lead' | t }}</p>
+          <div class="sp-hero__cta">
+            <a routerLink="/portal" fragment="surveys" class="sp-btn sp-btn--xl sp-btn--glow">
+              <i class="pi pi-angle-down sp-btn__ico" aria-hidden="true"></i>
+              {{ 'public.portal.hero.ctaSurveys' | t }}
+            </a>
+            @if (!isLoggedIn()) {
+              <a routerLink="/login" class="sp-btn sp-btn--xl sp-btn--outline">{{ 'landing.hero.ctaSecondary' | t }}</a>
+            }
+          </div>
+          <div class="sp-hero__chips">
+            <span class="sp-chip"><i class="pi pi-check-circle"></i>{{ 'public.portal.values.v2t' | t }}</span>
+            <span class="sp-chip"><i class="pi pi-mobile"></i>{{ 'public.portal.stats.quickTitle' | t }}</span>
+          </div>
+        </div>
+
+        <div class="sp-hero__visual sp-reveal sp-reveal--delay" aria-hidden="true">
+          <div class="sp-mock">
+            <div class="sp-mock__top">
+              <span class="sp-mock__dot"></span><span class="sp-mock__dot"></span><span class="sp-mock__dot"></span>
+            </div>
+            <div class="sp-mock__body">
+              <div class="sp-mock__line sp-mock__line--title"></div>
+              <div class="sp-mock__line"></div>
+              <div class="sp-mock__line sp-mock__line--short"></div>
+              <div class="sp-mock__opts">
+                <span class="sp-mock__pill"></span>
+                <span class="sp-mock__pill sp-mock__pill--on"></span>
+                <span class="sp-mock__pill"></span>
+              </div>
+              <div class="sp-mock__bar"><span class="sp-mock__bar-fill"></span></div>
+              <button type="button" class="sp-mock__btn">{{ 'q.fill.submit' | t }}</button>
+            </div>
+          </div>
+          <div class="sp-float-card sp-float-card--a">
+            <i class="pi pi-chart-line"></i>
+            <span>{{ 'public.portal.stats.openLabel' | t }}</span>
+            <strong>{{ catalog.length }}</strong>
+          </div>
+          <div class="sp-float-card sp-float-card--b">
+            <i class="pi pi-shield"></i>
+            <span>{{ 'public.portal.stats.secureTitle' | t }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Stats strip -->
+    <section class="sp-stats" aria-label="stats">
+      <div class="sp-stats__inner">
+        <div class="sp-stat sp-stat--featured sp-reveal">
+          <span class="sp-stat__ico"><i class="pi pi-chart-bar"></i></span>
+          <span class="sp-stat__num">{{ catalogBusy ? '—' : catalog.length }}</span>
+          <span class="sp-stat__caption">{{ 'public.portal.stats.openLabel' | t }}</span>
+        </div>
+        <div class="sp-stat sp-reveal sp-reveal--d1">
+          <span class="sp-stat__ico"><i class="pi pi-lock"></i></span>
+          <span class="sp-stat__title">{{ 'public.portal.stats.secureTitle' | t }}</span>
+          <span class="sp-stat__sub">{{ 'public.portal.stats.secureSub' | t }}</span>
+        </div>
+        <div class="sp-stat sp-reveal sp-reveal--d2">
+          <span class="sp-stat__ico"><i class="pi pi-bolt"></i></span>
+          <span class="sp-stat__title">{{ 'public.portal.stats.quickTitle' | t }}</span>
+          <span class="sp-stat__sub">{{ 'public.portal.stats.quickSub' | t }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section id="howitworks" class="sp-section sp-how sp-section--anchor" tabindex="-1">
+      <div class="sp-section__contain">
+        <header class="sp-section__head sp-reveal">
+          <span class="sp-eyebrow">{{ 'public.portal.nav.how' | t }}</span>
+          <h2 class="sp-section__title">{{ 'public.portal.how.title' | t }}</h2>
+          <p class="sp-section__lead">{{ 'public.portal.how.lead' | t }}</p>
+        </header>
+        <ol class="sp-steps">
+          <li class="sp-step sp-reveal">
+            <div class="sp-step__card">
+              <div class="sp-step__head">
+                <span class="sp-step__n">01</span>
+                <i class="pi pi-list sp-step__ico" aria-hidden="true"></i>
+              </div>
+              <h3 class="sp-step__t">{{ 'public.portal.how.s1t' | t }}</h3>
+              <p class="sp-step__b">{{ 'public.portal.how.s1b' | t }}</p>
+            </div>
+          </li>
+          <li class="sp-step sp-reveal sp-reveal--d1">
+            <div class="sp-step__card">
+              <div class="sp-step__head">
+                <span class="sp-step__n">02</span>
+                <i class="pi pi-book sp-step__ico" aria-hidden="true"></i>
+              </div>
+              <h3 class="sp-step__t">{{ 'public.portal.how.s2t' | t }}</h3>
+              <p class="sp-step__b">{{ 'public.portal.how.s2b' | t }}</p>
+            </div>
+          </li>
+          <li class="sp-step sp-reveal sp-reveal--d2">
+            <div class="sp-step__card">
+              <div class="sp-step__head">
+                <span class="sp-step__n">03</span>
+                <i class="pi pi-pencil sp-step__ico" aria-hidden="true"></i>
+              </div>
+              <h3 class="sp-step__t">{{ 'public.portal.how.s3t' | t }}</h3>
+              <p class="sp-step__b">{{ 'public.portal.how.s3b' | t }}</p>
+            </div>
+          </li>
+          <li class="sp-step sp-reveal sp-reveal--d3">
+            <div class="sp-step__card">
+              <div class="sp-step__head">
+                <span class="sp-step__n">04</span>
+                <i class="pi pi-send sp-step__ico" aria-hidden="true"></i>
+              </div>
+              <h3 class="sp-step__t">{{ 'public.portal.how.s4t' | t }}</h3>
+              <p class="sp-step__b">{{ 'public.portal.how.s4b' | t }}</p>
+            </div>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- Values -->
+    <section id="values" class="sp-section sp-values sp-section--anchor" tabindex="-1">
+      <div class="sp-section__contain">
+        <header class="sp-section__head sp-reveal">
+          <span class="sp-eyebrow">{{ 'public.portal.nav.values' | t }}</span>
+          <h2 class="sp-section__title">{{ 'public.portal.values.title' | t }}</h2>
+        </header>
+        <div class="sp-value-grid">
+          <article class="sp-value sp-reveal">
+            <div class="sp-value__glow"></div>
+            <i class="pi pi-megaphone sp-value__ico"></i>
+            <h3 class="sp-value__t">{{ 'public.portal.values.v1t' | t }}</h3>
+            <p class="sp-value__b">{{ 'public.portal.values.v1b' | t }}</p>
+          </article>
+          <article class="sp-value sp-reveal sp-reveal--d1">
+            <div class="sp-value__glow"></div>
+            <i class="pi pi-eye sp-value__ico"></i>
+            <h3 class="sp-value__t">{{ 'public.portal.values.v2t' | t }}</h3>
+            <p class="sp-value__b">{{ 'public.portal.values.v2b' | t }}</p>
+          </article>
+          <article class="sp-value sp-reveal sp-reveal--d2">
+            <div class="sp-value__glow"></div>
+            <i class="pi pi-globe sp-value__ico"></i>
+            <h3 class="sp-value__t">{{ 'public.portal.values.v3t' | t }}</h3>
+            <p class="sp-value__b">{{ 'public.portal.values.v3b' | t }}</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- About -->
+    <section id="about" class="sp-section sp-about sp-section--anchor" tabindex="-1">
+      <div class="sp-section__contain sp-about__layout">
+        <div class="sp-about__text sp-reveal">
+          <span class="sp-eyebrow">{{ 'public.portal.nav.about' | t }}</span>
+          <h2 class="sp-section__title">{{ 'public.portal.about.title' | t }}</h2>
+          <p class="sp-about__p">{{ 'public.portal.about.p1' | t }}</p>
+          <p class="sp-about__p">{{ 'public.portal.about.p2' | t }}</p>
+        </div>
+        <div class="sp-about__art sp-reveal sp-reveal--delay" aria-hidden="true">
+          <div class="sp-about__blob"></div>
+          <div class="sp-about__stack">
+            <div class="sp-mini-card"><i class="pi pi-users"></i><span>{{ 'public.portal.values.v1t' | t }}</span></div>
+            <div class="sp-mini-card"><i class="pi pi-chart-bar"></i><span>{{ 'landing.features.analytics.title' | t }}</span></div>
+            <div class="sp-mini-card"><i class="pi pi-verified"></i><span>{{ 'public.portal.stats.secureTitle' | t }}</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mission -->
+    <section id="mission" class="sp-section sp-mission sp-section--anchor" tabindex="-1">
+      <div class="sp-mission__band">
+        <div class="sp-section__contain">
+          <header class="sp-section__head sp-reveal">
+            <span class="sp-eyebrow sp-eyebrow--mission">{{ 'public.portal.nav.mission' | t }}</span>
+            <h2 class="sp-section__title">{{ 'public.portal.mission.title' | t }}</h2>
+            <p class="sp-section__lead sp-section__lead--mission">{{ 'public.portal.mission.intro' | t }}</p>
+          </header>
+          <ul class="sp-mission__list">
+            <li class="sp-reveal"><i class="pi pi-check-circle" aria-hidden="true"></i>{{ 'public.portal.mission.b1' | t }}</li>
+            <li class="sp-reveal sp-reveal--d1"><i class="pi pi-check-circle" aria-hidden="true"></i>{{ 'public.portal.mission.b2' | t }}</li>
+            <li class="sp-reveal sp-reveal--d2"><i class="pi pi-check-circle" aria-hidden="true"></i>{{ 'public.portal.mission.b3' | t }}</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Surveys catalog -->
+    <section id="surveys" class="sp-section sp-surveys sp-section--anchor" tabindex="-1">
+      <div class="sp-section__contain">
+        <header class="sp-section__head sp-reveal">
+          <span class="sp-eyebrow">{{ 'public.portal.nav.surveys' | t }}</span>
+          <h2 class="sp-section__title">{{ 'public.portal.surveys.title' | t }}</h2>
+          <p class="sp-section__lead">{{ 'public.portal.surveys.intro' | t }}</p>
+        </header>
+
+        @if (catalogBusy) {
+          <div class="sp-catalog-loading">
+            @for (x of [1, 2, 3, 4]; track x) {
+              <div class="sp-skel"></div>
+            }
+          </div>
+        } @else if (catalog.length === 0) {
+          <p class="sp-empty">{{ 'public.portal.surveys.empty' | t }}</p>
+        } @else {
+          <div class="sp-catalog">
+            @for (s of catalog; track s.id) {
+              <article class="sp-card sp-reveal">
+                <div class="sp-card__accent"></div>
+                <div class="sp-card__top">
+                  <span class="sp-card__ico"><i class="pi pi-file-edit"></i></span>
+                  @if (s.closesAtUtc) {
+                    <span class="sp-card__badge">{{ 'public.portal.surveys.closes' | t }} {{ s.closesAtUtc | date: 'medium' }}</span>
+                  }
+                </div>
+                <h3 class="sp-card__title">{{ surveyTitle(s) }}</h3>
+                @if (surveyDesc(s); as desc) {
+                  <p class="sp-card__desc">{{ desc }}</p>
+                }
+                <a [routerLink]="['/portal', 's', s.code]" class="sp-card__btn">
+                  {{ 'public.portal.surveys.open' | t }}
+                  <i class="pi pi-angle-right"></i>
+                </a>
+              </article>
+            }
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- Trust CTA -->
+    <section class="sp-trust">
+      <div class="sp-trust__inner sp-reveal">
+        <h2 class="sp-trust__title">{{ 'public.portal.trust.title' | t }}</h2>
+        <p class="sp-trust__lead">{{ 'public.portal.trust.lead' | t }}</p>
+        <a routerLink="/portal" fragment="surveys" class="sp-btn sp-btn--xl sp-btn--trust">{{ 'public.portal.trust.cta' | t }}</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="sp-footer">
+    <div class="sp-footer__grid">
+      <div class="sp-footer__brand">
+        <span class="sp-footer__logo"><i class="pi pi-file-edit"></i> {{ 'public.portal.brand' | t }}</span>
+        <p>{{ 'public.portal.footer.tag' | t }}</p>
+      </div>
+      <div>
+        <h3 class="sp-footer__h">{{ 'landing.footer.colExplore' | t }}</h3>
+        <nav class="sp-footer__nav">
+          <a routerLink="/portal" fragment="howitworks" (click)="jumpToSection('howitworks', $event)">{{ 'public.portal.nav.how' | t }}</a>
+          <a routerLink="/portal" fragment="values" (click)="jumpToSection('values', $event)">{{ 'public.portal.nav.values' | t }}</a>
+          <a routerLink="/portal" fragment="about" (click)="jumpToSection('about', $event)">{{ 'public.portal.nav.about' | t }}</a>
+          <a routerLink="/portal" fragment="surveys" (click)="jumpToSection('surveys', $event)">{{ 'public.portal.nav.surveys' | t }}</a>
+        </nav>
+      </div>
+      <div>
+        <h3 class="sp-footer__h">{{ 'landing.footer.colAccount' | t }}</h3>
+        <nav class="sp-footer__nav">
+          <a routerLink="/home">{{ 'landing.footer.home' | t }}</a>
+          @if (!isLoggedIn()) {
+            <a routerLink="/login">{{ 'landing.footer.login' | t }}</a>
+          } @else {
+            <a routerLink="/dashboard">{{ 'landing.footer.dashboard' | t }}</a>
+          }
+        </nav>
+      </div>
+    </div>
+    <div class="sp-footer__bottom">
+      <p>{{ 'landing.footer.copy' | t }}</p>
+    </div>
+  </footer>
+</div>

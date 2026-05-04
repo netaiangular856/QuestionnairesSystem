@@ -14,4 +14,11 @@ public sealed class UpdateSurveyRequest
 
     /// <summary>عند الإرسال يُستبدل جدول الجمهور بالكامل؛ عند <see langword="null"/> لا يُغيّر الجمهور.</summary>
     public IReadOnlyList<SurveyAudienceMemberInputDto>? AudienceMembers { get; set; }
+
+    public bool ShowOnPublicPortal { get; set; }
+    public bool PublicArticleEnabled { get; set; }
+    public string? PublicArticleTitleAr { get; set; }
+    public string? PublicArticleTitleEn { get; set; }
+    public string? PublicArticleBodyAr { get; set; }
+    public string? PublicArticleBodyEn { get; set; }
 }

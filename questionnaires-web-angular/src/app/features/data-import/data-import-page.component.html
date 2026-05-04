@@ -1,0 +1,181 @@
+<div class="dip-page" [attr.dir]="i18n.lang() === 'ar' ? 'rtl' : 'ltr'">
+  <div class="dip-page__ambient" aria-hidden="true">
+    <div class="dip-page__mesh"></div>
+    <span class="dip-page__orb dip-page__orb--a"></span>
+    <span class="dip-page__orb dip-page__orb--b"></span>
+    <span class="dip-page__orb dip-page__orb--c"></span>
+  </div>
+
+  <div class="dip">
+    <header class="dip__hero">
+      <span class="dip__badge">{{ 'dataImport.downloadSectionTitle' | t }}</span>
+      <h1 class="dip__title">{{ 'dataImport.title' | t }}</h1>
+      <p class="dip__lead">{{ 'dataImport.subtitle' | t }}</p>
+    </header>
+
+    <p class="dip__intro">{{ 'dataImport.helpIntro' | t }}</p>
+
+    <div class="dip__grid">
+      <section class="dip__panel dip__panel--steps dip__float" style="--d: 0.05s">
+        <header class="dip__stepsHeader">
+          <h2 class="dip__stepsTitle">{{ 'dataImport.stepsTitle' | t }}</h2>
+          <p class="dip__stepsLead">{{ 'dataImport.stepsLead' | t }}</p>
+        </header>
+        <div class="dip__stepTrack" role="list">
+          <article class="dip__step dip__step--1" role="listitem">
+            <div class="dip__stepRail" aria-hidden="true">
+              <span class="dip__stepBadge">1</span>
+            </div>
+            <div class="dip__stepBody">
+              <h3 class="dip__stepHeading">{{ 'dataImport.step1Title' | t }}</h3>
+              <p class="dip__stepText">{{ 'dataImport.step1' | t }}</p>
+            </div>
+          </article>
+          <article class="dip__step dip__step--2" role="listitem">
+            <div class="dip__stepRail" aria-hidden="true">
+              <span class="dip__stepBadge dip__stepBadge--cyan">2</span>
+            </div>
+            <div class="dip__stepBody">
+              <h3 class="dip__stepHeading">{{ 'dataImport.step2Title' | t }}</h3>
+              <p class="dip__stepText">{{ 'dataImport.step2' | t }}</p>
+            </div>
+          </article>
+          <article class="dip__step dip__step--3" role="listitem">
+            <div class="dip__stepRail" aria-hidden="true">
+              <span class="dip__stepBadge dip__stepBadge--teal">3</span>
+            </div>
+            <div class="dip__stepBody">
+              <h3 class="dip__stepHeading">{{ 'dataImport.step3Title' | t }}</h3>
+              <p class="dip__stepText">{{ 'dataImport.step3' | t }}</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="dip__panel dip__panel--download dip__float" style="--d: 0.12s">
+        <div class="dip__panelHead dip__panelHead--row">
+          <span class="dip__miniBadge dip__miniBadge--violet" aria-hidden="true">
+            <svg class="dip__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12l7 7 7-7" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <h2 class="dip__h2">{{ 'dataImport.downloadSectionTitle' | t }}</h2>
+        </div>
+
+        <label class="dip__fieldLabel" for="dip-scope">{{ 'dataImport.pickScope' | t }}</label>
+        <select
+          id="dip-scope"
+          class="dip__select"
+          [value]="templateScope()"
+          (change)="onScopeChange($event)"
+          [disabled]="downloading()"
+        >
+          @for (opt of scopeOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.labelKey | t }}</option>
+          }
+        </select>
+
+        <div class="dip__dlRow">
+          <button
+            type="button"
+            class="dip__btn dip__btn--ghost"
+            [disabled]="downloading()"
+            (click)="download(false)"
+          >
+            <span class="dip__btnGlow"></span>
+            {{ 'dataImport.downloadEmpty' | t }}
+          </button>
+          <button
+            type="button"
+            class="dip__btn dip__btn--prime"
+            [disabled]="downloading()"
+            (click)="download(true)"
+          >
+            <span class="dip__btnGlow dip__btnGlow--hot"></span>
+            {{ 'dataImport.downloadSample' | t }}
+          </button>
+        </div>
+      </section>
+
+      <section class="dip__panel dip__panel--upload dip__float" style="--d: 0.2s">
+        <div class="dip__panelHead dip__panelHead--row">
+          <span class="dip__miniBadge dip__miniBadge--teal" aria-hidden="true">
+            <svg class="dip__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path
+                d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path d="M14 2v6h6M12 18v-6M9 15l3 3 3-3" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <h2 class="dip__h2">{{ 'dataImport.uploadTitle' | t }}</h2>
+        </div>
+        <p class="dip__hint">{{ 'dataImport.uploadHint' | t }}</p>
+        <label class="dip__file">
+          <input
+            type="file"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            [disabled]="importing()"
+            (change)="onFileSelected($event)"
+          />
+          <span class="dip__fileInner">
+            <svg class="dip__fileSvg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path d="M14 2v6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            {{ 'dataImport.chooseFile' | t }}
+          </span>
+        </label>
+        @if (importing()) {
+          <p class="dip__status">{{ 'dataImport.importing' | t }}</p>
+        }
+      </section>
+    </div>
+
+    @if (lastResult(); as r) {
+      <section class="dip__panel dip__panel--result dip__float" style="--d: 0.28s">
+        <h2 class="dip__h2">{{ 'dataImport.resultTitle' | t }}</h2>
+        <ul class="dip__stats">
+          <li><span class="dip__statVal">{{ r.departmentsImported }}</span> {{ 'dataImport.count.departments' | t }}</li>
+          <li><span class="dip__statVal">{{ r.employeesImported }}</span> {{ 'dataImport.count.employees' | t }}</li>
+          <li><span class="dip__statVal">{{ r.partnersImported }}</span> {{ 'dataImport.count.partners' | t }}</li>
+          <li><span class="dip__statVal">{{ r.usersImported }}</span> {{ 'dataImport.count.users' | t }}</li>
+          <li><span class="dip__statVal">{{ r.templatesImported }}</span> {{ 'dataImport.count.templates' | t }}</li>
+          <li><span class="dip__statVal">{{ r.surveysImported }}</span> {{ 'dataImport.count.surveys' | t }}</li>
+          <li><span class="dip__statVal">{{ r.responsesImported }}</span> {{ 'dataImport.count.responses' | t }}</li>
+        </ul>
+
+        @if (r.errors?.length) {
+          <h3 class="dip__h3">{{ 'dataImport.errorsTitle' | t }}</h3>
+          <div class="dip__tableWrap">
+            <table class="dip__table">
+              <thead>
+                <tr>
+                  <th>{{ 'dataImport.col.sheet' | t }}</th>
+                  <th>{{ 'dataImport.col.row' | t }}</th>
+                  <th>{{ 'dataImport.col.message' | t }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (e of r.errors; track $index) {
+                  <tr>
+                    <td>{{ e.sheet }}</td>
+                    <td>{{ e.rowNumber }}</td>
+                    <td>{{ e.message }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+  </div>
+</div>

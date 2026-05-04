@@ -23,4 +23,11 @@ public sealed class CreateSurveyRequest
 
     /// <summary>عند <see cref="SurveyAudienceScope.SpecificUsers"/> يُحدد المستخدمون أو عناوين البريد المسموح لهم.</summary>
     public IReadOnlyList<SurveyAudienceMemberInputDto>? AudienceMembers { get; set; }
+
+    public bool ShowOnPublicPortal { get; set; }
+    public bool PublicArticleEnabled { get; set; }
+    public string? PublicArticleTitleAr { get; set; }
+    public string? PublicArticleTitleEn { get; set; }
+    public string? PublicArticleBodyAr { get; set; }
+    public string? PublicArticleBodyEn { get; set; }
 }

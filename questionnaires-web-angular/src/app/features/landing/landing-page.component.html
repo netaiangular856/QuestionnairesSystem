@@ -1,101 +1,216 @@
-<div class="landing">
-  <header class="landing__header">
-    <div class="landing__contain landing__header-row">
-      <a routerLink="/home" class="landing__brand">{{ 'landing.brand' | t }}</a>
-      <nav class="landing__nav" aria-label="Main">
-        <a class="landing__nav-link" routerLink="/home" fragment="about" (click)="jumpToSection('about', $event)">{{ 'landing.nav.about' | t }}</a>
-        <a class="landing__nav-link" routerLink="/home" fragment="features" (click)="jumpToSection('features', $event)">{{ 'landing.nav.features' | t }}</a>
-        <a class="landing__nav-link" routerLink="/home" fragment="workflow" (click)="jumpToSection('workflow', $event)">{{ 'landing.nav.workflow' | t }}</a>
-        <a class="landing__nav-link" routerLink="/home" fragment="security" (click)="jumpToSection('security', $event)">{{ 'landing.nav.security' | t }}</a>
+<div class="ld ld--home" [attr.dir]="i18n.lang() === 'ar' ? 'rtl' : 'ltr'">
+  <!-- خلفية الصفحة: نفس لوحة ألوان /portal (slate + violet/cyan) -->
+  <div class="ld__ambient ld__ambient--paper" aria-hidden="true">
+    <span class="ld__wash ld__wash--sage"></span>
+    <span class="ld__wash ld__wash--clay"></span>
+    <div class="ld__grain"></div>
+  </div>
+
+  <header class="ld-header ld-header--home">
+    <div class="ld-header__inner ld-contain">
+      <a routerLink="/home" class="ld-brand">
+        <span class="ld-brand__icon ld-brand__icon--home" aria-hidden="true">
+          <i class="pi pi-compass"></i>
+        </span>
+        <span class="ld-brand__text">{{ 'landing.brand' | t }}</span>
+      </a>
+      <nav class="ld-nav" aria-label="Main">
+        <a class="ld-nav__link ld-nav__link--portal" routerLink="/portal">{{ 'public.portal.nav.portalLink' | t }}</a>
+        <a class="ld-nav__link" routerLink="/home" fragment="about" (click)="jumpToSection('about', $event)">{{ 'landing.nav.about' | t }}</a>
+        <a class="ld-nav__link" routerLink="/home" fragment="features" (click)="jumpToSection('features', $event)">{{ 'landing.nav.features' | t }}</a>
+        <a class="ld-nav__link" routerLink="/home" fragment="workflow" (click)="jumpToSection('workflow', $event)">{{ 'landing.nav.workflow' | t }}</a>
+        <a class="ld-nav__link" routerLink="/home" fragment="security" (click)="jumpToSection('security', $event)">{{ 'landing.nav.security' | t }}</a>
       </nav>
-      <div class="landing__header-actions">
-        <button type="button" class="landing__lang" (click)="toggleLang()">{{ 'landing.lang' | t }}</button>
+      <div class="ld-header__actions">
+        <button type="button" class="ld-lang" (click)="toggleLang()">{{ 'landing.lang' | t }}</button>
         @if (isLoggedIn()) {
-          <a routerLink="/dashboard" class="landing__btn landing__btn--primary">{{ 'landing.header.dashboard' | t }}</a>
+          <a routerLink="/dashboard" class="ld-btn ld-btn--solid">{{ 'landing.header.dashboard' | t }}</a>
         } @else {
-          <a routerLink="/login" class="landing__btn landing__btn--ghost">{{ 'landing.header.login' | t }}</a>
-          <a routerLink="/register" class="landing__btn landing__btn--primary">{{ 'landing.header.register' | t }}</a>
+          <a routerLink="/login" class="ld-btn ld-btn--ghost">{{ 'landing.header.login' | t }}</a>
+          <a routerLink="/register" class="ld-btn ld-btn--ember">{{ 'landing.header.register' | t }}</a>
         }
       </div>
     </div>
   </header>
 
-  <main class="landing__main">
-    <div class="landing__hero-wrap">
-      <div class="landing__contain landing__hero-layout">
-        <div class="landing__hero-copy">
-          <p class="landing__hero-kicker">{{ 'landing.hero.kicker' | t }}</p>
-          <h1 class="landing__hero-title">{{ 'landing.hero.title' | t }}</h1>
-          <p class="landing__hero-lead">{{ 'landing.hero.lead' | t }}</p>
-          <div class="landing__hero-cta">
+  <main class="ld-main">
+    <div class="ld-hero-band">
+      <div class="ld-hero-band__bg" aria-hidden="true">
+        <div class="ld-hero-band__grid"></div>
+        <span class="ld-hero-band__glow ld-hero-band__glow--a"></span>
+        <span class="ld-hero-band__glow ld-hero-band__glow--b"></span>
+        <span class="ld-hero-band__glow ld-hero-band__glow--c"></span>
+        <div class="ld-hero-band__arc"></div>
+      </div>
+
+      <section class="ld-hero">
+      <div class="ld-contain ld-hero__grid">
+        <div class="ld-hero__copy ld-reveal">
+          <span class="ld-pill">
+            <i class="pi pi-bolt" aria-hidden="true"></i>
+            {{ 'landing.hero.kicker' | t }}
+          </span>
+          <h1 class="ld-hero__title">{{ 'landing.hero.title' | t }}</h1>
+          <p class="ld-hero__lead">{{ 'landing.hero.lead' | t }}</p>
+          <div class="ld-hero__cta">
             @if (isLoggedIn()) {
-              <a routerLink="/dashboard" class="landing__btn landing__btn--primary landing__btn--lg">{{ 'landing.hero.ctaDashboard' | t }}</a>
+              <a routerLink="/dashboard" class="ld-btn ld-btn--xl ld-btn--ember">
+                <i class="pi pi-chart-bar ld-btn__ico" aria-hidden="true"></i>
+                {{ 'landing.hero.ctaDashboard' | t }}
+              </a>
+              <a routerLink="/portal" class="ld-btn ld-btn--xl ld-btn--outline">{{ 'landing.hero.ctaPortal' | t }}</a>
             } @else {
-              <a routerLink="/register" class="landing__btn landing__btn--primary landing__btn--lg">{{ 'landing.hero.ctaPrimary' | t }}</a>
-              <a routerLink="/login" class="landing__btn landing__btn--secondary landing__btn--lg">{{ 'landing.hero.ctaSecondary' | t }}</a>
+              <a routerLink="/register" class="ld-btn ld-btn--xl ld-btn--ember">
+                <i class="pi pi-user-plus ld-btn__ico" aria-hidden="true"></i>
+                {{ 'landing.hero.ctaPrimary' | t }}
+              </a>
+              <a routerLink="/login" class="ld-btn ld-btn--xl ld-btn--outline">{{ 'landing.hero.ctaSecondary' | t }}</a>
+              <a routerLink="/portal" class="ld-btn ld-btn--xl ld-btn--ghost">{{ 'landing.hero.ctaPortal' | t }}</a>
             }
           </div>
-        </div>
-        <div class="landing__hero-panel" aria-hidden="true">
-          <div class="landing__hero-panel-inner">
-            <span class="landing__hero-panel-line"></span>
-            <span class="landing__hero-panel-line"></span>
-            <span class="landing__hero-panel-line"></span>
+          <div class="ld-hero__chips">
+            <span class="ld-chip"><i class="pi pi-globe"></i>{{ 'landing.features.title' | t }}</span>
+            <span class="ld-chip"><i class="pi pi-shield"></i>{{ 'public.portal.stats.secureTitle' | t }}</span>
           </div>
         </div>
-      </div>
-    </div>
 
-    <section id="about" class="landing__band landing__section--anchor" tabindex="-1">
-      <div class="landing__contain">
-        <header class="landing__block-head">
-          <span class="landing__eyebrow">{{ 'landing.nav.about' | t }}</span>
-          <h2 class="landing__block-title">{{ 'landing.about.title' | t }}</h2>
-        </header>
-        <div class="landing__about-split">
-          <p class="landing__lead-card">{{ 'landing.about.p1' | t }}</p>
-          <p class="landing__lead-card">{{ 'landing.about.p2' | t }}</p>
+        <div class="ld-hero__visual ld-reveal ld-reveal--delay" aria-hidden="true">
+          <div class="ld-mock">
+            <div class="ld-mock__top">
+              <span class="ld-mock__dot"></span><span class="ld-mock__dot"></span><span class="ld-mock__dot"></span>
+            </div>
+            <div class="ld-mock__body">
+              <div class="ld-mock__line ld-mock__line--title"></div>
+              <div class="ld-mock__line"></div>
+              <div class="ld-mock__line ld-mock__line--short"></div>
+              <div class="ld-mock__opts">
+                <span class="ld-mock__pill"></span>
+                <span class="ld-mock__pill ld-mock__pill--on"></span>
+                <span class="ld-mock__pill"></span>
+              </div>
+              <div class="ld-mock__bar"><span class="ld-mock__bar-fill"></span></div>
+              <button type="button" class="ld-mock__btn">{{ 'landing.workflow.s3.title' | t }}</button>
+            </div>
+          </div>
+          <div class="ld-hero__badges">
+            <div class="ld-hero-badge">
+              <i class="pi pi-verified" aria-hidden="true"></i>
+              <span>{{ 'public.portal.stats.secureTitle' | t }}</span>
+            </div>
+            <div class="ld-hero-badge">
+              <i class="pi pi-sparkles" aria-hidden="true"></i>
+              <span>{{ 'public.portal.stats.quickTitle' | t }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <section id="features" class="landing__band landing__band--muted landing__section--anchor" tabindex="-1">
-      <div class="landing__contain">
-        <header class="landing__block-head">
-          <span class="landing__eyebrow">{{ 'landing.nav.features' | t }}</span>
-          <h2 class="landing__block-title">{{ 'landing.features.title' | t }}</h2>
-          <p class="landing__block-sub">{{ 'landing.features.intro' | t }}</p>
+    <section class="ld-stats" aria-label="highlights">
+      <div class="ld-contain ld-stats__inner">
+        <div class="ld-stat ld-stat--featured ld-reveal">
+          <span class="ld-stat__ico"><i class="pi pi-th-large"></i></span>
+          <span class="ld-stat__num">8</span>
+          <span class="ld-stat__caption">{{ 'landing.nav.features' | t }}</span>
+        </div>
+        <div class="ld-stat ld-reveal ld-reveal--d1">
+          <span class="ld-stat__ico"><i class="pi pi-lock"></i></span>
+          <span class="ld-stat__title">{{ 'public.portal.stats.secureTitle' | t }}</span>
+          <span class="ld-stat__sub">{{ 'public.portal.stats.secureSub' | t }}</span>
+        </div>
+        <div class="ld-stat ld-reveal ld-reveal--d2">
+          <span class="ld-stat__ico"><i class="pi pi-bolt"></i></span>
+          <span class="ld-stat__title">{{ 'public.portal.stats.quickTitle' | t }}</span>
+          <span class="ld-stat__sub">{{ 'public.portal.stats.quickSub' | t }}</span>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <section id="about" class="ld-section ld-section--about ld-section--anchor" tabindex="-1">
+      <div class="ld-contain ld-about">
+        <header class="ld-section__head ld-about__head ld-reveal">
+          <span class="ld-eyebrow">{{ 'landing.nav.about' | t }}</span>
+          <h2 class="ld-section__title">{{ 'landing.about.title' | t }}</h2>
         </header>
-        <div class="landing__feature-grid">
-          <article class="landing__feature">
+        <div class="ld-about__grid">
+          <article class="ld-about-card ld-about-card--primary ld-reveal">
+            <div class="ld-about-card__accent" aria-hidden="true"></div>
+            <div class="ld-about-card__top">
+              <span class="ld-about-card__icon-wrap">
+                <i class="pi pi-compass ld-about-card__icon" aria-hidden="true"></i>
+              </span>
+              <span class="ld-about-card__step" aria-hidden="true">01</span>
+            </div>
+            <p class="ld-about-card__body">{{ 'landing.about.p1' | t }}</p>
+          </article>
+          <article class="ld-about-card ld-about-card--secondary ld-reveal ld-reveal--d2">
+            <div class="ld-about-card__accent" aria-hidden="true"></div>
+            <div class="ld-about-card__top">
+              <span class="ld-about-card__icon-wrap">
+                <i class="pi pi-chart-line ld-about-card__icon" aria-hidden="true"></i>
+              </span>
+              <span class="ld-about-card__step" aria-hidden="true">02</span>
+            </div>
+            <p class="ld-about-card__body">{{ 'landing.about.p2' | t }}</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="ld-section ld-section--features ld-section--anchor" tabindex="-1">
+      <div class="ld-contain">
+        <header class="ld-section__head ld-reveal">
+          <span class="ld-eyebrow">{{ 'landing.nav.features' | t }}</span>
+          <h2 class="ld-section__title">{{ 'landing.features.title' | t }}</h2>
+          <p class="ld-section__lead">{{ 'landing.features.intro' | t }}</p>
+        </header>
+        <div class="ld-feature-grid ld-feature-grid--mosaic">
+          <article class="ld-feature ld-feature--accent-1 ld-reveal">
+            <div class="ld-feature__glow"></div>
+            <i class="pi pi-file-edit ld-feature__ico"></i>
             <h3>{{ 'landing.features.surveys.title' | t }}</h3>
             <p>{{ 'landing.features.surveys.body' | t }}</p>
           </article>
-          <article class="landing__feature">
+          <article class="ld-feature ld-feature--accent-2 ld-reveal ld-reveal--d1">
+            <div class="ld-feature__glow"></div>
+            <i class="pi pi-clone ld-feature__ico"></i>
             <h3>{{ 'landing.features.templates.title' | t }}</h3>
             <p>{{ 'landing.features.templates.body' | t }}</p>
           </article>
-          <article class="landing__feature">
+          <article class="ld-feature ld-reveal ld-reveal--d2">
+            <div class="ld-feature__glow"></div>
+            <i class="pi pi-users ld-feature__ico"></i>
             <h3>{{ 'landing.features.participants.title' | t }}</h3>
             <p>{{ 'landing.features.participants.body' | t }}</p>
           </article>
-          <article class="landing__feature">
+          <article class="ld-feature ld-reveal ld-reveal--d3">
+            <div class="ld-feature__glow"></div>
+            <i class="pi pi-inbox ld-feature__ico"></i>
             <h3>{{ 'landing.features.responses.title' | t }}</h3>
             <p>{{ 'landing.features.responses.body' | t }}</p>
           </article>
-          <article class="landing__feature">
+          <article class="ld-feature ld-reveal">
+            <div class="ld-feature__glow"></div>
+            <i class="pi pi-chart-line ld-feature__ico"></i>
             <h3>{{ 'landing.features.analytics.title' | t }}</h3>
             <p>{{ 'landing.features.analytics.body' | t }}</p>
           </article>
-          <article class="landing__feature">
+          <article class="ld-feature ld-reveal ld-reveal--d1">
+            <div class="ld-feature__glow"></div>
+            <i class="pi pi-lightbulb ld-feature__ico"></i>
             <h3>{{ 'landing.features.recommendations.title' | t }}</h3>
             <p>{{ 'landing.features.recommendations.body' | t }}</p>
           </article>
-          <article class="landing__feature">
+          <article class="ld-feature ld-reveal ld-reveal--d2">
+            <div class="ld-feature__glow"></div>
+            <i class="pi pi-list-check ld-feature__ico"></i>
             <h3>{{ 'landing.features.actionPlans.title' | t }}</h3>
             <p>{{ 'landing.features.actionPlans.body' | t }}</p>
           </article>
-          <article class="landing__feature">
+          <article class="ld-feature ld-reveal ld-reveal--d3">
+            <div class="ld-feature__glow"></div>
+            <i class="pi pi-file-pdf ld-feature__ico"></i>
             <h3>{{ 'landing.features.reports.title' | t }}</h3>
             <p>{{ 'landing.features.reports.body' | t }}</p>
           </article>
@@ -103,109 +218,131 @@
       </div>
     </section>
 
-    <section id="workflow" class="landing__band landing__section--anchor" tabindex="-1">
-      <div class="landing__contain">
-        <header class="landing__block-head">
-          <span class="landing__eyebrow">{{ 'landing.nav.workflow' | t }}</span>
-          <h2 class="landing__block-title">{{ 'landing.workflow.title' | t }}</h2>
-          <p class="landing__block-sub">{{ 'landing.workflow.intro' | t }}</p>
+    <section id="workflow" class="ld-section ld-section--flow ld-section--anchor" tabindex="-1">
+      <div class="ld-contain">
+        <header class="ld-section__head ld-reveal">
+          <span class="ld-eyebrow">{{ 'landing.nav.workflow' | t }}</span>
+          <h2 class="ld-section__title">{{ 'landing.workflow.title' | t }}</h2>
+          <p class="ld-section__lead">{{ 'landing.workflow.intro' | t }}</p>
         </header>
-        <ol class="landing__workflow-grid">
-          <li class="landing__workflow-card">
-            <span class="landing__workflow-num">01</span>
-            <h3>{{ 'landing.workflow.s1.title' | t }}</h3>
-            <p>{{ 'landing.workflow.s1.body' | t }}</p>
+        <ol class="ld-steps ld-steps--rail">
+          <li class="ld-step ld-reveal">
+            <div class="ld-step__card">
+              <div class="ld-step__head">
+                <span class="ld-step__n">01</span>
+                <i class="pi pi-pencil ld-step__ico" aria-hidden="true"></i>
+              </div>
+              <h3 class="ld-step__t">{{ 'landing.workflow.s1.title' | t }}</h3>
+              <p class="ld-step__b">{{ 'landing.workflow.s1.body' | t }}</p>
+            </div>
           </li>
-          <li class="landing__workflow-card">
-            <span class="landing__workflow-num">02</span>
-            <h3>{{ 'landing.workflow.s2.title' | t }}</h3>
-            <p>{{ 'landing.workflow.s2.body' | t }}</p>
+          <li class="ld-step ld-reveal ld-reveal--d1">
+            <div class="ld-step__card">
+              <div class="ld-step__head">
+                <span class="ld-step__n">02</span>
+                <i class="pi pi-send ld-step__ico" aria-hidden="true"></i>
+              </div>
+              <h3 class="ld-step__t">{{ 'landing.workflow.s2.title' | t }}</h3>
+              <p class="ld-step__b">{{ 'landing.workflow.s2.body' | t }}</p>
+            </div>
           </li>
-          <li class="landing__workflow-card">
-            <span class="landing__workflow-num">03</span>
-            <h3>{{ 'landing.workflow.s3.title' | t }}</h3>
-            <p>{{ 'landing.workflow.s3.body' | t }}</p>
+          <li class="ld-step ld-reveal ld-reveal--d2">
+            <div class="ld-step__card">
+              <div class="ld-step__head">
+                <span class="ld-step__n">03</span>
+                <i class="pi pi-comments ld-step__ico" aria-hidden="true"></i>
+              </div>
+              <h3 class="ld-step__t">{{ 'landing.workflow.s3.title' | t }}</h3>
+              <p class="ld-step__b">{{ 'landing.workflow.s3.body' | t }}</p>
+            </div>
           </li>
-          <li class="landing__workflow-card">
-            <span class="landing__workflow-num">04</span>
-            <h3>{{ 'landing.workflow.s4.title' | t }}</h3>
-            <p>{{ 'landing.workflow.s4.body' | t }}</p>
+          <li class="ld-step ld-reveal ld-reveal--d3">
+            <div class="ld-step__card">
+              <div class="ld-step__head">
+                <span class="ld-step__n">04</span>
+                <i class="pi pi-chart-bar ld-step__ico" aria-hidden="true"></i>
+              </div>
+              <h3 class="ld-step__t">{{ 'landing.workflow.s4.title' | t }}</h3>
+              <p class="ld-step__b">{{ 'landing.workflow.s4.body' | t }}</p>
+            </div>
           </li>
         </ol>
       </div>
     </section>
 
-    <section id="security" class="landing__band landing__band--muted landing__section--anchor" tabindex="-1">
-      <div class="landing__contain landing__security-layout">
-        <div class="landing__security-text">
-          <header class="landing__block-head landing__block-head--tight">
-            <span class="landing__eyebrow">{{ 'landing.nav.security' | t }}</span>
-            <h2 class="landing__block-title">{{ 'landing.security.title' | t }}</h2>
+    <section id="security" class="ld-section ld-section--tint ld-section--anchor" tabindex="-1">
+      <div class="ld-contain ld-security">
+        <div class="ld-security__text ld-reveal">
+          <header class="ld-section__head ld-section__head--left">
+            <span class="ld-eyebrow">{{ 'landing.nav.security' | t }}</span>
+            <h2 class="ld-section__title">{{ 'landing.security.title' | t }}</h2>
           </header>
-          <p class="landing__prose">{{ 'landing.security.p1' | t }}</p>
-          <p class="landing__prose">{{ 'landing.security.p2' | t }}</p>
+          <p class="ld-prose">{{ 'landing.security.p1' | t }}</p>
+          <p class="ld-prose">{{ 'landing.security.p2' | t }}</p>
         </div>
-        <div class="landing__security-aside">
-          <p class="landing__checklist-label">{{ 'landing.security.listLabel' | t }}</p>
-          <ul class="landing__checklist">
-            <li>{{ 'landing.security.b1' | t }}</li>
-            <li>{{ 'landing.security.b2' | t }}</li>
-            <li>{{ 'landing.security.b3' | t }}</li>
-            <li>{{ 'landing.security.b4' | t }}</li>
-          </ul>
+        <div class="ld-security__art ld-reveal ld-reveal--delay">
+          <div class="ld-security__blob" aria-hidden="true"></div>
+          <div class="ld-security__panel">
+            <p class="ld-checklist-label">{{ 'landing.security.listLabel' | t }}</p>
+            <ul class="ld-checklist">
+              <li><i class="pi pi-check-circle" aria-hidden="true"></i>{{ 'landing.security.b1' | t }}</li>
+              <li><i class="pi pi-check-circle" aria-hidden="true"></i>{{ 'landing.security.b2' | t }}</li>
+              <li><i class="pi pi-check-circle" aria-hidden="true"></i>{{ 'landing.security.b3' | t }}</li>
+              <li><i class="pi pi-check-circle" aria-hidden="true"></i>{{ 'landing.security.b4' | t }}</li>
+            </ul>
+          </div>
         </div>
       </div>
     </section>
 
-    <section class="landing__cta-wrap">
-      <div class="landing__contain landing__cta">
-        <h2 class="landing__cta-title">{{ 'landing.cta.title' | t }}</h2>
-        <p class="landing__cta-lead">{{ 'landing.cta.lead' | t }}</p>
+    <section class="ld-trust ld-trust--home">
+      <div class="ld-contain ld-trust__inner ld-reveal">
+        <h2 class="ld-trust__title">{{ 'landing.cta.title' | t }}</h2>
+        <p class="ld-trust__lead">{{ 'landing.cta.lead' | t }}</p>
         @if (!isLoggedIn()) {
-          <div class="landing__hero-cta landing__hero-cta--center">
-            <a routerLink="/register" class="landing__btn landing__btn--invert landing__btn--lg">{{ 'landing.cta.signup' | t }}</a>
-            <a routerLink="/login" class="landing__btn landing__btn--outline-light landing__btn--lg">{{ 'landing.cta.login' | t }}</a>
+          <div class="ld-trust__cta">
+            <a routerLink="/register" class="ld-btn ld-btn--xl ld-btn--ember-shadow">{{ 'landing.cta.signup' | t }}</a>
+            <a routerLink="/login" class="ld-btn ld-btn--xl ld-btn--glass-dark">{{ 'landing.cta.login' | t }}</a>
           </div>
         } @else {
-          <a routerLink="/dashboard" class="landing__btn landing__btn--invert landing__btn--lg">{{ 'landing.cta.dashboard' | t }}</a>
+          <a routerLink="/dashboard" class="ld-btn ld-btn--xl ld-btn--ember-shadow">{{ 'landing.cta.dashboard' | t }}</a>
         }
       </div>
     </section>
   </main>
 
-  <footer class="landing__footer">
-    <div class="landing__footer-fill">
-      <div class="landing__contain landing__footer-grid">
-        <div class="landing__footer-col landing__footer-col--brand">
-          <span class="landing__footer-logo">{{ 'landing.brand' | t }}</span>
-          <p class="landing__footer-tag">{{ 'landing.footer.tagline' | t }}</p>
-        </div>
-        <div class="landing__footer-col">
-          <h3 class="landing__footer-heading">{{ 'landing.footer.colExplore' | t }}</h3>
-          <nav class="landing__footer-list" aria-label="Footer sections">
-            <a routerLink="/home" fragment="about" (click)="jumpToSection('about', $event)">{{ 'landing.nav.about' | t }}</a>
-            <a routerLink="/home" fragment="features" (click)="jumpToSection('features', $event)">{{ 'landing.nav.features' | t }}</a>
-            <a routerLink="/home" fragment="workflow" (click)="jumpToSection('workflow', $event)">{{ 'landing.nav.workflow' | t }}</a>
-            <a routerLink="/home" fragment="security" (click)="jumpToSection('security', $event)">{{ 'landing.nav.security' | t }}</a>
-          </nav>
-        </div>
-        <div class="landing__footer-col">
-          <h3 class="landing__footer-heading">{{ 'landing.footer.colAccount' | t }}</h3>
-          <nav class="landing__footer-list" aria-label="Footer account">
-            <a routerLink="/home">{{ 'landing.footer.home' | t }}</a>
-            @if (!isLoggedIn()) {
-              <a routerLink="/login">{{ 'landing.footer.login' | t }}</a>
-              <a routerLink="/register">{{ 'landing.footer.register' | t }}</a>
-            } @else {
-              <a routerLink="/dashboard">{{ 'landing.footer.dashboard' | t }}</a>
-            }
-          </nav>
-        </div>
+  <footer class="ld-footer ld-footer--home">
+    <div class="ld-contain ld-footer__grid">
+      <div class="ld-footer__brand">
+        <span class="ld-footer__logo"><i class="pi pi-compass"></i> {{ 'landing.brand' | t }}</span>
+        <p>{{ 'landing.footer.tagline' | t }}</p>
       </div>
-      <div class="landing__footer-bottom">
-        <div class="landing__contain landing__footer-bottom-inner">
-          <p class="landing__footer-copy">{{ 'landing.footer.copy' | t }}</p>
-        </div>
+      <div>
+        <h3 class="ld-footer__h">{{ 'landing.footer.colExplore' | t }}</h3>
+        <nav class="ld-footer__nav">
+          <a routerLink="/home" fragment="about" (click)="jumpToSection('about', $event)">{{ 'landing.nav.about' | t }}</a>
+          <a routerLink="/home" fragment="features" (click)="jumpToSection('features', $event)">{{ 'landing.nav.features' | t }}</a>
+          <a routerLink="/home" fragment="workflow" (click)="jumpToSection('workflow', $event)">{{ 'landing.nav.workflow' | t }}</a>
+          <a routerLink="/home" fragment="security" (click)="jumpToSection('security', $event)">{{ 'landing.nav.security' | t }}</a>
+          <a routerLink="/portal">{{ 'public.portal.nav.portalLink' | t }}</a>
+        </nav>
+      </div>
+      <div>
+        <h3 class="ld-footer__h">{{ 'landing.footer.colAccount' | t }}</h3>
+        <nav class="ld-footer__nav">
+          <a routerLink="/home">{{ 'landing.footer.home' | t }}</a>
+          @if (!isLoggedIn()) {
+            <a routerLink="/login">{{ 'landing.footer.login' | t }}</a>
+            <a routerLink="/register">{{ 'landing.footer.register' | t }}</a>
+          } @else {
+            <a routerLink="/dashboard">{{ 'landing.footer.dashboard' | t }}</a>
+          }
+        </nav>
+      </div>
+    </div>
+    <div class="ld-footer__bottom">
+      <div class="ld-contain">
+        <p class="ld-footer__copy">{{ 'landing.footer.copy' | t }}</p>
       </div>
     </div>
   </footer>

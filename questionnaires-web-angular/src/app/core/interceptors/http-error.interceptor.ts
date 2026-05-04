@@ -22,7 +22,8 @@ export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       const loginCall = req.url.includes('/api/auth/login');
-      if (err.status === 401 && !loginCall) {
+      const publicApiCall = req.url.includes('/api/public/');
+      if (err.status === 401 && !loginCall && !publicApiCall) {
         auth.logout(false);
         void router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
       } else if (

@@ -1,0 +1,225 @@
+/* Rich HTML from Quill — global only ([innerHTML] has no encapsulation). Clean typography, no heavy chrome. */
+
+.pub-rte-article {
+  color: #334155;
+  line-height: 1.7;
+  word-break: break-word;
+}
+
+.pub-rte-article :where(h1, h2, h3, p, ul, ol) {
+  margin-top: 0;
+}
+
+.pub-rte-article h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.65rem;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+}
+
+.pub-rte-article h2 {
+  font-size: 1.08rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 1.35rem 0 0.5rem;
+  padding: 0 0 0.35rem;
+  border-bottom: 1px solid #e2e8f0;
+  line-height: 1.35;
+}
+
+.pub-rte-article h2:first-child {
+  margin-top: 0;
+}
+
+.pub-rte-article h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 1.1rem 0 0.4rem;
+  line-height: 1.35;
+}
+
+.pub-rte-article p {
+  margin: 0 0 0.85rem;
+}
+
+.pub-rte-article hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 1.25rem 0;
+}
+
+.pub-rte-article li {
+  margin: 0.3rem 0;
+}
+
+.pub-rte-article :where(ul, ol) {
+  margin: 0 0 0.85rem;
+  padding-inline-start: 1.25rem;
+}
+
+.pub-rte-article ul {
+  list-style-type: disc;
+}
+
+.pub-rte-article ol {
+  list-style-type: decimal;
+}
+
+.pub-rte-article ul ul,
+.pub-rte-article ol ol {
+  margin-bottom: 0;
+}
+
+.pub-rte-article strong,
+.pub-rte-article b {
+  font-weight: 700;
+  color: inherit;
+}
+
+.pub-rte-article em,
+.pub-rte-article i {
+  font-style: italic;
+}
+
+.pub-rte-article u {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.pub-rte-article s,
+.pub-rte-article strike {
+  text-decoration: line-through;
+}
+
+.pub-rte-article sub,
+.pub-rte-article sup {
+  font-size: 0.75em;
+}
+
+.pub-rte-article a {
+  color: #0e7490;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.pub-rte-article a:hover {
+  color: #0f766e;
+}
+
+.pub-rte-article img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 0.25rem 0 0.75rem;
+  border: 1px solid #e2e8f0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.pub-rte-article blockquote {
+  margin: 0.85rem 0 1rem;
+  padding: 0.65rem 0 0.65rem 1rem;
+  padding-inline-start: 1rem;
+  border-inline-start: 3px solid #cbd5e1;
+  background: #f8fafc;
+  border-radius: 0 8px 8px 0;
+  color: #475569;
+}
+
+.pub-rte-article blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.pub-rte-article pre,
+.pub-rte-article .ql-syntax {
+  margin: 0.65rem 0 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  background: #1e293b;
+  color: #e2e8f0;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  border: 1px solid #334155;
+}
+
+/* Quill alignment & indentation */
+.pub-rte-article .ql-align-center {
+  text-align: center;
+}
+
+.pub-rte-article .ql-align-right {
+  text-align: right;
+}
+
+.pub-rte-article .ql-align-justify {
+  text-align: justify;
+}
+
+.pub-rte-article .ql-indent-1 {
+  padding-inline-start: 3em;
+}
+.pub-rte-article .ql-indent-2 {
+  padding-inline-start: 6em;
+}
+.pub-rte-article .ql-indent-3 {
+  padding-inline-start: 9em;
+}
+.pub-rte-article .ql-indent-4 {
+  padding-inline-start: 12em;
+}
+.pub-rte-article .ql-indent-5 {
+  padding-inline-start: 15em;
+}
+.pub-rte-article .ql-indent-6 {
+  padding-inline-start: 18em;
+}
+.pub-rte-article .ql-indent-7 {
+  padding-inline-start: 21em;
+}
+.pub-rte-article .ql-indent-8 {
+  padding-inline-start: 24em;
+}
+
+@media (max-width: 640px) {
+  .pub-rte-article .ql-indent-3,
+  .pub-rte-article .ql-indent-4,
+  .pub-rte-article .ql-indent-5,
+  .pub-rte-article .ql-indent-6,
+  .pub-rte-article .ql-indent-7,
+  .pub-rte-article .ql-indent-8 {
+    padding-inline-start: 2.5em;
+  }
+}
+
+.pub-rte-article .ql-font-serif {
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.pub-rte-article .ql-font-monospace {
+  font-family: ui-monospace, Consolas, Monaco, monospace;
+}
+
+.pub-rte-article .ql-size-small {
+  font-size: 0.85em;
+}
+
+.pub-rte-article .ql-size-large {
+  font-size: 1.3em;
+  line-height: 1.35;
+}
+
+.pub-rte-article .ql-size-huge {
+  font-size: 1.75em;
+  line-height: 1.25;
+}
+
+.pub-rte-article .ql-direction-rtl {
+  direction: rtl;
+  text-align: inherit;
+}
