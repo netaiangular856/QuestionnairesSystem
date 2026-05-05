@@ -1,0 +1,24 @@
+/* Reuse form field styles from create panel */
+@import '../recommendation-create-panel/recommendation-create-panel.component.scss';
+
+.rec-edit__muted {
+  margin: 0;
+  color: var(--color-muted);
+  font-weight: 600;
+}
+
+.rec-edit__err {
+  margin: 0;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.rec-edit__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  padding-top: 0.75rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--color-border);
+}

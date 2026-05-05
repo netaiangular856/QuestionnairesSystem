@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.OpenApi;
 using QuestPDF.Infrastructure;
@@ -8,6 +9,8 @@ using QuestionnairesSystem.Api.Authorization;
 using QuestionnairesSystem.Api.Services;
 using QuestionnairesSystem.Api.Middleware;
 using QuestionnairesSystem.Application.DependencyInjection;
+using QuestionnairesSystem.Application.Features.Ai;
+using QuestionnairesSystem.Application.Features.Ai.Services;
 using QuestionnairesSystem.Application.Features.Identity;
 using QuestionnairesSystem.Application.Features.Identity.Interfaces;
 using QuestionnairesSystem.Infrastructure.DependencyInjection;
@@ -16,6 +19,14 @@ using QuestionnairesSystem.Shared.Api;
 using QuestionnairesSystem.Shared.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Map resolved env key → OpenAI:ApiKey so Options binding sees it (custom env names are not OpenAI__ApiKey).
+var openAiKeyFromEnv = OpenAiApiKeyResolver.TryResolveFromEnvironment();
+if (!string.IsNullOrWhiteSpace(openAiKeyFromEnv))
+{
+    builder.Configuration.AddInMemoryCollection(
+        new Dictionary<string, string?> { ["OpenAI:ApiKey"] = openAiKeyFromEnv.Trim() });
+}
 
 var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 var trimmedOrigins = corsOrigins
@@ -36,6 +47,14 @@ if (trimmedOrigins.Length > 0)
     });
 }
 
+builder.Services.Configure<OpenAiOptions>(builder.Configuration.GetSection("OpenAI"));
+builder.Services.PostConfigure<OpenAiOptions>(o =>
+{
+    if (string.IsNullOrWhiteSpace(o.ApiKey))
+        o.ApiKey = OpenAiApiKeyResolver.TryResolveFromEnvironment() ?? string.Empty;
+});
+
+builder.Services.AddHttpClient<OpenAiChatClient>();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddPersistence(builder.Configuration);
@@ -106,6 +125,10 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+var openAiOpts = app.Services.GetRequiredService<IOptionsMonitor<OpenAiOptions>>().CurrentValue;
+var hasOpenAiKey = !string.IsNullOrWhiteSpace(OpenAiApiKeyResolver.Resolve(openAiOpts, app.Configuration));
+app.Logger.LogInformation("OpenAI: API key configured = {Configured}", hasOpenAiKey);
 
 if (app.Configuration.GetValue("IdentitySeed:RunOnStartup", true))
 {

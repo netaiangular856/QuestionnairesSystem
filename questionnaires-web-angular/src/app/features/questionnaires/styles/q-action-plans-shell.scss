@@ -1,0 +1,546 @@
+﻿@import './q-workspace-shell.scss';
+
+/* ============================================================
+   Action plans & Initiatives â€” premium card design
+   Crafted layering: ribbon + glow + badge + content grid
+   ============================================================ */
+
+.apl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 1.35rem;
+  align-items: stretch;
+  animation: rec-fade-up 0.45s 0.06s var(--rec-ease) both;
+}
+
+.apl-card {
+  --apl-accent: #64748b;
+  --apl-accent-soft: rgba(100, 116, 139, 0.14);
+  --apl-accent-text: #334155;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.4rem 1.35rem 1.15rem;
+  border-radius: 18px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(248, 250, 252, 0.8) 0%, rgba(255, 255, 255, 0) 55%),
+    #ffffff;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow:
+    0 1px 1px rgba(15, 23, 42, 0.04),
+    0 6px 18px -10px rgba(15, 23, 42, 0.08);
+  transition:
+    transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1),
+    border-color 0.3s ease,
+    box-shadow 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.apl-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid transparent;
+  pointer-events: none;
+  transition: border-color 0.3s ease;
+  z-index: 2;
+}
+
+.apl-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 1px 1px rgba(15, 23, 42, 0.04),
+    0 20px 40px -16px rgba(15, 23, 42, 0.2),
+    0 6px 14px -6px var(--apl-accent-soft);
+}
+
+.apl-card:hover::before {
+  border-color: color-mix(in srgb, var(--apl-accent) 32%, transparent);
+}
+
+.apl-card:focus-visible {
+  outline: 2px solid var(--apl-accent);
+  outline-offset: 3px;
+}
+
+.apl-card.is-disabled {
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+/* â€”â€” top ribbon + corner glow â€”â€” */
+.apl-card__ribbon {
+  position: absolute;
+  top: 0;
+  inset-inline: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--apl-accent) 0%, color-mix(in srgb, var(--apl-accent) 30%, transparent) 100%);
+  z-index: 1;
+}
+
+.apl-card__glow {
+  position: absolute;
+  top: -70px;
+  inset-inline-end: -70px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: var(--apl-accent-soft);
+  filter: blur(38px);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 0.35s ease;
+}
+
+.apl-card:hover .apl-card__glow {
+  opacity: 0.85;
+}
+
+.apl-card > *:not(.apl-card__ribbon):not(.apl-card__glow) {
+  position: relative;
+  z-index: 1;
+}
+
+/* â€”â€” status palette â€”â€” */
+.apl-card--draft {
+  --apl-accent: #64748b;
+  --apl-accent-soft: rgba(100, 116, 139, 0.14);
+  --apl-accent-text: #334155;
+}
+
+.apl-card--active {
+  --apl-accent: #059669;
+  --apl-accent-soft: rgba(5, 150, 105, 0.15);
+  --apl-accent-text: #047857;
+}
+
+.apl-card--implemented {
+  --apl-accent: #2563eb;
+  --apl-accent-soft: rgba(37, 99, 235, 0.14);
+  --apl-accent-text: #1d4ed8;
+}
+
+.apl-card--dismissed {
+  --apl-accent: #dc2626;
+  --apl-accent-soft: rgba(220, 38, 38, 0.14);
+  --apl-accent-text: #b91c1c;
+}
+
+.apl-card--risk {
+  --apl-accent: #d97706;
+  --apl-accent-soft: rgba(217, 119, 6, 0.16);
+  --apl-accent-text: #b45309;
+}
+
+/* â€”â€” head row: badge + status chip â€”â€” */
+.apl-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.apl-card__badge {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--apl-accent) 16%, #ffffff) 0%,
+    color-mix(in srgb, var(--apl-accent) 7%, #ffffff) 100%
+  );
+  color: var(--apl-accent);
+  -webkit-text-fill-color: var(--apl-accent);
+  font-size: 1.05rem;
+  border: 1px solid color-mix(in srgb, var(--apl-accent) 18%, #e2e8f0);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 2px 6px -2px color-mix(in srgb, var(--apl-accent) 20%, transparent);
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 0.3s ease;
+  flex-shrink: 0;
+}
+
+.apl-card__badge .pi {
+  color: var(--apl-accent);
+  -webkit-text-fill-color: var(--apl-accent);
+}
+
+.apl-card:hover .apl-card__badge {
+  transform: scale(1.05) rotate(-3deg);
+  border-color: color-mix(in srgb, var(--apl-accent) 38%, transparent);
+}
+
+.apl-card__badge--init {
+  border-radius: 50%;
+}
+
+/* â€”â€” status chip â€”â€” */
+.apl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.3rem 0.7rem 0.3rem 0.58rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--apl-accent) 22%, transparent);
+  background: var(--apl-accent-soft);
+  color: var(--apl-accent-text);
+  -webkit-text-fill-color: var(--apl-accent-text);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.apl-chip__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--apl-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--apl-accent) 18%, transparent);
+  flex-shrink: 0;
+}
+
+/* â€”â€” title â€”â€” */
+.apl-card__title {
+  margin: 0;
+  font-size: 1.08rem;
+  font-weight: 800;
+  letter-spacing: -0.022em;
+  line-height: 1.34;
+  color: #0f172a;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  min-height: 2.68em;
+}
+
+/* â€”â€” owner row â€”â€” */
+.apl-card__owner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+  min-width: 0;
+}
+
+.apl-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  color: #4338ca;
+  -webkit-text-fill-color: #4338ca;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  box-shadow: 0 2px 4px -2px rgba(99, 102, 241, 0.35);
+}
+
+.apl-avatar .pi {
+  color: #6366f1;
+  -webkit-text-fill-color: #6366f1;
+  font-size: 0.82rem;
+}
+
+.apl-card__owner-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+/* â€”â€” plan chip (initiatives) â€”â€” */
+.apl-card__plan {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.48rem;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 0.38rem 0.7rem;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  color: #0f172a;
+  -webkit-text-fill-color: #0f172a;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.apl-card__plan .pi {
+  color: #64748b;
+  -webkit-text-fill-color: #64748b;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.apl-card__plan > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.apl-card:hover .apl-card__plan {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+/* â€”â€” progress timeline (plans) â€”â€” */
+.apl-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: auto;
+  padding-top: 0.1rem;
+}
+
+.apl-progress__bar {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.apl-progress__fill {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--apl-accent) 0%, color-mix(in srgb, var(--apl-accent) 65%, #ffffff 35%) 100%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--apl-accent) 25%, transparent) inset;
+  transition: width 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.apl-progress__labels {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.apl-progress__date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.apl-progress__date--end {
+  justify-content: flex-end;
+  text-align: end;
+}
+
+.apl-progress__date .pi {
+  color: var(--apl-accent);
+  -webkit-text-fill-color: var(--apl-accent);
+  font-size: 0.68rem;
+  flex-shrink: 0;
+}
+
+.apl-progress__pct {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--apl-accent-soft);
+  color: var(--apl-accent-text);
+  -webkit-text-fill-color: var(--apl-accent-text);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* â€”â€” no-period fallback â€”â€” */
+.apl-card__fallback {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px dashed #e2e8f0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.apl-card__fallback .pi {
+  color: #94a3b8;
+  -webkit-text-fill-color: #94a3b8;
+  font-size: 0.88rem;
+}
+
+/* â€”â€” initiatives target box â€”â€” */
+.apl-target {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: auto;
+  padding: 0.65rem 0.8rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.apl-target .pi {
+  font-size: 1.05rem;
+  color: #64748b;
+  -webkit-text-fill-color: #64748b;
+  flex-shrink: 0;
+}
+
+.apl-target__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.apl-target__text {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.apl-target__date {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.apl-target--overdue {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.apl-target--overdue .pi,
+.apl-target--overdue .apl-target__text {
+  color: #b91c1c;
+  -webkit-text-fill-color: #b91c1c;
+}
+
+.apl-target--soon {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.apl-target--soon .pi,
+.apl-target--soon .apl-target__text {
+  color: #b45309;
+  -webkit-text-fill-color: #b45309;
+}
+
+.apl-target--ok {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.apl-target--ok .pi,
+.apl-target--ok .apl-target__text {
+  color: #047857;
+  -webkit-text-fill-color: #047857;
+}
+
+/* â€”â€” footer CTA â€”â€” */
+.apl-card__foot {
+  padding-top: 0.8rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.apl-card__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--apl-accent-text);
+  -webkit-text-fill-color: var(--apl-accent-text);
+  transition: gap 0.25s ease;
+}
+
+.apl-card__cta .pi {
+  font-size: 0.85rem;
+  color: var(--apl-accent);
+  -webkit-text-fill-color: var(--apl-accent);
+  transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.apl-card:hover .apl-card__cta .pi {
+  transform: translateX(4px);
+}
+
+[dir='rtl'] .apl-card__cta .pi,
+:host-context([dir='rtl']) .apl-card__cta .pi {
+  transform: scaleX(-1);
+}
+
+[dir='rtl'] .apl-card:hover .apl-card__cta .pi,
+:host-context([dir='rtl']) .apl-card:hover .apl-card__cta .pi {
+  transform: scaleX(-1) translateX(4px);
+}
+
+/* table helpers */
+.action-plans-page a.rec-row-btn,
+.initiatives-page a.rec-row-btn {
+  text-decoration: none;
+}
+
+/* responsive */
+@media (max-width: 520px) {
+  .apl-card {
+    padding: 1.25rem 1.15rem 1.05rem;
+  }
+
+  .apl-card__title {
+    min-height: 0;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
+}

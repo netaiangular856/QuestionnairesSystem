@@ -18,7 +18,7 @@ import { I18nService } from '../../shared/services/i18n.service';
   standalone: true,
   imports: [FormsModule, TranslatePipe, RouterLink],
   templateUrl: './public-survey-fill-page.component.html',
-  styleUrl: '../questionnaires/survey-fill-page.component.scss',
+  styleUrl: '../questionnaires/surveys/survey-fill-page/survey-fill-page.component.scss',
 })
 export class PublicSurveyFillPageComponent implements OnInit {
   private readonly publicApi = inject(PublicSurveyApiService);

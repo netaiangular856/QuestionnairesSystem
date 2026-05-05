@@ -1,0 +1,219 @@
+<div
+  class="page-workspace reports-dashboard impact-fullbleed impact-motion-root"
+  [attr.dir]="i18n.lang() === 'ar' ? 'rtl' : 'ltr'"
+>
+  <div class="rp-page impact-page">
+    <header class="rp-hero impact-hero impact-motion-hero" role="banner">
+      <div class="rp-hero__icon impact-hero__icon" aria-hidden="true"><i class="pi pi-percentage"></i></div>
+      <div class="rp-hero__text">
+        <p class="rp-hero__kicker">{{ 'q.impact.heroKicker' | t }}</p>
+        <h1 class="rp-hero__title">{{ 'q.impact.title' | t }}</h1>
+        <p class="rp-hero__lead">{{ 'q.impact.leadShort' | t }}</p>
+      </div>
+    </header>
+
+    <section class="rp-panel rp-filters impact-filters impact-motion-filters" aria-labelledby="impact-filters-h">
+      <div class="impact-filters__head">
+        <h2 id="impact-filters-h" class="impact-filters__title">{{ 'q.impact.filtersSection' | t }}</h2>
+        <p class="impact-filters__hint">{{ 'q.impact.filtersHintShort' | t }}</p>
+      </div>
+
+      <div class="impact-filters__grid">
+        <label class="impact-filter">
+          <span class="impact-filter__label">{{ 'q.impact.pickSurvey' | t }}</span>
+          <select class="impact-filter__control" [(ngModel)]="selectedSurveyId">
+            <option value="">{{ 'q.impact.optionAllSurveys' | t }}</option>
+            @for (s of surveyList(); track s.id) {
+              <option [value]="s.id">{{ s.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="impact-filter">
+          <span class="impact-filter__label">{{ 'q.impact.pickPlan' | t }}</span>
+          <select class="impact-filter__control" [(ngModel)]="selectedPlanId">
+            <option value="">{{ 'q.impact.optionAllPlans' | t }}</option>
+            @for (p of planList(); track p.id) {
+              <option [value]="p.id">{{ planPickerLabel(p) }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="impact-filter impact-filter--wide">
+          <span class="impact-filter__label">{{ 'q.impact.pickInitiative' | t }}</span>
+          <select class="impact-filter__control" [(ngModel)]="selectedInitiativeId">
+            <option value="">{{ 'q.impact.optionAllInitiatives' | t }}</option>
+            @for (i of initiativeList(); track i.id) {
+              <option [value]="i.id">{{ initiativePickerLabel(i) }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="impact-filter">
+          <span class="impact-filter__label">{{ 'q.impact.filterFrom' | t }}</span>
+          <input class="impact-filter__control" type="date" [(ngModel)]="fromDate" />
+        </label>
+
+        <label class="impact-filter">
+          <span class="impact-filter__label">{{ 'q.impact.filterTo' | t }}</span>
+          <input class="impact-filter__control" type="date" [(ngModel)]="toDate" />
+        </label>
+
+        <label class="impact-filter impact-filter--wide">
+          <span class="impact-filter__label">{{ 'q.impact.splitAtOptional' | t }}</span>
+          <input class="impact-filter__control" type="datetime-local" [(ngModel)]="splitAtLocal" />
+        </label>
+
+        <div class="impact-filters__actions">
+          <button type="button" class="rp-btn rp-btn--primary" (click)="applyFilters()" [disabled]="busy()">
+            <i class="pi pi-check" aria-hidden="true"></i>
+            {{ 'q.impact.apply' | t }}
+          </button>
+          <button type="button" class="rp-btn rp-btn--ghost" (click)="resetFilters()" [disabled]="busy()">
+            <i class="pi pi-refresh" aria-hidden="true"></i>
+            {{ 'q.impact.reset' | t }}
+          </button>
+        </div>
+      </div>
+    </section>
+
+    @if (errorMessage(); as err) {
+      <div class="rp-state rp-state--err rp-panel" role="alert">
+        <i class="pi pi-times-circle rp-state__icon" aria-hidden="true"></i>
+        <span class="rp-state__text">{{ err }}</span>
+      </div>
+    }
+
+    @if (busy()) {
+      <div class="rp-state rp-state--loading rp-panel" role="status" aria-live="polite">
+        <span class="rp-spinner" aria-hidden="true"></span>
+        <span class="rp-state__text">{{ 'q.impact.loading' | t }}</span>
+      </div>
+    } @else {
+      @if (data(); as overview) {
+        <div class="rp-main impact-main">
+          @if (overview.surveyImpact; as d) {
+            <section class="impact-block impact-motion-section impact-motion-section--survey" aria-labelledby="impact-surveys-h">
+              <h2 class="impact-block__title" id="impact-surveys-h">
+                <i class="pi pi-send" aria-hidden="true"></i>
+                {{ 'q.impact.section.surveys' | t }}
+              </h2>
+
+              <div class="impact-chart-grid impact-chart-grid--four">
+                <article class="rp-chart-card impact-chart-tile impact-motion-card impact-motion-card--i1">
+                  <h3 class="rp-chart-card__title">{{ volumeLabel(d) }}</h3>
+                  <div class="rp-chart-card__canvas rp-chart-card__canvas--bar impact-chart-tile__canvas">
+                    <canvas baseChart type="bar" [data]="surveyBarVolumeData()" [options]="barOpts()"></canvas>
+                  </div>
+                </article>
+
+                @if (surveyShowAvgChart()) {
+                  <article class="rp-chart-card impact-chart-tile impact-motion-card impact-motion-card--i2">
+                    <h3 class="rp-chart-card__title">{{ avgLabel(d) }}</h3>
+                    <div class="rp-chart-card__canvas rp-chart-card__canvas--bar impact-chart-tile__canvas">
+                      <canvas baseChart type="bar" [data]="surveyBarAvgData()" [options]="barOpts()"></canvas>
+                    </div>
+                  </article>
+                  <article class="rp-chart-card impact-chart-tile impact-motion-card impact-motion-card--i3">
+                    <h3 class="rp-chart-card__title">{{ 'q.impact.chart.avgHorizontalTitle' | t }}</h3>
+                    <div class="rp-chart-card__canvas rp-chart-card__canvas--hbar impact-chart-tile__canvas">
+                      <canvas baseChart type="bar" [data]="surveyBarAvgHorizontalData()" [options]="barHorizontalOpts()"></canvas>
+                    </div>
+                  </article>
+                  <article class="rp-chart-card impact-chart-tile impact-motion-card impact-motion-card--i4">
+                    <h3 class="rp-chart-card__title">{{ 'q.impact.chart.trendTitle' | t }}</h3>
+                    <div class="rp-chart-card__canvas rp-chart-card__canvas--column impact-chart-tile__canvas">
+                      <canvas baseChart type="line" [data]="surveyLineTrendData()" [options]="lineOpts()"></canvas>
+                    </div>
+                  </article>
+                } @else {
+                  <article class="rp-chart-card impact-chart-tile impact-chart-tile--empty impact-motion-card impact-motion-card--i2">
+                    <h3 class="rp-chart-card__title">{{ 'q.impact.chart.avgBundleTitle' | t }}</h3>
+                    <p class="impact-chart-tile__empty">{{ 'q.impact.chart.noRatingData' | t }}</p>
+                  </article>
+                  <article class="rp-chart-card impact-chart-tile impact-chart-tile--empty impact-motion-card impact-motion-card--i3">
+                    <h3 class="rp-chart-card__title">{{ 'q.impact.chart.avgBundleTitle' | t }}</h3>
+                    <p class="impact-chart-tile__empty">{{ 'q.impact.chart.noRatingData' | t }}</p>
+                  </article>
+                  <article class="rp-chart-card impact-chart-tile impact-chart-tile--empty impact-motion-card impact-motion-card--i4">
+                    <h3 class="rp-chart-card__title">{{ 'q.impact.chart.avgBundleTitle' | t }}</h3>
+                    <p class="impact-chart-tile__empty">{{ 'q.impact.chart.noRatingData' | t }}</p>
+                  </article>
+                }
+              </div>
+            </section>
+          }
+
+          @if (overview.executionImpact; as e) {
+            <section class="impact-block impact-block--exec impact-motion-section impact-motion-section--exec" aria-labelledby="impact-exec-h">
+              <h2 class="impact-block__title" id="impact-exec-h">
+                <i class="pi pi-chart-line" aria-hidden="true"></i>
+                {{ 'q.impact.section.execution' | t }}
+              </h2>
+
+              <div class="impact-chart-grid impact-chart-grid--four">
+                <article class="rp-chart-card impact-chart-tile impact-motion-card impact-motion-card--i1">
+                  <h3 class="rp-chart-card__title">{{ volumeLabel(e) }}</h3>
+                  <div class="rp-chart-card__canvas rp-chart-card__canvas--bar impact-chart-tile__canvas">
+                    <canvas baseChart type="bar" [data]="execBarVolumeData()" [options]="barOpts()"></canvas>
+                  </div>
+                </article>
+
+                @if (execShowAvgChart()) {
+                  <article class="rp-chart-card impact-chart-tile impact-motion-card impact-motion-card--i2">
+                    <h3 class="rp-chart-card__title">{{ avgLabel(e) }}</h3>
+                    <div class="rp-chart-card__canvas rp-chart-card__canvas--bar impact-chart-tile__canvas">
+                      <canvas baseChart type="bar" [data]="execBarAvgData()" [options]="barOpts()"></canvas>
+                    </div>
+                  </article>
+                  <article class="rp-chart-card impact-chart-tile impact-motion-card impact-motion-card--i3">
+                    <h3 class="rp-chart-card__title">{{ 'q.impact.chart.avgHorizontalTitle' | t }}</h3>
+                    <div class="rp-chart-card__canvas rp-chart-card__canvas--hbar impact-chart-tile__canvas">
+                      <canvas baseChart type="bar" [data]="execBarAvgHorizontalData()" [options]="barHorizontalOpts()"></canvas>
+                    </div>
+                  </article>
+                  <article class="rp-chart-card impact-chart-tile impact-motion-card impact-motion-card--i4">
+                    <h3 class="rp-chart-card__title">{{ 'q.impact.chart.trendTitle' | t }}</h3>
+                    <div class="rp-chart-card__canvas rp-chart-card__canvas--column impact-chart-tile__canvas">
+                      <canvas baseChart type="line" [data]="execLineTrendData()" [options]="lineOpts()"></canvas>
+                    </div>
+                  </article>
+                } @else {
+                  <article class="rp-chart-card impact-chart-tile impact-chart-tile--empty impact-motion-card impact-motion-card--i2">
+                    <h3 class="rp-chart-card__title">{{ 'q.impact.chart.progressAvgBundleTitle' | t }}</h3>
+                    <p class="impact-chart-tile__empty">{{ 'q.impact.chart.noProgressAvgData' | t }}</p>
+                  </article>
+                  <article class="rp-chart-card impact-chart-tile impact-chart-tile--empty impact-motion-card impact-motion-card--i3">
+                    <h3 class="rp-chart-card__title">{{ 'q.impact.chart.progressAvgBundleTitle' | t }}</h3>
+                    <p class="impact-chart-tile__empty">{{ 'q.impact.chart.noProgressAvgData' | t }}</p>
+                  </article>
+                  <article class="rp-chart-card impact-chart-tile impact-chart-tile--empty impact-motion-card impact-motion-card--i4">
+                    <h3 class="rp-chart-card__title">{{ 'q.impact.chart.progressAvgBundleTitle' | t }}</h3>
+                    <p class="impact-chart-tile__empty">{{ 'q.impact.chart.noProgressAvgData' | t }}</p>
+                  </article>
+                }
+              </div>
+
+              @if (execShowStatusCharts()) {
+                <div class="impact-chart-grid impact-chart-grid--pair impact-chart-grid--status">
+                  <article class="rp-chart-card impact-chart-tile impact-motion-card impact-motion-card--s1">
+                    <h3 class="rp-chart-card__title">{{ 'q.impact.chart.statusDoughnut' | t }}</h3>
+                    <div class="rp-chart-card__canvas rp-chart-card__canvas--donut impact-chart-tile__canvas">
+                      <canvas baseChart type="doughnut" [data]="execDoughnutStatusData()" [options]="doughnutOpts()"></canvas>
+                    </div>
+                  </article>
+                  <article class="rp-chart-card impact-chart-tile impact-motion-card impact-motion-card--s2">
+                    <h3 class="rp-chart-card__title">{{ 'q.impact.chart.statusPolar' | t }}</h3>
+                    <div class="rp-chart-card__canvas rp-chart-card__canvas--donut impact-chart-tile__canvas">
+                      <canvas baseChart type="polarArea" [data]="execPolarStatusData()" [options]="polarOpts()"></canvas>
+                    </div>
+                  </article>
+                </div>
+              }
+            </section>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>

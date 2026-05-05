@@ -14,8 +14,13 @@ namespace QuestionnairesSystem.Api.Controllers;
 public sealed class ReportsController : ControllerBase
 {
     private readonly IQuestionnaireReportService _reports;
+    private readonly IImpactMeasurementService _impact;
 
-    public ReportsController(IQuestionnaireReportService reports) => _reports = reports;
+    public ReportsController(IQuestionnaireReportService reports, IImpactMeasurementService impact)
+    {
+        _reports = reports;
+        _impact = impact;
+    }
 
     [HttpGet("survey-analytics/export/pdf")]
     [Authorize(Policy = PermissionCodes.ReportExport)]
@@ -63,6 +68,18 @@ public sealed class ReportsController : ControllerBase
     {
         var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
         var result = await _reports.GetCrossSurveyAnalyticsAsync(request, cancellationToken).ConfigureAwait(false);
+        return result.ToApiActionResult(this, traceId);
+    }
+
+    [HttpGet("impact-measurement")]
+    [Authorize(Policy = PermissionCodes.ReportView)]
+    [ProducesResponseType(typeof(ApiResponse<ImpactMeasurementOverviewDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ImpactMeasurement(
+        [FromQuery] ImpactMeasurementFilterRequest request,
+        CancellationToken cancellationToken)
+    {
+        var traceId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+        var result = await _impact.GetAsync(request, cancellationToken).ConfigureAwait(false);
         return result.ToApiActionResult(this, traceId);
     }
 

@@ -1,0 +1,20 @@
+@import '../../styles/q-action-plans-shell.scss';
+
+/* initiatives-specific fine-tuning */
+
+.init-table-plan-link {
+  color: #0f766e;
+  -webkit-text-fill-color: #0f766e;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.init-table-plan-link:hover {
+  text-decoration: underline;
+}
+
+.rec-status--risk {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #b45309;
+}

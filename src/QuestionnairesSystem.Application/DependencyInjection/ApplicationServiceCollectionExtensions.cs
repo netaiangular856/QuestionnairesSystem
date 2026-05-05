@@ -1,5 +1,7 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using QuestionnairesSystem.Application.Features.Ai.Interfaces;
+using QuestionnairesSystem.Application.Features.Ai.Services;
 using QuestionnairesSystem.Application.Features.AuditLogs.Interfaces;
 using QuestionnairesSystem.Application.Features.AuditLogs.Services;
 using QuestionnairesSystem.Application.Features.DataBulk;
@@ -56,6 +58,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<IParticipantResponseService, ParticipantResponseService>();
         services.AddScoped<IPublicSurveyPortalService, PublicSurveyPortalService>();
         services.AddScoped<IQuestionnaireReportService, QuestionnaireReportService>();
+        services.AddScoped<IImpactMeasurementService, ImpactMeasurementService>();
         services.AddScoped<IRecommendationCrudService, RecommendationCrudService>();
         services.AddScoped<IActionPlanCrudService, ActionPlanCrudService>();
 
@@ -64,6 +67,8 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<IPartnerService, PartnerService>();
 
         services.AddScoped<IExcelBulkDataService, ExcelBulkDataService>();
+
+        services.AddScoped<IAiAssistantService, AiAssistantService>();
 
         return services;
     }

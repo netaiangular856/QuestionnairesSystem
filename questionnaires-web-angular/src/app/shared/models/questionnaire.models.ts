@@ -559,6 +559,42 @@ export interface CrossSurveyAnalyticsFilterRequest {
   includeAnswerDetails?: boolean;
 }
 
+/** GET /api/reports/impact-measurement — all filters optional; empty IDs mean workspace-wide aggregates. */
+export interface ImpactMeasurementFilterRequest {
+  surveyId?: string | null;
+  actionPlanId?: string | null;
+  initiativeId?: string | null;
+  fromUtc?: string | null;
+  toUtc?: string | null;
+  splitAtUtc?: string | null;
+}
+
+export interface ImpactMeasurementBucketDto {
+  surveySubmissionCount: number;
+  averageRating: number | null;
+  progressEntryCount: number;
+  averageProgressPercent: number | null;
+}
+
+export interface ImpactMeasurementDto {
+  /** Survey | AllSurveys | ActionPlan | Initiative | AllExecution */
+  scopeKind: string;
+  subjectId: string;
+  subjectTitleAr: string;
+  subjectTitleEn: string;
+  splitAtUtc: string;
+  splitBasis: string;
+  before: ImpactMeasurementBucketDto;
+  after: ImpactMeasurementBucketDto;
+  initiativeStatusDistribution: NamedCountDto[];
+}
+
+/** GET /api/reports/impact-measurement — overview: surveys + execution (either may be null). */
+export interface ImpactMeasurementOverviewDto {
+  surveyImpact: ImpactMeasurementDto | null;
+  executionImpact: ImpactMeasurementDto | null;
+}
+
 export interface CrossSurveyAnalyticsDto {
   appliedFilter: CrossSurveyAnalyticsFilterSnapshotDto;
   overview: CrossSurveyOverviewDto;
@@ -777,4 +813,55 @@ export interface RatingAnalyticsDto {
   rating: number;
   count: number;
   percentage: number;
+}
+
+/** POST /api/ai */
+export interface TranslateRichTextRequest {
+  html: string;
+  sourceLang: 'ar' | 'en';
+  targetLang: 'ar' | 'en';
+}
+
+export interface TranslateRichTextResponse {
+  html: string;
+}
+
+export interface AiSuggestFromSurveyRequest {
+  surveyId?: string | null;
+}
+
+export interface AiSuggestRecommendationDraftDto {
+  titleAr: string;
+  titleEn: string;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
+  priority: number;
+}
+
+export interface AiSuggestActionPlanDraftDto {
+  titleAr: string;
+  titleEn: string;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
+}
+
+export interface AiAnalyzeReportsRequest {
+  filter: CrossSurveyAnalyticsFilterRequest;
+}
+
+export interface AiChartSuggestionDto {
+  /** Legacy single title (often English). Prefer titleAr / titleEn. */
+  title?: string;
+  titleAr?: string | null;
+  titleEn?: string | null;
+  /** Server returns bar | line | doughnut */
+  kind?: string | null;
+  labels: string[];
+  values: number[];
+}
+
+export interface AiAnalyzeReportsResponseDto {
+  summaryAr: string;
+  summaryEn: string;
+  charts: AiChartSuggestionDto[];
 }

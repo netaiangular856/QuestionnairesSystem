@@ -12,4 +12,9 @@ public static class QuestionnaireErrors
     public const string InitiativeNotFound = "QUESTIONNAIRE_INITIATIVE_NOT_FOUND";
     public const string InvalidStatusTransition = "QUESTIONNAIRE_INVALID_STATUS";
     public const string InvalidOperation = "QUESTIONNAIRE_INVALID_OPERATION";
+    public const string ImpactMeasurementInsufficientData = "QUESTIONNAIRE_IMPACT_MEASUREMENT_INSUFFICIENT_DATA";
+
+    public const string AiNotConfigured = "QUESTIONNAIRE_AI_NOT_CONFIGURED";
+
+    public const string AiProviderError = "QUESTIONNAIRE_AI_PROVIDER_ERROR";
 }

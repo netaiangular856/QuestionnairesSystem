@@ -1,0 +1,138 @@
+<div
+  class="page-workspace reports-dashboard ai-page ai-page--future"
+  [attr.dir]="i18n.lang() === 'ar' ? 'rtl' : 'ltr'"
+  [class.ai-page--rtl]="i18n.lang() === 'ar'"
+>
+  @if (!canViewReports) {
+    <div class="card rp-panel rp-state rp-state--err" role="alert">
+      <span class="rp-state__text">{{ 'forbidden.lead' | t }}</span>
+    </div>
+  } @else {
+    <div class="ai-page__ambient" aria-hidden="true">
+      <div class="ai-page__blob ai-page__blob--a"></div>
+      <div class="ai-page__blob ai-page__blob--b"></div>
+      <div class="ai-page__blob ai-page__blob--c"></div>
+      <div class="ai-page__grid-faint"></div>
+    </div>
+
+    <div class="rp-page ai-page__inner">
+      <header class="rp-hero ai-page__hero" role="banner">
+        <div class="ai-page__hero-bar">
+          <span class="ai-page__pill">{{ 'q.ai.futureBadge' | t }}</span>
+          <div class="ai-page__signal" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="ai-page__hero-body">
+          <div class="rp-hero__icon ai-page__hero-icon" aria-hidden="true"><i class="pi pi-sparkles"></i></div>
+          <div class="rp-hero__text">
+            <p class="rp-hero__kicker">{{ 'q.ai.heroKicker' | t }}</p>
+            <h1 class="rp-hero__title ai-page__title-gradient">{{ 'q.ai.title' | t }}</h1>
+            <p class="rp-hero__lead">{{ 'q.ai.lead' | t }}</p>
+            <p class="ai-page__hint muted">{{ 'q.ai.futureTag' | t }}</p>
+          </div>
+        </div>
+      </header>
+
+      @if (analyzeBusy()) {
+        <div class="rp-state rp-state--loading rp-panel ai-page__busy" role="status" aria-live="polite">
+          <span class="rp-spinner" aria-hidden="true"></span>
+          <span class="rp-state__text">{{ 'q.ai.analyzing' | t }}</span>
+        </div>
+      }
+
+      <section class="rp-panel rp-filters ai-page__filters" aria-labelledby="ai-filters-heading">
+        <div class="rp-panel__head rp-filters__intro">
+          <span class="rp-panel__icon ai-page__filters-icon" aria-hidden="true"><i class="pi pi-filter"></i></span>
+          <div>
+            <h2 id="ai-filters-heading" class="rp-panel__title">{{ 'q.ai.filtersSection' | t }}</h2>
+            <p class="rp-panel__hint muted">{{ 'q.ai.filtersHint' | t }}</p>
+          </div>
+        </div>
+        <div class="rp-filters__grid">
+          <label class="rp-field">
+            <span class="rp-field__label">{{ 'q.analysis.filterSurvey' | t }}</span>
+            <span class="rp-field__control">
+              <select class="rp-input rp-input--select ai-page__field ai-page__field--select-solo" [(ngModel)]="selectedSurveyId">
+                <option value="">{{ 'q.analysis.filterSurveyAll' | t }}</option>
+                @for (s of surveyList(); track s.id) {
+                  <option [value]="s.id">{{ s.name }}</option>
+                }
+              </select>
+            </span>
+          </label>
+          <label class="rp-field">
+            <span class="rp-field__label">{{ 'q.analysis.filterFrom' | t }}</span>
+            <span class="rp-field__control">
+              <input class="rp-input ai-page__field ai-page__field--date-solo" type="date" [(ngModel)]="fromDate" />
+            </span>
+          </label>
+          <label class="rp-field">
+            <span class="rp-field__label">{{ 'q.analysis.filterTo' | t }}</span>
+            <span class="rp-field__control">
+              <input class="rp-input ai-page__field ai-page__field--date-solo" type="date" [(ngModel)]="toDate" />
+            </span>
+          </label>
+          <div class="rp-filters__actions">
+            <button type="button" class="rp-btn rp-btn--primary ai-page__cta" (click)="runAnalysis()" [disabled]="analyzeBusy()">
+              @if (analyzeBusy()) {
+                <span class="rp-spinner" aria-hidden="true"></span>
+              } @else {
+                <i class="pi pi-bolt" aria-hidden="true"></i>
+              }
+              {{ 'q.ai.run' | t }}
+            </button>
+            <a routerLink="/reports" class="rp-btn rp-btn--ghost ai-page__ghost">
+              <span class="ai-page__ghost-icon" aria-hidden="true"><i class="pi pi-chart-bar"></i></span>
+              <span>{{ 'q.ai.openReports' | t }}</span>
+              <i class="pi pi-angle-right ai-page__ghost-chevron" aria-hidden="true"></i>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      @if (failed()) {
+        <div class="rp-state rp-state--err rp-panel" role="alert">
+          <i class="pi pi-times-circle rp-state__icon" aria-hidden="true"></i>
+          <span class="rp-state__text">{{ errorText() }}</span>
+        </div>
+      }
+
+      @if (result(); as res) {
+        <section class="rp-panel ai-analysis-summary ai-page__summary" aria-labelledby="ai-sum-h">
+          <div class="ai-analysis-summary__head">
+            <span class="ai-analysis-summary__accent" aria-hidden="true"></span>
+            <h2 id="ai-sum-h" class="ai-analysis-summary__title">{{ 'q.ai.summary' | t }}</h2>
+          </div>
+          <div class="ai-analysis-summary__body rp-rich" [innerHTML]="summarySafe()"></div>
+        </section>
+
+        @if (res.charts.length) {
+          <div class="ai-charts-block">
+            <h2 class="ai-charts-block__heading">{{ 'q.ai.chartsHeading' | t }}</h2>
+            <div class="rp-main ai-analysis-charts">
+              @for (c of res.charts; track $index) {
+                <article class="rp-chart-card ai-analysis-chart ai-page__chart">
+                  <h3 class="rp-chart-card__title">{{ chartHeading(c) }}</h3>
+                  <div class="rp-chart-card__canvas ai-analysis-chart__canvas">
+                    @switch (chartKind(c)) {
+                      @case ('line') {
+                        <canvas baseChart type="line" [data]="$any(chartData(c))" [options]="lineChartOptions()"></canvas>
+                      }
+                      @case ('doughnut') {
+                        <canvas baseChart type="doughnut" [data]="$any(chartData(c))" [options]="doughnutChartOptions()"></canvas>
+                      }
+                      @default {
+                        <canvas baseChart type="bar" [data]="$any(chartData(c))" [options]="barChartOptions()"></canvas>
+                      }
+                    }
+                  </div>
+                </article>
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+  }
+</div>

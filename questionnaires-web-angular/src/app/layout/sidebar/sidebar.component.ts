@@ -50,8 +50,44 @@ export class SidebarComponent {
       titleKey: 'nav.group.questionnaires',
       items: [
         { path: '/surveys', labelKey: 'nav.surveys', permissions: [PermissionCodes.SurveyView], icon: 'survey' },
-        { path: '/surveys-approval', labelKey: 'nav.surveysApproval', permissions: [PermissionCodes.SurveyApprovalView], icon: 'audit' },
+        {
+          path: '/surveys-approval',
+          labelKey: 'nav.surveysApproval',
+          permissions: [PermissionCodes.SurveyApprovalView],
+          icon: 'audit',
+        },
         { path: '/templates', labelKey: 'nav.templates', permissions: [PermissionCodes.TemplateView], icon: 'template' },
+      ],
+    },
+    {
+      id: 'analytics',
+      titleKey: 'nav.group.analytics',
+      items: [
+        { path: '/reports', labelKey: 'nav.reports', permissions: [PermissionCodes.ReportView], icon: 'report' },
+        {
+          path: '/survey-analysis',
+          labelKey: 'nav.surveyAnalysis',
+          permissions: [PermissionCodes.ReportView],
+          icon: 'chart',
+        },
+        {
+          path: '/impact-measurement',
+          labelKey: 'nav.impactMeasurement',
+          permissions: [PermissionCodes.ReportView],
+          icon: 'chart',
+        },
+        {
+          path: '/ai-analysis',
+          labelKey: 'nav.aiAnalysis',
+          permissions: [PermissionCodes.ReportView],
+          icon: 'report',
+        },
+      ],
+    },
+    {
+      id: 'programs',
+      titleKey: 'nav.group.programs',
+      items: [
         {
           path: '/recommendations',
           labelKey: 'nav.recommendations',
@@ -65,37 +101,38 @@ export class SidebarComponent {
           permissions: [PermissionCodes.ActionPlanView],
           icon: 'recommend',
         },
-        { path: '/reports', labelKey: 'nav.reports', permissions: [PermissionCodes.ReportView], icon: 'report' },
-        {
-          path: '/survey-analysis',
-          labelKey: 'nav.surveyAnalysis',
-          permissions: [PermissionCodes.ReportView],
-          icon: 'chart',
-        },
       ],
     },
     {
-      id: 'identity',
-      titleKey: 'nav.group.identity',
+      id: 'organization',
+      titleKey: 'nav.group.organization',
       items: [
         { path: '/users', labelKey: 'nav.users', permissions: [PermissionCodes.UserManage], icon: 'users' },
         { path: '/employees', labelKey: 'nav.employees', permissions: [PermissionCodes.EmployeeView], icon: 'users' },
         { path: '/departments', labelKey: 'nav.departments', permissions: [PermissionCodes.DepartmentView], icon: 'template' },
         { path: '/partners', labelKey: 'nav.partners', permissions: [PermissionCodes.PartnerView], icon: 'audit' },
+      ],
+    },
+    {
+      id: 'administration',
+      titleKey: 'nav.group.administration',
+      items: [
+        { path: '/roles', labelKey: 'nav.roles', permissions: [PermissionCodes.RoleManage], icon: 'roles' },
+        { path: '/audit-logs', labelKey: 'nav.auditLogs', permissions: [PermissionCodes.AuditLogView], icon: 'audit' },
         {
           path: '/data-import',
           labelKey: 'nav.dataImport',
           permissions: [PermissionCodes.DataBulkImport],
           icon: 'report',
         },
-        { path: '/roles', labelKey: 'nav.roles', permissions: [PermissionCodes.RoleManage], icon: 'roles' },
-        { path: '/audit-logs', labelKey: 'nav.auditLogs', permissions: [PermissionCodes.AuditLogView], icon: 'audit' },
       ],
     },
     {
       id: 'ops',
       titleKey: 'nav.group.ops',
-      items: [{ path: '/notifications', labelKey: 'nav.notifications', permissions: [PermissionCodes.NotificationView], icon: 'bell' }],
+      items: [
+        { path: '/notifications', labelKey: 'nav.notifications', permissions: [PermissionCodes.NotificationView], icon: 'bell' },
+      ],
     },
   ];
 

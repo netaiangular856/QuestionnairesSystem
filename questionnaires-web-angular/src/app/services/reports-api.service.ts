@@ -9,6 +9,8 @@ import {
   CrossSurveyAnalyticsFilterRequest,
   DashboardFilterQuery,
   DashboardReportDto,
+  ImpactMeasurementFilterRequest,
+  ImpactMeasurementOverviewDto,
 } from '../shared/models/questionnaire.models';
 import { toHttpParams, unwrapApiResponse } from '../shared/utils/api-helpers';
 
@@ -34,6 +36,21 @@ export class ReportsApiService {
           surveyId: filter.surveyId || undefined,
           fromUtc: filter.fromUtc || undefined,
           toUtc: filter.toUtc || undefined,
+        }),
+      })
+      .pipe(map((r) => unwrapApiResponse(r)));
+  }
+
+  getImpactMeasurement(filter: ImpactMeasurementFilterRequest) {
+    return this.http
+      .get<ApiResponse<ImpactMeasurementOverviewDto>>(`${this.base}/impact-measurement`, {
+        params: toHttpParams({
+          surveyId: filter.surveyId || undefined,
+          actionPlanId: filter.actionPlanId || undefined,
+          initiativeId: filter.initiativeId || undefined,
+          fromUtc: filter.fromUtc || undefined,
+          toUtc: filter.toUtc || undefined,
+          splitAtUtc: filter.splitAtUtc || undefined,
         }),
       })
       .pipe(map((r) => unwrapApiResponse(r)));

@@ -69,7 +69,22 @@ export class PublicArticleEditorComponent implements ControlValueAccessor {
     const range = q.getSelection(true);
     const index = range ? range.index : Math.max(0, q.getLength() - 1);
     q.clipboard.dangerouslyPasteHTML(index, fragment);
-    this.onTouched();
+    // Paste does not always emit ngModelChange — push HTML back so the parent form field stays in sync.
+    const html = (q.root as HTMLElement).innerHTML;
+    this.onEditorChange(html);
+  }
+
+  /**
+   * Forces the bound ngModel string to match Quill’s current HTML.
+   * Call before logic that reads `publicArticleBodyAr` / En (e.g. AI translate): typing can lag one tick vs parent.
+   */
+  flushValueFromEditor(): void {
+    const q = this.quill ?? this.editorCmp?.getQuill?.() ?? null;
+    if (!q) return;
+    const html = (q.root as HTMLElement).innerHTML;
+    if (html === this.value) return;
+    this.value = html;
+    this.onChange(html);
   }
 
   insertSection(): void {
