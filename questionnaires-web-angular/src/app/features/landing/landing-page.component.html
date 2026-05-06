@@ -9,10 +9,8 @@
   <header class="ld-header ld-header--home">
     <div class="ld-header__inner ld-contain">
       <a routerLink="/home" class="ld-brand">
-        <span class="ld-brand__icon ld-brand__icon--home" aria-hidden="true">
-          <i class="pi pi-compass"></i>
-        </span>
-        <span class="ld-brand__text">{{ 'landing.brand' | t }}</span>
+        <img class="ld-brand__logo" src="assets/brand/logo.png" alt="" width="40" height="40" />
+        <!-- <span class="ld-brand__text">{{ 'landing.brand' | t }}</span> -->
       </a>
       <nav class="ld-nav" aria-label="Main">
         <a class="ld-nav__link ld-nav__link--portal" routerLink="/portal">{{ 'public.portal.nav.portalLink' | t }}</a>
@@ -314,7 +312,10 @@
   <footer class="ld-footer ld-footer--home">
     <div class="ld-contain ld-footer__grid">
       <div class="ld-footer__brand">
-        <span class="ld-footer__logo"><i class="pi pi-compass"></i> {{ 'landing.brand' | t }}</span>
+        <span class="ld-footer__logo">
+          <img class="ld-footer__logo-img" src="assets/brand/logo.png" alt="" width="32" height="32" />
+          {{ 'landing.brand' | t }}
+        </span>
         <p>{{ 'landing.footer.tagline' | t }}</p>
       </div>
       <div>

@@ -1,48 +1,60 @@
-<div class="auth-page auth-page--centered">
-  <div class="auth-page__panel">
-    <div class="auth-page__card">
-      <div class="auth-page__brand">
-        <h1 class="auth-page__title">{{ 'login.title' | t }}</h1>
-        <p class="auth-page__sub">{{ 'login.subtitle' | t }}</p>
-      </div>
+<div class="auth-page auth-page--split">
+  <div class="auth-page__shell">
+    <div class="auth-page__form-col">
+      <div class="auth-page__card">
+        <div class="auth-page__brand">
+          <img class="auth-page__logo" src="assets/brand/logo.png" alt="" />
+          <h1 class="auth-page__title">{{ 'login.title' | t }}</h1>
+          <p class="auth-page__sub">{{ 'login.subtitle' | t }}</p>
+        </div>
 
-      <form class="auth-page__form" [formGroup]="form" (ngSubmit)="submit()">
-        <p class="auth-page__error" *ngIf="error" role="alert">{{ error }}</p>
+        <form class="auth-page__form" [formGroup]="form" (ngSubmit)="submit()">
+          <p class="auth-page__error" *ngIf="error" role="alert">{{ error }}</p>
 
-        <label class="auth-page__field">
-          <span class="auth-page__label">{{ 'login.email' | t }}</span>
-          <input type="email" formControlName="email" autocomplete="username" />
-        </label>
+          <label class="auth-page__field">
+            <span class="auth-page__label">{{ 'login.email' | t }}</span>
+            <input type="email" formControlName="email" autocomplete="username" />
+          </label>
 
-        <label class="auth-page__field">
-          <span class="auth-page__label">{{ 'login.password' | t }}</span>
-          <div class="password-field">
-            <input
-              [type]="showPassword ? 'text' : 'password'"
-              formControlName="password"
-              autocomplete="current-password"
-            />
-            <button
-              class="password-toggle"
-              type="button"
-              (click)="togglePasswordVisibility()"
-              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
-            >
-              {{ showPassword ? ('login.hidePassword' | t) : ('login.showPassword' | t) }}
-            </button>
-          </div>
-        </label>
+          <label class="auth-page__field">
+            <span class="auth-page__label">{{ 'login.password' | t }}</span>
+            <div class="password-field">
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                formControlName="password"
+                autocomplete="current-password"
+              />
+              <button
+                class="password-toggle"
+                type="button"
+                (click)="togglePasswordVisibility()"
+                [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+              >
+                {{ showPassword ? ('login.hidePassword' | t) : ('login.showPassword' | t) }}
+              </button>
+            </div>
+          </label>
 
-        <button class="auth-page__submit" type="submit" [disabled]="busy">
-          {{ busy ? ('login.loading' | t) : ('login.submit' | t) }}
-        </button>
-      </form>
+          <button class="auth-page__submit" type="submit" [disabled]="busy">
+            {{ busy ? ('login.loading' | t) : ('login.submit' | t) }}
+          </button>
+        </form>
 
-      <div class="auth-page__links">
-        <a routerLink="/home" class="auth-page__link">{{ 'landing.footer.home' | t }}</a>
-        <a routerLink="/register" class="auth-page__link">{{ 'login.createAccount' | t }}</a>
-        <button type="button" class="auth-page__lang" (click)="toggleLang()">{{ 'login.lang' | t }}</button>
+        <footer class="auth-page__footer">
+          <nav class="auth-page__footer-nav">
+            <a routerLink="/home" class="auth-page__footer-link">{{ 'landing.footer.home' | t }}</a>
+            <span class="auth-page__footer-dot" aria-hidden="true"></span>
+            <a routerLink="/register" class="auth-page__footer-link">{{ 'login.createAccount' | t }}</a>
+          </nav>
+          <button type="button" class="auth-page__footer-lang" (click)="toggleLang()">{{ 'login.lang' | t }}</button>
+        </footer>
       </div>
     </div>
+
+    <aside class="auth-page__visual" aria-hidden="true">
+      <div class="auth-page__visual-inner">
+        <img src="assets/brand/Login.png" alt="" width="640" height="640" />
+      </div>
+    </aside>
   </div>
 </div>

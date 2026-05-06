@@ -30,6 +30,10 @@ export class ChangePasswordPageComponent {
     return this.auth.sessionSnapshot();
   }
 
+  toggleLang(): void {
+    this.i18n.toggleLang();
+  }
+
   submitPassword(): void {
     const s = this.session();
     const email = s?.email;

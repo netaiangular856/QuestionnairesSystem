@@ -106,6 +106,7 @@
   background: rgba(255, 255, 255, 0.82);
   border-bottom: 1px solid var(--h-line);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  overflow: visible;
 }
 
 .ld-header__inner {
@@ -115,6 +116,26 @@
   gap: 0.75rem 1rem;
   justify-content: space-between;
   padding-block: 0.85rem;
+  overflow: visible;
+}
+
+.ld-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  /* Prevent edge clipping in RTL/LTR when the app uses overflow-x: clip */
+  padding-inline: 0.25rem;
+  box-sizing: border-box;
+}
+
+/* Extra safe-area so first/last glyphs never clip */
+[dir='rtl'] .ld-nav {
+  padding-inline: 0.85rem 0.25rem;
+}
+
+[dir='ltr'] .ld-nav {
+  padding-inline: 0.25rem 0.85rem;
 }
 
 .ld-brand {
@@ -128,23 +149,22 @@
   font-size: 1.05rem;
 }
 
-.ld-brand__icon--home {
-  width: 2.45rem;
+.ld-brand__logo {
+  width: auto;
   height: 2.45rem;
-  border-radius: 14px;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, #22d3ee, #a78bfa);
-  color: #fff;
-  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.2);
-  font-size: 1.05rem;
+  max-width: 160px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .ld-nav__link {
+  display: inline-flex;
+  align-items: center;
   color: var(--h-muted);
   text-decoration: none;
   font-size: 0.85rem;
-  padding: 0.35rem 0.6rem;
+  line-height: 1.3;
+  padding: 0.4rem 0.72rem;
   border-radius: 999px;
   transition:
     color 0.2s ease,
@@ -675,7 +695,7 @@
 }
 
 .ld-stat--featured {
-  border-top: 4px solid var(--h-violet);
+  // border-top: 4px solid var(--h-violet);
 }
 
 .ld-stat__ico {
@@ -1362,8 +1382,12 @@
   gap: 0.45rem;
 }
 
-.ld-footer__logo i {
-  color: var(--h-cyan);
+.ld-footer__logo-img {
+  height: 2rem;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .ld-footer__brand p {

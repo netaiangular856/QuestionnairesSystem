@@ -1,99 +1,116 @@
 <div class="page-workspace profile-page">
   @if (session(); as s) {
-    <article class="card profile-sheet">
-      <header class="profile-sheet__top">
-        <div class="profile-sheet__identity">
-          <div class="profile-sheet__avatar-col">
-            <input
-              #avatarFile
-              type="file"
-              class="profile-sheet__file-hidden"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              (change)="onAvatarSelected($event)"
-            />
-            @if (avatarSrc(); as src) {
-              <button
-                type="button"
-                class="profile-sheet__avatar-btn profile-sheet__avatar-btn--photo"
-                [disabled]="busy()"
-                (click)="avatarFile.click()"
-                [attr.aria-label]="'profile.pickPhoto' | t"
-                [attr.title]="'profile.avatarHelp' | t"
-              >
-                <img [src]="src" alt="" width="48" height="48" />
-                <span class="profile-sheet__avatar-overlay" aria-hidden="true">
-                  <svg class="profile-sheet__camera-icon" viewBox="0 0 24 24" focusable="false" fill="currentColor">
-                    <path
-                      d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 5c2.76 0 5 2.24 5 5s-2.24 5-5 5-5-2.24-5-5 2.24-5 5-5zm0 2c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-                    />
-                  </svg>
-                </span>
-              </button>
-            } @else {
-              <button
-                type="button"
-                class="profile-sheet__avatar-btn profile-sheet__avatar-btn--initial"
-                [disabled]="busy()"
-                (click)="avatarFile.click()"
-                [attr.aria-label]="'profile.pickPhoto' | t"
-                [attr.title]="'profile.avatarHelp' | t"
-              >
-                <span class="profile-sheet__avatar-initial" aria-hidden="true">{{ avatarFallbackLetter() }}</span>
-                <span class="profile-sheet__avatar-overlay" aria-hidden="true">
-                  <svg class="profile-sheet__camera-icon" viewBox="0 0 24 24" focusable="false" fill="currentColor">
-                    <path
-                      d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 5c2.76 0 5 2.24 5 5s-2.24 5-5 5-5-2.24-5-5 2.24-5 5-5zm0 2c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
-                    />
-                  </svg>
-                </span>
-              </button>
-            }
-            @if (hasAvatar()) {
-              <button
-                type="button"
-                class="profile-sheet__remove-link"
-                [disabled]="busy()"
-                (click)="removeAvatar()"
-              >
-                {{ 'profile.removePhoto' | t }}
-              </button>
-            }
-          </div>
-          <div class="profile-sheet__who">
-            <h1 class="profile-sheet__name">{{ headline() }}</h1>
-            <p class="profile-sheet__email">{{ profile()?.email ?? s.email ?? '—' }}</p>
-          </div>
+    <header class="profile-hero">
+      <div class="profile-hero__head">
+        <div class="profile-hero__title">
+          <h1>{{ 'nav.profile' | t }}</h1>
+          <p>{{ 'profile.subtitle' | t }}</p>
         </div>
-        <div class="profile-sheet__actions">
-          <span class="profile-sheet__status">{{ 'profile.statusActive' | t }}</span>
-          <button type="button" class="btn-primary profile-sheet__edit-open" (click)="openEditModal()">
-            {{ 'profile.editDetails' | t }}
-          </button>
-          <a routerLink="/change-password" class="btn-primary">{{ 'profile.openChangePassword' | t }}</a>
+        <div class="profile-hero__meta">
+          <span class="profile-hero__status">{{ 'profile.statusActive' | t }}</span>
         </div>
-      </header>
+      </div>
+    </header>
 
-      <section class="profile-sheet__section" aria-labelledby="profile-perms-heading">
-        <div class="profile-sheet__section-head">
-          <h2 id="profile-perms-heading" class="profile-sheet__h2">{{ 'profile.permissions' | t }}</h2>
+    <section class="profile-grid" aria-label="Profile">
+      <article class="card profile-card profile-card--identity">
+        <header class="profile-card__head">
+          <div class="profile-id">
+            <div class="profile-id__avatar-col">
+              <input
+                #avatarFile
+                type="file"
+                class="profile-id__file-hidden"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                (change)="onAvatarSelected($event)"
+              />
+              @if (avatarSrc(); as src) {
+                <button
+                  type="button"
+                  class="profile-id__avatar-btn profile-id__avatar-btn--photo"
+                  [disabled]="busy()"
+                  (click)="avatarFile.click()"
+                  [attr.aria-label]="'profile.pickPhoto' | t"
+                  [attr.title]="'profile.avatarHelp' | t"
+                >
+                  <img [src]="src" alt="" width="56" height="56" />
+                  <span class="profile-id__avatar-overlay" aria-hidden="true">
+                    <svg class="profile-id__camera-icon" viewBox="0 0 24 24" focusable="false" fill="currentColor">
+                      <path
+                        d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 5c2.76 0 5 2.24 5 5s-2.24 5-5 5-5-2.24-5-5 2.24-5 5-5zm0 2c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                      />
+                    </svg>
+                  </span>
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="profile-id__avatar-btn profile-id__avatar-btn--initial"
+                  [disabled]="busy()"
+                  (click)="avatarFile.click()"
+                  [attr.aria-label]="'profile.pickPhoto' | t"
+                  [attr.title]="'profile.avatarHelp' | t"
+                >
+                  <span class="profile-id__avatar-initial" aria-hidden="true">{{ avatarFallbackLetter() }}</span>
+                  <span class="profile-id__avatar-overlay" aria-hidden="true">
+                    <svg class="profile-id__camera-icon" viewBox="0 0 24 24" focusable="false" fill="currentColor">
+                      <path
+                        d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 5c2.76 0 5 2.24 5 5s-2.24 5-5 5-5-2.24-5-5 2.24-5 5-5zm0 2c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"
+                      />
+                    </svg>
+                  </span>
+                </button>
+              }
+              @if (hasAvatar()) {
+                <button type="button" class="profile-id__remove" [disabled]="busy()" (click)="removeAvatar()">
+                  {{ 'profile.removePhoto' | t }}
+                </button>
+              }
+            </div>
+
+            <div class="profile-id__who">
+              <h2 class="profile-id__name">{{ headline() }}</h2>
+              <p class="profile-id__email">{{ profile()?.email ?? s.email ?? '—' }}</p>
+            </div>
+          </div>
+        </header>
+
+        <div class="profile-card__body">
+          <div class="profile-actions">
+            <button type="button" class="btn-primary" (click)="openEditModal()">
+              {{ 'profile.editDetails' | t }}
+            </button>
+            <a routerLink="/change-password" class="btn-primary">{{ 'profile.openChangePassword' | t }}</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="card profile-card profile-card--permissions" aria-labelledby="profile-perms-heading">
+        <header class="profile-card__head profile-card__head--row">
+          <div class="profile-card__title">
+            <h2 id="profile-perms-heading">{{ 'profile.permissions' | t }}</h2>
+            <p>{{ 'profile.subtitle' | t }}</p>
+          </div>
           @if (s.permissions.length) {
-            <span class="profile-sheet__badge">{{ s.permissions.length }}</span>
+            <span class="profile-card__count">{{ s.permissions.length }}</span>
+          }
+        </header>
+
+        <div class="profile-card__body">
+          @if (s.permissions.length) {
+            <ul class="perm-grid" role="list">
+              @for (code of sortedPermissions(s); track code) {
+                <li>
+                  <span class="perm-chip" [attr.title]="code">{{ permissionLabel(code) }}</span>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="profile-card__empty">{{ 'profile.noPermissions' | t }}</p>
           }
         </div>
-
-        @if (s.permissions.length) {
-          <ul class="profile-sheet__chips" role="list">
-            @for (code of sortedPermissions(s); track code) {
-              <li>
-                <span class="profile-sheet__chip" [attr.title]="code">{{ permissionLabel(code) }}</span>
-              </li>
-            }
-          </ul>
-        } @else {
-          <p class="profile-sheet__empty">{{ 'profile.noPermissions' | t }}</p>
-        }
-      </section>
-    </article>
+      </article>
+    </section>
   }
 
   @if (editModalOpen()) {

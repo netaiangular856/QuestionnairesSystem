@@ -1,63 +1,76 @@
-<div class="auth-page auth-page--centered">
-  <div class="auth-page__panel">
-    <div class="auth-page__card">
-      <div class="auth-page__brand">
-        <h1 class="auth-page__title">{{ 'register.title' | t }}</h1>
-        <p class="auth-page__sub">{{ 'register.subtitle' | t }}</p>
-      </div>
+<div class="auth-page auth-page--split auth-page--many-fields">
+  <div class="auth-page__shell">
+    <div class="auth-page__form-col">
+      <div class="auth-page__card">
+        <div class="auth-page__brand">
+          <img class="auth-page__logo" src="assets/brand/logo.png" alt="" />
+          <p class="auth-page__product">{{ 'app.title' | t }}</p>
+          <h1 class="auth-page__title">{{ 'register.title' | t }}</h1>
+          <p class="auth-page__sub">{{ 'register.subtitle' | t }}</p>
+        </div>
 
-      <form class="auth-page__form" [formGroup]="form" (ngSubmit)="submit()">
-        <p class="auth-page__error" *ngIf="error" role="alert">{{ error }}</p>
+        <form class="auth-page__form" [formGroup]="form" (ngSubmit)="submit()">
+          <p class="auth-page__error" *ngIf="error" role="alert">{{ error }}</p>
 
-        <label class="auth-page__field">
-          <span class="auth-page__label">{{ 'register.userName' | t }}</span>
-          <input type="text" formControlName="userName" autocomplete="username" />
-        </label>
+          <label class="auth-page__field">
+            <span class="auth-page__label">{{ 'register.userName' | t }}</span>
+            <input type="text" formControlName="userName" autocomplete="username" />
+          </label>
 
-        <label class="auth-page__field">
-          <span class="auth-page__label">{{ 'register.email' | t }}</span>
-          <input type="email" formControlName="email" autocomplete="email" />
-        </label>
+          <label class="auth-page__field">
+            <span class="auth-page__label">{{ 'register.email' | t }}</span>
+            <input type="email" formControlName="email" autocomplete="email" />
+          </label>
 
-        <label class="auth-page__field">
-          <span class="auth-page__label">{{ 'register.password' | t }}</span>
-          <div class="password-field">
-            <input
-              [type]="showPassword ? 'text' : 'password'"
-              formControlName="password"
-              autocomplete="new-password"
-            />
-            <button
-              class="password-toggle"
-              type="button"
-              (click)="togglePasswordVisibility()"
-              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
-            >
-              {{ showPassword ? ('login.hidePassword' | t) : ('login.showPassword' | t) }}
-            </button>
-          </div>
-        </label>
+          <label class="auth-page__field">
+            <span class="auth-page__label">{{ 'register.password' | t }}</span>
+            <div class="password-field">
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                formControlName="password"
+                autocomplete="new-password"
+              />
+              <button
+                class="password-toggle"
+                type="button"
+                (click)="togglePasswordVisibility()"
+                [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+              >
+                {{ showPassword ? ('login.hidePassword' | t) : ('login.showPassword' | t) }}
+              </button>
+            </div>
+          </label>
 
-        <label class="auth-page__field">
-          <span class="auth-page__label">{{ 'register.nameAr' | t }}</span>
-          <input type="text" formControlName="nameAr" autocomplete="name" />
-        </label>
+          <label class="auth-page__field">
+            <span class="auth-page__label">{{ 'register.nameAr' | t }}</span>
+            <input type="text" formControlName="nameAr" autocomplete="name" />
+          </label>
 
-        <label class="auth-page__field">
-          <span class="auth-page__label">{{ 'register.nameEn' | t }}</span>
-          <input type="text" formControlName="nameEn" autocomplete="nickname" />
-        </label>
+          <label class="auth-page__field">
+            <span class="auth-page__label">{{ 'register.nameEn' | t }}</span>
+            <input type="text" formControlName="nameEn" autocomplete="nickname" />
+          </label>
 
-        <button class="auth-page__submit" type="submit" [disabled]="busy">
-          {{ busy ? ('register.loading' | t) : ('register.submit' | t) }}
-        </button>
-      </form>
+          <button class="auth-page__submit" type="submit" [disabled]="busy">
+            {{ busy ? ('register.loading' | t) : ('register.submit' | t) }}
+          </button>
+        </form>
 
-      <div class="auth-page__links">
-        <a routerLink="/home" class="auth-page__link">{{ 'landing.footer.home' | t }}</a>
-        <a routerLink="/login" class="auth-page__link">{{ 'register.haveAccount' | t }}</a>
-        <button type="button" class="auth-page__lang" (click)="toggleLang()">{{ 'login.lang' | t }}</button>
+        <footer class="auth-page__footer">
+          <nav class="auth-page__footer-nav">
+            <a routerLink="/home" class="auth-page__footer-link">{{ 'landing.footer.home' | t }}</a>
+            <span class="auth-page__footer-dot" aria-hidden="true"></span>
+            <a routerLink="/login" class="auth-page__footer-link">{{ 'register.haveAccount' | t }}</a>
+          </nav>
+          <button type="button" class="auth-page__footer-lang" (click)="toggleLang()">{{ 'login.lang' | t }}</button>
+        </footer>
       </div>
     </div>
+
+    <aside class="auth-page__visual" aria-hidden="true">
+      <div class="auth-page__visual-inner">
+        <img src="assets/brand/Register.png" alt="" width="640" height="640" />
+      </div>
+    </aside>
   </div>
 </div>

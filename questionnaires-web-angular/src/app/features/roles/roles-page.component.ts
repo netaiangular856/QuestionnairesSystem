@@ -346,14 +346,24 @@ export class RolesPageComponent implements OnInit {
   private groupPermissions(rows: readonly PermissionDto[]): PermissionGroupView[] {
     const groups = new Map<string, PermissionDto[]>();
     for (const permission of rows) {
-      const key = this.moduleLabelKey(permission.module);
+      const key = this.permissionGroupKey(permission);
       const list = groups.get(key) ?? [];
       list.push(permission);
       groups.set(key, list);
     }
 
+    const order = new Map<string, number>([
+      ['roles.groups.questionnaires', 10],
+      ['roles.groups.analytics', 20],
+      ['roles.groups.programs', 30],
+      ['roles.groups.organization', 40],
+      ['roles.groups.administration', 50],
+      ['roles.groups.ops', 60],
+      ['roles.groups.other', 999],
+    ]);
+
     return Array.from(groups.entries())
-      .sort((a, b) => this.i18n.t(a[0]).localeCompare(this.i18n.t(b[0]), this.i18n.lang()))
+      .sort((a, b) => (order.get(a[0]) ?? 500) - (order.get(b[0]) ?? 500) || a[0].localeCompare(b[0]))
       .map(([key, perms]) => ({
         key,
         label: this.i18n.t(key),
@@ -379,29 +389,60 @@ export class RolesPageComponent implements OnInit {
       : permission.nameEn || permission.nameAr;
   }
 
-  private moduleLabelKey(module: string): string {
-    const value = module.trim().toLowerCase();
-    if (value.includes('audit')) return 'roles.groups.audit';
-    if (value.includes('user') || value.includes('role') || value.includes('identity') || value.includes('employee')) {
-      return 'roles.groups.identity';
+  private permissionGroupKey(permission: Pick<PermissionDto, 'code' | 'module'>): string {
+    const code = permission.code.trim().toUpperCase();
+
+    // Core product areas — mirrors sidebar grouping for a more predictable UX.
+    if (
+      code.startsWith('SURVEY_') ||
+      code.startsWith('QUESTION_') ||
+      code.startsWith('TEMPLATE_') ||
+      code.startsWith('PARTICIPANT_') ||
+      code.startsWith('RESPONSE_')
+    ) {
+      return 'roles.groups.questionnaires';
     }
-    if (value.includes('approval')) return 'roles.groups.approvals';
-    if (value.includes('notification')) return 'roles.groups.notifications';
-    if (value.includes('marketplace')) return 'roles.groups.marketplace';
+
+    if (code.startsWith('REPORT_')) {
+      return 'roles.groups.analytics';
+    }
+
+    if (code.startsWith('RECOMMENDATION_') || code.startsWith('ACTION_PLAN_') || code.startsWith('INITIATIVE_')) {
+      return 'roles.groups.programs';
+    }
+
+    if (
+      code.startsWith('DEPARTMENT_') ||
+      code.startsWith('EMPLOYEE_') ||
+      code.startsWith('PARTNER_')
+    ) {
+      return 'roles.groups.organization';
+    }
+
+    if (
+      code.startsWith('USER_') ||
+      code.startsWith('ROLE_') ||
+      code.startsWith('AUDIT_LOG_') ||
+      code.startsWith('NOTIFICATION_')
+    ) {
+      return 'roles.groups.administration';
+    }
+
+    if (code.startsWith('DATA_') || code.startsWith('INTEGRATION_') || code.startsWith('LOOKUP_') || code.startsWith('SETTINGS_')) {
+      return 'roles.groups.ops';
+    }
+
+    // Fallback: backend module (older permissions).
+    const value = permission.module.trim().toLowerCase();
+    if (value.includes('audit')) return 'roles.groups.administration';
+    if (value.includes('notification')) return 'roles.groups.administration';
     if (value.includes('analytics') || value.includes('intelligence') || value.includes('insight')) {
       return 'roles.groups.analytics';
     }
-    if (
-      value.includes('performance') ||
-      value.includes('potential') ||
-      value.includes('succession') ||
-      value.includes('development') ||
-      value.includes('competency') ||
-      value.includes('classification') ||
-      value.includes('scoring')
-    ) {
-      return 'roles.groups.talent';
+    if (value.includes('employee') || value.includes('department') || value.includes('partner')) {
+      return 'roles.groups.organization';
     }
+
     return 'roles.groups.other';
   }
 }
