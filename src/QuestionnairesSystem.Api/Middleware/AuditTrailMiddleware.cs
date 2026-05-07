@@ -46,6 +46,11 @@ public sealed class AuditTrailMiddleware
                 return;
             }
 
+            // Detach any entities that may still be tracked by the request-scoped
+            // DbContext so we never accidentally flush partially-applied mutations
+            // from a failed business operation when persisting the audit row.
+            db.ChangeTracker.Clear();
+
             var userId = TryReadUserId(context.User);
             var action = context.Request.Method.ToUpperInvariant();
             var path = context.Request.Path.Value ?? string.Empty;

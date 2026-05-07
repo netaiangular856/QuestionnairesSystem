@@ -301,7 +301,10 @@
 }
 
 .sidebar--collapsed .sidebar__nav {
-  overflow-y: hidden !important;
+  /* Keep vertical scrolling so all icons remain reachable when many groups are
+     visible. The floating tooltip is rendered outside this scroll container so
+     it never gets clipped. */
+  overflow-y: auto;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
@@ -312,7 +315,6 @@
   justify-content: center;
   padding-inline: 0;
   min-height: 38px;
-  overflow: hidden;
   border-radius: var(--radius-sm);
 }
 
@@ -326,28 +328,83 @@
   width: 72px;
 }
 
-.sidebar--collapsed .nav-group a::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  inset-inline-start: calc(100% + 10px);
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--color-card);
-  color: var(--color-text);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  padding: 6px 10px;
-  font-size: 0.75rem;
+/* ============ Floating tooltip rendered outside the scrollable nav ============
+   Rendered as a sibling of <aside> at the component host level. Uses
+   position: fixed with top set imperatively so it can never be clipped by any
+   parent's overflow (scroll container, shell clip, etc.). */
+.sidebar-tooltip {
+  position: fixed;
+  inset-inline-start: 80px;
+  transform: translateY(-50%) translateX(-6px);
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  color: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  padding: 8px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   white-space: nowrap;
-  z-index: 500;
-  opacity: 0;
+  z-index: 1000;
   pointer-events: none;
-  transition: opacity 0.2s ease;
-  box-shadow: var(--shadow-lg);
+  box-shadow:
+    0 10px 25px rgba(15, 23, 42, 0.25),
+    0 0 0 1px rgba(99, 102, 241, 0.15);
+  animation: sidebar-tooltip-in 0.18s ease forwards;
 }
 
-.sidebar--collapsed .nav-group a:hover::after {
-  opacity: 1;
+/* Arrow */
+.sidebar-tooltip::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -5px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border-inline-start: 1px solid rgba(99, 102, 241, 0.4);
+  border-block-end: 1px solid rgba(99, 102, 241, 0.4);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+/* RTL just needs a flipped slide-in animation (translateX is not
+   direction-aware). The tooltip and arrow positions already flip correctly via
+   the logical `inset-inline-start` properties. */
+:host-context([dir='rtl']) .sidebar-tooltip {
+  transform: translateY(-50%) translateX(6px);
+  animation-name: sidebar-tooltip-in-rtl;
+}
+
+/* Active link gets an accent-tinted tooltip border */
+.sidebar-tooltip--active {
+  border-color: rgba(99, 102, 241, 0.75);
+}
+
+.sidebar-tooltip--active::before {
+  border-inline-start-color: rgba(99, 102, 241, 0.75);
+  border-block-end-color: rgba(99, 102, 241, 0.75);
+}
+
+@keyframes sidebar-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+@keyframes sidebar-tooltip-in-rtl {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
 }
 
 @media (max-width: 1024px) {

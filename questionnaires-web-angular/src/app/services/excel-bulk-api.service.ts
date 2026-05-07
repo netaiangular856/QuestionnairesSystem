@@ -11,7 +11,10 @@ export type ExcelTemplateScopeParam =
   | 'partners'
   | 'users'
   | 'templates'
-  | 'surveys';
+  | 'surveys'
+  | 'recommendations'
+  | 'actionPlans'
+  | 'initiatives';
 
 export interface ExcelImportRowErrorDto {
   sheet: string;
@@ -27,6 +30,9 @@ export interface ExcelImportResultDto {
   templatesImported: number;
   surveysImported: number;
   responsesImported: number;
+  recommendationsImported: number;
+  actionPlansImported: number;
+  initiativesImported: number;
   errors: ExcelImportRowErrorDto[];
 }
 

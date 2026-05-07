@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using QuestionnairesSystem.Application.Common;
 using QuestionnairesSystem.Application.Features.Identity;
 using QuestionnairesSystem.Application.Features.Notifications;
@@ -30,6 +31,7 @@ public sealed class SurveyService : ISurveyService
     private readonly IValidator<PatchSurveyStatusRequest> _patchStatusValidator;
     private readonly IValidator<PublishSurveyRequest> _publishValidator;
     private readonly IInboxNotificationDispatchService _notify;
+    private readonly ILogger<SurveyService> _logger;
 
     public SurveyService(
         QuestionnairesDbContext db,
@@ -40,7 +42,8 @@ public sealed class SurveyService : ISurveyService
         IValidator<RejectSurveyRequest> rejectValidator,
         IValidator<PatchSurveyStatusRequest> patchStatusValidator,
         IValidator<PublishSurveyRequest> publishValidator,
-        IInboxNotificationDispatchService notify)
+        IInboxNotificationDispatchService notify,
+        ILogger<SurveyService> logger)
     {
         _db = db;
         _currentUser = currentUser;
@@ -51,6 +54,7 @@ public sealed class SurveyService : ISurveyService
         _patchStatusValidator = patchStatusValidator;
         _publishValidator = publishValidator;
         _notify = notify;
+        _logger = logger;
     }
 
     public async Task<Result<SurveyDetailDto>> CreateAsync(CreateSurveyRequest request, CancellationToken cancellationToken = default)
@@ -64,13 +68,21 @@ public sealed class SurveyService : ISurveyService
         if (!audienceRef.IsSuccess)
             return Result<SurveyDetailDto>.Fail(audienceRef.Errors, audienceRef.FailureCode);
 
+        var normalizedCode = string.IsNullOrWhiteSpace(request.Code) ? null : request.Code.Trim();
+        if (normalizedCode is not null)
+        {
+            var codeCheck = await EnsureSurveyCodeUniqueAsync(normalizedCode, excludeId: null, cancellationToken).ConfigureAwait(false);
+            if (!codeCheck.IsSuccess)
+                return Result<SurveyDetailDto>.Fail(codeCheck.Errors, codeCheck.FailureCode);
+        }
+
         var survey = new Survey
         {
             TitleAr = request.TitleAr.Trim(),
             TitleEn = request.TitleEn.Trim(),
             DescriptionAr = string.IsNullOrWhiteSpace(request.DescriptionAr) ? null : request.DescriptionAr.Trim(),
             DescriptionEn = string.IsNullOrWhiteSpace(request.DescriptionEn) ? null : request.DescriptionEn.Trim(),
-            Code = string.IsNullOrWhiteSpace(request.Code) ? null : request.Code.Trim(),
+            Code = normalizedCode,
             AudienceScope = request.AudienceScope,
             Status = SurveyStatus.Draft,
             OwnerUserId = _currentUser.UserId,
@@ -109,32 +121,46 @@ public sealed class SurveyService : ISurveyService
         }
 
         _db.Surveys.Add(survey);
-        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-        if (_currentUser.UserId is { } creatorId)
+        try
         {
-            var (na, ne) = SurveyNamePair(survey);
-            var text = survey.TemplateId is null
-                ? new LocalizedInboxNotificationText(
-                    "تم إنشاء استبيان",
-                    "Survey created",
-                    $"تم إنشاء الاستبيان «{na}».",
-                    $"Survey «{ne}» was created.")
-                : new LocalizedInboxNotificationText(
-                    "تم إنشاء استبيان من قالب",
-                    "Survey created from template",
-                    $"تم إنشاء الاستبيان «{na}» من قالب.",
-                    $"Survey «{ne}» was created from a template.");
-            await _notify.DispatchAsync(
-                new[] { creatorId },
-                text,
-                NotificationRelatedEntityTypes.Survey,
-                survey.Id,
-                null,
-                cancellationToken).ConfigureAwait(false);
+            await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateException ex) when (IsSurveyCodeUniqueViolation(ex))
+        {
+            return Result<SurveyDetailDto>.Fail(BuildDuplicateCodeMessage(normalizedCode), QuestionnaireErrors.SurveyCodeAlreadyExists);
         }
 
-        return Result<SurveyDetailDto>.Ok(await MapDetailAsync(survey, cancellationToken).ConfigureAwait(false));
+        try
+        {
+            if (_currentUser.UserId is { } creatorId)
+            {
+                var (na, ne) = SurveyNamePair(survey);
+                var text = survey.TemplateId is null
+                    ? new LocalizedInboxNotificationText(
+                        "تم إنشاء استبيان",
+                        "Survey created",
+                        $"تم إنشاء الاستبيان «{na}».",
+                        $"Survey «{ne}» was created.")
+                    : new LocalizedInboxNotificationText(
+                        "تم إنشاء استبيان من قالب",
+                        "Survey created from template",
+                        $"تم إنشاء الاستبيان «{na}» من قالب.",
+                        $"Survey «{ne}» was created from a template.");
+                await _notify.DispatchAsync(
+                    new[] { creatorId },
+                    text,
+                    NotificationRelatedEntityTypes.Survey,
+                    survey.Id,
+                    null,
+                    cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Post-create notification dispatch failed for survey {SurveyId}.", survey.Id);
+        }
+
+        return Result<SurveyDetailDto>.Ok(await SafeMapDetailAsync(survey, cancellationToken).ConfigureAwait(false));
     }
 
     public async Task<Result<PagedResult<SurveyListItemDto>>> GetPagedAsync(
@@ -203,11 +229,41 @@ public sealed class SurveyService : ISurveyService
         if (s is null)
             return Result<SurveyDetailDto>.Fail("Survey was not found.", QuestionnaireErrors.SurveyNotFound);
 
+        // ---- Pre-mutation guard checks (must run BEFORE any state changes) ----
+        // Returning Result.Fail after mutating the tracked entity would leak changes to disk
+        // because subsequent middleware (audit trail) calls SaveChangesAsync on the same context.
+        if (request.Questions is not null
+            && s.Status != SurveyStatus.Draft
+            && s.Status != SurveyStatus.Rejected)
+        {
+            return Result<SurveyDetailDto>.Fail("Questions can only be updated in Draft or Rejected status.");
+        }
+
+        var normalizedCodeUpd = string.IsNullOrWhiteSpace(request.Code) ? null : request.Code.Trim();
+        if (normalizedCodeUpd is not null && !string.Equals(normalizedCodeUpd, s.Code, StringComparison.Ordinal))
+        {
+            var codeCheckUpd = await EnsureSurveyCodeUniqueAsync(normalizedCodeUpd, excludeId: s.Id, cancellationToken).ConfigureAwait(false);
+            if (!codeCheckUpd.IsSuccess)
+                return Result<SurveyDetailDto>.Fail(codeCheckUpd.Errors, codeCheckUpd.FailureCode);
+        }
+
+        IReadOnlyList<SurveyAudienceMemberInputDto>? normalizedAudienceUpd = null;
+        if (request.AudienceScope == SurveyAudienceScope.SpecificUsers && request.AudienceMembers is not null)
+        {
+            var audienceRef = await ValidateAudienceMemberInputsAsync(request.AudienceMembers, cancellationToken)
+                .ConfigureAwait(false);
+            if (!audienceRef.IsSuccess)
+                return Result<SurveyDetailDto>.Fail(audienceRef.Errors, audienceRef.FailureCode);
+
+            normalizedAudienceUpd = NormalizeAudiencePayload(request.AudienceMembers);
+        }
+
+        // ---- Apply mutations only after all guards passed ----
         s.TitleAr = request.TitleAr.Trim();
         s.TitleEn = request.TitleEn.Trim();
         s.DescriptionAr = string.IsNullOrWhiteSpace(request.DescriptionAr) ? null : request.DescriptionAr.Trim();
         s.DescriptionEn = string.IsNullOrWhiteSpace(request.DescriptionEn) ? null : request.DescriptionEn.Trim();
-        s.Code = string.IsNullOrWhiteSpace(request.Code) ? null : request.Code.Trim();
+        s.Code = normalizedCodeUpd;
         s.AudienceScope = request.AudienceScope;
         s.ShowOnPublicPortal = request.ShowOnPublicPortal;
         s.PublicArticleEnabled = request.PublicArticleEnabled;
@@ -224,16 +280,11 @@ public sealed class SurveyService : ISurveyService
                 s.AudienceMembers.Clear();
             }
         }
-        else if (request.AudienceMembers is not null)
+        else if (normalizedAudienceUpd is not null)
         {
-            var audienceRef = await ValidateAudienceMemberInputsAsync(request.AudienceMembers, cancellationToken)
-                .ConfigureAwait(false);
-            if (!audienceRef.IsSuccess)
-                return Result<SurveyDetailDto>.Fail(audienceRef.Errors, audienceRef.FailureCode);
-
             _db.SurveyAudienceMembers.RemoveRange(s.AudienceMembers);
             s.AudienceMembers.Clear();
-            foreach (var m in NormalizeAudiencePayload(request.AudienceMembers))
+            foreach (var m in normalizedAudienceUpd)
             {
                 if (m.UserId is { } uid)
                     s.AudienceMembers.Add(new SurveyAudienceMember { SurveyId = s.Id, UserId = uid });
@@ -244,36 +295,46 @@ public sealed class SurveyService : ISurveyService
 
         if (request.Questions is not null)
         {
-            // Only allow updating questions if Draft or Rejected
-            if (s.Status != SurveyStatus.Draft && s.Status != SurveyStatus.Rejected)
-                return Result<SurveyDetailDto>.Fail("Questions can only be updated in Draft or Rejected status.");
-
             _db.Questions.RemoveRange(s.Questions);
             s.Questions.Clear();
             AppendOwnerQuestions(s, request.Questions);
         }
 
-        await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (DbUpdateException ex) when (IsSurveyCodeUniqueViolation(ex))
+        {
+            return Result<SurveyDetailDto>.Fail(BuildDuplicateCodeMessage(normalizedCodeUpd), QuestionnaireErrors.SurveyCodeAlreadyExists);
+        }
 
-        var updateRecipients = new HashSet<Guid>();
-        if (_currentUser.UserId is { } actorUpd)
-            updateRecipients.Add(actorUpd);
-        if (s.OwnerUserId is { } ownerUpd)
-            updateRecipients.Add(ownerUpd);
-        var (naUpd, neUpd) = SurveyNamePair(s);
-        await _notify.DispatchAsync(
-            updateRecipients,
-            new LocalizedInboxNotificationText(
-                "تم تحديث الاستبيان",
-                "Survey updated",
-                $"تم تحديث الاستبيان «{naUpd}».",
-                $"Survey «{neUpd}» was updated."),
-            NotificationRelatedEntityTypes.Survey,
-            s.Id,
-            null,
-            cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var updateRecipients = new HashSet<Guid>();
+            if (_currentUser.UserId is { } actorUpd)
+                updateRecipients.Add(actorUpd);
+            if (s.OwnerUserId is { } ownerUpd)
+                updateRecipients.Add(ownerUpd);
+            var (naUpd, neUpd) = SurveyNamePair(s);
+            await _notify.DispatchAsync(
+                updateRecipients,
+                new LocalizedInboxNotificationText(
+                    "تم تحديث الاستبيان",
+                    "Survey updated",
+                    $"تم تحديث الاستبيان «{naUpd}».",
+                    $"Survey «{neUpd}» was updated."),
+                NotificationRelatedEntityTypes.Survey,
+                s.Id,
+                null,
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Post-update notification dispatch failed for survey {SurveyId}.", s.Id);
+        }
 
-        return Result<SurveyDetailDto>.Ok(await MapDetailAsync(s, cancellationToken).ConfigureAwait(false));
+        return Result<SurveyDetailDto>.Ok(await SafeMapDetailAsync(s, cancellationToken).ConfigureAwait(false));
     }
 
     public async Task<Result> SoftDeleteAsync(Guid id, CancellationToken cancellationToken = default)
@@ -1163,6 +1224,47 @@ public sealed class SurveyService : ISurveyService
         });
     }
 
+    private async Task<SurveyDetailDto> SafeMapDetailAsync(Survey s, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await MapDetailAsync(s, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Survey detail mapping failed for {SurveyId}; returning bare detail.", s.Id);
+            return BuildBareDetailDto(s);
+        }
+    }
+
+    private static SurveyDetailDto BuildBareDetailDto(Survey s) => new()
+    {
+        Id = s.Id,
+        TitleAr = s.TitleAr,
+        TitleEn = s.TitleEn,
+        DescriptionAr = s.DescriptionAr,
+        DescriptionEn = s.DescriptionEn,
+        Code = s.Code,
+        Status = s.Status,
+        AudienceScope = s.AudienceScope,
+        Version = s.Version,
+        OwnerUserId = s.OwnerUserId,
+        OwnerDisplayName = null,
+        TemplateId = s.TemplateId,
+        PublishedAtUtc = s.PublishedAtUtc,
+        ClosedAtUtc = s.ClosedAtUtc,
+        OpensAtUtc = s.OpensAtUtc,
+        ClosesAtUtc = s.ClosesAtUtc,
+        RejectionReason = s.RejectionReason,
+        ShowOnPublicPortal = s.ShowOnPublicPortal,
+        PublicArticleEnabled = s.PublicArticleEnabled,
+        PublicArticleTitleAr = s.PublicArticleTitleAr,
+        PublicArticleTitleEn = s.PublicArticleTitleEn,
+        PublicArticleBodyAr = s.PublicArticleBodyAr,
+        PublicArticleBodyEn = s.PublicArticleBodyEn,
+        AudienceMembers = new List<SurveyAudienceMemberDetailDto>()
+    };
+
     private async Task<SurveyDetailDto> MapDetailAsync(Survey s, CancellationToken cancellationToken)
     {
         string? ownerDisplayName = null;
@@ -1665,5 +1767,44 @@ public sealed class SurveyService : ISurveyService
         }
 
         return Result.Ok();
+    }
+
+    private async Task<Result> EnsureSurveyCodeUniqueAsync(string code, Guid? excludeId, CancellationToken cancellationToken)
+    {
+        var exists = await _db.Surveys
+            .AsNoTracking()
+            .AnyAsync(s => s.Code == code && (excludeId == null || s.Id != excludeId), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (exists)
+            return Result.Fail(BuildDuplicateCodeMessage(code), QuestionnaireErrors.SurveyCodeAlreadyExists);
+
+        return Result.Ok();
+    }
+
+    private static string BuildDuplicateCodeMessage(string? code)
+    {
+        var displayCode = string.IsNullOrWhiteSpace(code) ? string.Empty : $" «{code}»";
+        return $"Survey code{displayCode} is already in use. Please choose a different code.";
+    }
+
+    private static bool IsSurveyCodeUniqueViolation(DbUpdateException ex)
+    {
+        // Walk the inner-exception chain and look for our unique index name.
+        // This avoids a hard dependency on Microsoft.Data.SqlClient in this layer.
+        for (Exception? cur = ex; cur is not null; cur = cur.InnerException)
+        {
+            var msg = cur.Message;
+            if (string.IsNullOrEmpty(msg))
+                continue;
+            if (msg.Contains("IX_Surveys_Code", StringComparison.OrdinalIgnoreCase) ||
+                (msg.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) &&
+                 msg.Contains("Surveys", StringComparison.OrdinalIgnoreCase) &&
+                 msg.Contains("Code", StringComparison.OrdinalIgnoreCase)))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

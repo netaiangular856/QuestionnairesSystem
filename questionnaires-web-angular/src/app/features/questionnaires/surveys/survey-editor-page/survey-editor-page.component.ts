@@ -18,6 +18,7 @@ import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { I18nService } from '../../../../shared/services/i18n.service';
 import { SurveyAudiencePickerComponent } from '../../../../shared/questionnaires/survey-audience-picker/survey-audience-picker.component';
 import { PublicArticleEditorComponent } from '../../../../shared/questionnaires/public-article-editor/public-article-editor.component';
+import { extractApiErrorMessage } from '../../../../shared/utils/api-helpers';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
@@ -193,9 +194,12 @@ export class SurveyEditorPageComponent implements OnInit {
           this.toast.show(this.i18n.t('q.detail.toast.updated'), 'success');
           void this.router.navigate(['/surveys', this.surveyId]);
         },
-        error: () => {
+        error: (err: unknown) => {
           this.saveBusy.set(false);
-          this.toast.show(this.i18n.t('q.detail.toast.updateFailed'), 'error');
+          this.toast.show(
+            extractApiErrorMessage(err, this.i18n.t('q.detail.toast.updateFailed')),
+            'error',
+          );
         },
       });
     }
@@ -234,9 +238,9 @@ export class SurveyEditorPageComponent implements OnInit {
         this.questions = rows.length > 0 ? rows : [this.emptyQuestion()];
         this.busy.set(false);
       },
-      error: () => {
+      error: (err: unknown) => {
         this.busy.set(false);
-        this.toast.show(this.i18n.t('q.detail.error'), 'error');
+        this.toast.show(extractApiErrorMessage(err, this.i18n.t('q.detail.error')), 'error');
         void this.router.navigate(['/surveys']);
       },
     });

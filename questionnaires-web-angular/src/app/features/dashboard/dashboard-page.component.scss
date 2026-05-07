@@ -96,7 +96,9 @@
   }
 
   .db-top-panel__body > .db-shortcuts__grid {
-    flex: 1 1 260px;
+    /* Don't let the shortcuts area shrink to a single column */
+    flex: 1 1 360px;
+    min-width: 320px;
     margin-top: 0;
   }
 
@@ -156,9 +158,17 @@
 
 .db-shortcuts__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  /* Keep shortcuts side-by-side on narrow/medium panels (2 columns). */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;
   margin-top: 0.35rem;
+}
+
+/* Only on wide screens, allow auto-fill multi-column layout. */
+@media (min-width: 1024px) {
+  .db-shortcuts__grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
 }
 
 .db-shortcut {
@@ -177,6 +187,19 @@
     transform 0.18s var(--rp-ease, ease),
     box-shadow 0.18s var(--rp-ease, ease);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* Extra small screens: slightly tighter shortcut cards */
+@media (max-width: 420px) {
+  .db-shortcut {
+    padding: 0.45rem 0.5rem;
+    font-size: 0.75rem;
+    gap: 0.4rem;
+  }
+
+  .db-shortcut i {
+    font-size: 1rem;
+  }
 }
 
 .db-shortcut i {
@@ -259,6 +282,177 @@
 .db-kpi-grid .rp-kpi__label {
   font-size: 0.74rem;
   line-height: 1.25;
+}
+
+/* —— Distinct accent color per KPI card (used only on hover) —— */
+.db-kpi--surveys {
+  --kpi-c: #6366f1;
+}
+.db-kpi--published {
+  --kpi-c: #10b981;
+}
+.db-kpi--responses {
+  --kpi-c: #f59e0b;
+}
+.db-kpi--invited {
+  --kpi-c: #06b6d4;
+}
+.db-kpi--users {
+  --kpi-c: #8b5cf6;
+}
+.db-kpi--departments {
+  --kpi-c: #f97316;
+}
+.db-kpi--plans {
+  --kpi-c: #ec4899;
+}
+.db-kpi--initiatives {
+  --kpi-c: #14b8a6;
+}
+
+/* —— Anchor reset (no underline / inherited color) —— */
+.db-kpi-grid a.rp-kpi {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  isolation: isolate;
+}
+
+/* —— Smooth transitions on the original elements —— */
+.db-kpi-grid .rp-kpi {
+  position: relative;
+  transition:
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.25s ease,
+    border-color 0.25s ease,
+    background 0.25s ease;
+}
+
+.db-kpi-grid .rp-kpi__ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--kpi-c, var(--color-accent)) 12%, transparent);
+  color: var(--kpi-c, var(--color-accent));
+  font-size: 0.85rem;
+  margin-bottom: 0.3rem;
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.db-kpi-grid .rp-kpi__value {
+  transition: color 0.25s ease;
+}
+
+.db-kpi-grid .rp-kpi::before {
+  transition:
+    background 0.25s ease,
+    opacity 0.25s ease,
+    width 0.25s ease;
+}
+
+/* —— Soft colored glow that grows from the corner on hover —— */
+.db-kpi-grid .rp-kpi::after {
+  content: '';
+  position: absolute;
+  inset-inline-end: -40%;
+  top: -50%;
+  width: 180%;
+  height: 200%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--kpi-c, #6366f1) 22%, transparent) 0%,
+    transparent 70%
+  );
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 0.3s ease,
+    transform 0.4s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.db-kpi-grid .rp-kpi__ico,
+.db-kpi-grid .rp-kpi__label,
+.db-kpi-grid .rp-kpi__value {
+  position: relative;
+  z-index: 1;
+}
+
+/* —— Hover only on clickable cards —— */
+.db-kpi-grid .rp-kpi--link {
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--kpi-c, #6366f1) 65%, var(--color-border));
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--kpi-c, #6366f1) 6%, var(--color-card)) 0%,
+      var(--color-card) 100%
+    );
+    box-shadow:
+      0 14px 26px -14px color-mix(in srgb, var(--kpi-c, #6366f1) 45%, transparent),
+      0 3px 8px -4px color-mix(in srgb, var(--kpi-c, #6366f1) 22%, transparent);
+    outline: none;
+  }
+
+  &:hover::after,
+  &:focus-visible::after {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  &:hover .rp-kpi__ico,
+  &:focus-visible .rp-kpi__ico {
+    background: var(--kpi-c, var(--color-accent));
+    color: #fff;
+    transform: scale(1.1) rotate(-6deg);
+  }
+
+  &:hover .rp-kpi__value,
+  &:focus-visible .rp-kpi__value {
+    color: var(--kpi-c, var(--color-accent));
+  }
+
+  &:hover::before,
+  &:focus-visible::before {
+    background: var(--kpi-c, var(--color-accent));
+    opacity: 1;
+    width: 5px;
+  }
+
+  &:active {
+    transform: translateY(-1px);
+    transition-duration: 0.1s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .db-kpi-grid .rp-kpi,
+  .db-kpi-grid .rp-kpi__ico,
+  .db-kpi-grid .rp-kpi__value,
+  .db-kpi-grid .rp-kpi::before,
+  .db-kpi-grid .rp-kpi::after {
+    transition: none;
+  }
+
+  .db-kpi-grid .rp-kpi--link:hover,
+  .db-kpi-grid .rp-kpi--link:focus-visible {
+    transform: none;
+  }
+
+  .db-kpi-grid .rp-kpi--link:hover .rp-kpi__ico,
+  .db-kpi-grid .rp-kpi--link:focus-visible .rp-kpi__ico {
+    transform: none;
+  }
 }
 
 .db-chart-gap {

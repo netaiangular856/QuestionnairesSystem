@@ -85,29 +85,120 @@
         </div>
       </article>
 
-      <article class="card profile-card profile-card--permissions" aria-labelledby="profile-perms-heading">
-        <header class="profile-card__head profile-card__head--row">
-          <div class="profile-card__title">
-            <h2 id="profile-perms-heading">{{ 'profile.permissions' | t }}</h2>
-            <p>{{ 'profile.subtitle' | t }}</p>
+      <article class="card profile-card welcome-card" [attr.data-daypart]="daypart()" aria-labelledby="profile-welcome-heading">
+        <div class="welcome-sky" aria-hidden="true">
+          <div class="welcome-aurora"></div>
+          <div class="welcome-blob welcome-blob--a"></div>
+          <div class="welcome-blob welcome-blob--b"></div>
+          <div class="welcome-blob welcome-blob--c"></div>
+          <div class="welcome-blob welcome-blob--d"></div>
+          <div class="welcome-stars">
+            @for (i of sparkles; track i) {
+              <span class="welcome-spark welcome-spark--{{ i }}"></span>
+            }
           </div>
-          @if (s.permissions.length) {
-            <span class="profile-card__count">{{ s.permissions.length }}</span>
-          }
-        </header>
+          <div class="welcome-orb" aria-hidden="true">
+            @if (daypart() === 'night') {
+              <svg viewBox="0 0 64 64" focusable="false">
+                <defs>
+                  <radialGradient id="welcomeMoon" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#fef3c7" />
+                    <stop offset="100%" stop-color="#f59e0b" />
+                  </radialGradient>
+                </defs>
+                <circle cx="32" cy="32" r="20" fill="url(#welcomeMoon)" />
+                <circle cx="40" cy="26" r="16" fill="rgba(15,23,42,0.85)" />
+              </svg>
+            } @else {
+              <svg viewBox="0 0 64 64" focusable="false">
+                <defs>
+                  <radialGradient id="welcomeSun" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#fff7ed" />
+                    <stop offset="60%" stop-color="#fbbf24" />
+                    <stop offset="100%" stop-color="#f97316" />
+                  </radialGradient>
+                </defs>
+                <circle cx="32" cy="32" r="14" fill="url(#welcomeSun)" />
+                <g class="welcome-orb__rays" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round">
+                  <line x1="32" y1="4" x2="32" y2="12" />
+                  <line x1="32" y1="52" x2="32" y2="60" />
+                  <line x1="4" y1="32" x2="12" y2="32" />
+                  <line x1="52" y1="32" x2="60" y2="32" />
+                  <line x1="11" y1="11" x2="17" y2="17" />
+                  <line x1="47" y1="47" x2="53" y2="53" />
+                  <line x1="11" y1="53" x2="17" y2="47" />
+                  <line x1="47" y1="17" x2="53" y2="11" />
+                </g>
+              </svg>
+            }
+          </div>
+        </div>
 
-        <div class="profile-card__body">
-          @if (s.permissions.length) {
-            <ul class="perm-grid" role="list">
-              @for (code of sortedPermissions(s); track code) {
-                <li>
-                  <span class="perm-chip" [attr.title]="code">{{ permissionLabel(code) }}</span>
-                </li>
+        <div class="welcome-card__inner">
+          <div class="welcome-greet">
+            <span class="welcome-greet__pill">
+              <span class="welcome-pulse" aria-hidden="true"></span>
+              {{ 'profile.welcome.live' | t }}
+            </span>
+          </div>
+          <h2 id="profile-welcome-heading" class="welcome-title">
+            <span class="welcome-title__hi">{{ greeting() }}</span>
+            <span class="welcome-title__name">{{ headline() }}</span>
+            <span class="welcome-wave" aria-hidden="true">👋</span>
+          </h2>
+          <p class="welcome-quote" [attr.key]="quoteIndex()">{{ currentQuote() }}</p>
+
+          <div class="welcome-meta">
+            <div class="welcome-clock" role="timer" aria-live="off">
+              <span class="welcome-clock__time">{{ clockLabel() }}</span>
+              <span class="welcome-clock__date">{{ todayLabel() }}</span>
+              @if (tzLabel()) {
+                <span class="welcome-clock__tz" [title]="'profile.welcome.localTime' | t">
+                  <i class="pi pi-globe" aria-hidden="true"></i>
+                  {{ tzLabel() }}
+                </span>
               }
+            </div>
+            <ul class="welcome-chips" role="list">
+              <li class="welcome-chip welcome-chip--c1">
+                <i class="pi pi-bolt" aria-hidden="true"></i>
+                <span>{{ 'profile.welcome.chip.focus' | t }}</span>
+              </li>
+              <li class="welcome-chip welcome-chip--c2">
+                <i class="pi pi-heart-fill" aria-hidden="true"></i>
+                <span>{{ 'profile.welcome.chip.care' | t }}</span>
+              </li>
+              <li class="welcome-chip welcome-chip--c3">
+                <i class="pi pi-star-fill" aria-hidden="true"></i>
+                <span>{{ 'profile.welcome.chip.shine' | t }}</span>
+              </li>
             </ul>
-          } @else {
-            <p class="profile-card__empty">{{ 'profile.noPermissions' | t }}</p>
-          }
+          </div>
+
+          <section class="welcome-cal" aria-label="Calendar">
+            <header class="welcome-cal__head">
+              <i class="pi pi-calendar welcome-cal__icon" aria-hidden="true"></i>
+              <span class="welcome-cal__month">{{ monthLabel() }}</span>
+            </header>
+            <div class="welcome-cal__grid" role="grid">
+              @for (w of weekdayLabels(); track w) {
+                <span class="welcome-cal__wd" role="columnheader">{{ w }}</span>
+              }
+              @for (week of monthMatrix(); track $index) {
+                @for (cell of week; track $index) {
+                  <span
+                    class="welcome-cal__day"
+                    role="gridcell"
+                    [class.welcome-cal__day--out]="!cell.inMonth"
+                    [class.welcome-cal__day--today]="cell.isToday"
+                    [class.welcome-cal__day--weekend]="cell.isWeekend && cell.inMonth"
+                  >
+                    {{ cell.day }}
+                  </span>
+                }
+              }
+            </div>
+          </section>
         </div>
       </article>
     </section>

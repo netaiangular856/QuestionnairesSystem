@@ -20,7 +20,7 @@ import { PermissionCodes } from '../../../../shared/models/permission-codes';
 import { qLocalizedTitle } from '../../../../shared/questionnaires/q-display';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { I18nService } from '../../../../shared/services/i18n.service';
-import { ApiBusinessError } from '../../../../shared/utils/api-helpers';
+import { ApiBusinessError, extractApiErrorMessage } from '../../../../shared/utils/api-helpers';
 import {
   htmlFragmentToPlainText,
   resolveBilingualTranslateSource,
@@ -317,9 +317,12 @@ export class SurveyCreateWizardPageComponent implements OnInit {
         this.extraQuestions = [];
         this.step.set(2);
       },
-      error: () => {
+      error: (err: unknown) => {
         this.templateLoadBusy.set(false);
-        this.toast.show(this.i18n.t('q.templates.toast.loadFailed'), 'error');
+        this.toast.show(
+          extractApiErrorMessage(err, this.i18n.t('q.templates.toast.loadFailed')),
+          'error',
+        );
       },
     });
   }
@@ -543,9 +546,12 @@ export class SurveyCreateWizardPageComponent implements OnInit {
         this.toast.show(this.i18n.t('q.surveys.toast.created'), 'success');
         void this.router.navigate(['/surveys', s.id]);
       },
-      error: () => {
+      error: (err: unknown) => {
         this.saveBusy.set(false);
-        this.toast.show(this.i18n.t('q.surveys.toast.createFailed'), 'error');
+        this.toast.show(
+          extractApiErrorMessage(err, this.i18n.t('q.surveys.toast.createFailed')),
+          'error',
+        );
       },
     });
   }

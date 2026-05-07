@@ -5,7 +5,7 @@ namespace QuestionnairesSystem.Infrastructure.Identity;
 
 public sealed class WebRootAvatarStorage : IAvatarStorage
 {
-    private const long MaxBytes = 2 * 1024 * 1024;
+    private const long MaxBytes = 8 * 1024 * 1024;
     private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
         ".jpg", ".jpeg", ".png", ".webp", ".gif"

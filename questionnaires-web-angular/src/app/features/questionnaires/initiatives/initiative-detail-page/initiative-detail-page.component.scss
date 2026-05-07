@@ -34,7 +34,7 @@
 }
 
 /* Subtle page polish */
-.init-detail-page .card {
+.init-detail-page .card:not(.init-modal):not(.rec-modal-panel) {
   transition:
     transform 0.18s ease,
     box-shadow 0.18s ease,
@@ -42,7 +42,7 @@
 }
 
 @media (hover: hover) {
-  .init-detail-page .card:hover {
+  .init-detail-page .card:not(.init-modal):not(.rec-modal-panel):hover {
     border-color: var(--color-border-hover);
     box-shadow: var(--shadow-md);
     transform: translateY(-1px);

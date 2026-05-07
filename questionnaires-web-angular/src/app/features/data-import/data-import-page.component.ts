@@ -35,6 +35,9 @@ export class DataImportPageComponent {
     { value: 'users', labelKey: 'dataImport.scope.users' },
     { value: 'templates', labelKey: 'dataImport.scope.templates' },
     { value: 'surveys', labelKey: 'dataImport.scope.surveys' },
+    { value: 'recommendations', labelKey: 'dataImport.scope.recommendations' },
+    { value: 'actionPlans', labelKey: 'dataImport.scope.actionPlans' },
+    { value: 'initiatives', labelKey: 'dataImport.scope.initiatives' },
   ];
 
   onScopeChange(ev: Event): void {

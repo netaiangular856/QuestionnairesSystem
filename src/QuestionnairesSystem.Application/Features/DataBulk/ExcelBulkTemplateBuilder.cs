@@ -2,7 +2,7 @@ using ClosedXML.Excel;
 
 namespace QuestionnairesSystem.Application.Features.DataBulk;
 
-internal static class ExcelBulkTemplateBuilder
+internal static partial class ExcelBulkTemplateBuilder
 {
     public const string SheetInstructions = "_Instructions";
     public const string SheetDepartments = "Departments";
@@ -14,6 +14,9 @@ internal static class ExcelBulkTemplateBuilder
     public const string SheetSurveyResponses = "SurveyResponses";
     public const string SheetSurveyTemplates = "SurveyTemplates";
     public const string SheetSurveyTemplateQuestions = "SurveyTemplateQuestions";
+    public const string SheetRecommendations = "Recommendations";
+    public const string SheetActionPlans = "ActionPlans";
+    public const string SheetInitiatives = "Initiatives";
 
     public static byte[] Build(ExcelTemplateScope scope, bool includeSamples)
     {
@@ -40,6 +43,9 @@ internal static class ExcelBulkTemplateBuilder
                 AddSurveysSheet(wb, includeSamples);
                 AddSurveyQuestionsSheet(wb, includeSamples);
                 AddSurveyResponsesSheet(wb, includeSamples);
+                AddRecommendationsSheet(wb, includeSamples);
+                AddActionPlansSheet(wb, includeSamples);
+                AddInitiativesSheet(wb, includeSamples);
                 break;
             case ExcelTemplateScope.Departments:
                 AddDepartmentsSheet(wb, includeSamples);
@@ -62,6 +68,17 @@ internal static class ExcelBulkTemplateBuilder
                 AddSurveyQuestionsSheet(wb, includeSamples);
                 AddSurveyResponsesSheet(wb, includeSamples);
                 break;
+            case ExcelTemplateScope.Recommendations:
+                AddRecommendationsSheet(wb, includeSamples);
+                break;
+            case ExcelTemplateScope.ActionPlans:
+                AddActionPlansSheet(wb, includeSamples);
+                break;
+            case ExcelTemplateScope.Initiatives:
+                // Initiatives need an ActionPlan parent; ship both sheets so the file is self-contained.
+                AddActionPlansSheet(wb, includeSamples);
+                AddInitiativesSheet(wb, includeSamples);
+                break;
         }
 
         using var ms = new MemoryStream();
@@ -79,6 +96,12 @@ internal static class ExcelBulkTemplateBuilder
             ExcelTemplateScope.Users => "هذا الملف: المستخدمون فقط. RoleNames بالإنجليزية (مثل Employee, Admin).",
             ExcelTemplateScope.Templates => "هذا الملف: SurveyTemplates + SurveyTemplateQuestions. ربط TemplateKey بين الورقتين.",
             ExcelTemplateScope.Surveys => "هذا الملف: Surveys + SurveyQuestions + SurveyResponses. ربط SurveyKey بين الأوراق الثلاث.",
+            ExcelTemplateScope.Recommendations =>
+                "هذا الملف: التوصيات فقط. SurveyKey اختياري ويطابق Code استبيان موجود. AssignedToUserName اختياري ويطابق UserName مستخدم موجود.",
+            ExcelTemplateScope.ActionPlans =>
+                "هذا الملف: خطط العمل فقط. ActionPlanKey مفتاح داخلي للورقة (يستخدمه ورقة Initiatives لاحقاً). SurveyKey/OwnerUserName اختياريان ويطابقان عناصر موجودة.",
+            ExcelTemplateScope.Initiatives =>
+                "هذا الملف: ActionPlans + Initiatives. ActionPlanKey مطلوب في الورقتين ليربط كل مبادرة بخطتها داخل نفس الملف.",
             _ => "قالب جزئي.",
         };
 
@@ -103,17 +126,22 @@ internal static class ExcelBulkTemplateBuilder
             "4) Users — المستخدمون (RoleNames: أسماء الأدوار بالإنجليزية مفصولة بفاصلة، مثل: Employee أو Admin,Employee).\r\n" +
             "5) SurveyTemplates ثم SurveyTemplateQuestions — قوالب استبيان جاهزة (TemplateKey يربط بين الورقتين؛ يُستورد قبل تعريف الاستبيانات).\r\n" +
             "6) Surveys ثم SurveyQuestions — تعريف الاستبيان والأسئلة (SurveyKey رابط بين الأوراق).\r\n" +
-            "7) SurveyResponses — إجابات (SurveyKey، UserName، QuestionDisplayOrder، AnswerValue).\r\n\r\n" +
+            "   في العيّنة: استبيان IMP-SVY-01 يضم تسعة أسئلة (أنواع 1–9 كاملة)؛ بقية الصفوف في SurveyQuestions توزّع أسئلة على استبيانات أخرى حتى 20 صفاً.\r\n" +
+            "7) SurveyResponses — إجابات (SurveyKey، UserName، QuestionDisplayOrder، AnswerValue). في العيّنة: تسعة ردود لـ IMP-SVY-01 (نفس المستخدم) تغطي كل الأسئلة، ثم ردود لاستبيانات أخرى حتى 20 صفاً.\r\n" +
+            "8) Recommendations — التوصيات (SurveyKey و AssignedToUserName اختياريان).\r\n" +
+            "9) ActionPlans — خطط العمل (ActionPlanKey مفتاح داخلي للملف، SurveyKey/OwnerUserName اختياريان).\r\n" +
+            "10) Initiatives — المبادرات (ActionPlanKey يطابق ورقة ActionPlans؛ OwnerUserName اختياري).\r\n\r\n" +
             "AudienceScope (Surveys): 1 Everyone, 2 Guest, 3 SpecificUsers, 4 AllOrganizationMembers.\r\n" +
             "QuestionType (SurveyQuestions و SurveyTemplateQuestions): 1 ShortText, 2 LongText, 3 SingleChoice, 4 MultipleChoice, 5 Rating, 6 Scale, 7 YesNo, 8 Date, 9 Number.\r\n" +
             "OptionsJson للاختيارات: [{\"value\":\"a\",\"labelAr\":\"خيار\",\"labelEn\":\"Option\"}] — وللمقياس مثلاً {\"min\":1,\"max\":5}.\r\n" +
-            "عمود SurveyKey في SurveyResponses يجب أن يطابق قيمة Code المحفوظة للاستبيان (= PublicCode إن وُجد، وإلا SurveyKey في ورقة Surveys).\r\n" +
-            "أمثلة الصفوف تستخدم بادئة IMP- لتقليل التصادم مع بياناتك؛ احذفها أو غيّر الأكواد قبل الإنتاج.\r\n" +
+            "عمود SurveyKey في SurveyResponses و Recommendations و ActionPlans يجب أن يطابق قيمة Code المحفوظة للاستبيان (= PublicCode إن وُجد، وإلا SurveyKey في ورقة Surveys).\r\n" +
+            "أعمدة التواريخ (DueDateUtc / StartDateUtc / EndDateUtc / TargetDateUtc) بصيغة ISO مثل 2026-05-31.\r\n" +
+            "أمثلة الصفوف (عند اختيار «قالب مع أمثلة»): 20 صفاً لكل ورقة بيانات تقريباً، بمفردات قريبة من سياق دولة الإمارات (متعامل، هوية رقمية، رؤية 2071، إلخ). تستخدم بادئة IMP- لتقليل التصادم؛ غيّرها قبل الإنتاج.\r\n" +
             "القالب الفارغ: صف العناوين فقط. القالب مع أمثلة: صفوف توضيحية يمكن حذفها أو استبدالها.\r\n";
         ws.Cell(1, 1).Style.Alignment.WrapText = true;
-        ws.Range(1, 1, 22, 8).Merge();
+        ws.Range(1, 1, 26, 8).Merge();
         ws.Column(1).Width = 100;
-        ws.Row(1).Height = 460;
+        ws.Row(1).Height = 540;
     }
 
     private static void AddSurveyTemplatesSheet(XLWorkbook wb, bool includeSamples)
@@ -122,20 +150,7 @@ internal static class ExcelBulkTemplateBuilder
         WriteHeader(ws, "TemplateKey", "NameAr", "NameEn", "DescriptionAr", "DescriptionEn");
         if (includeSamples)
         {
-            var rows = new (string Key, string Ar, string En, string Da, string De)[]
-            {
-                ("IMP-TPL-01", "قالب — تقييم أسبوعي", "Template — weekly check-in", "نسخة مختصرة للفرق", "Short team pulse"),
-                ("IMP-TPL-02", "قالب — ورشة تدريب", "Template — training workshop", "بعد الحضور", "Post-training"),
-                ("IMP-TPL-03", "قالب — زيارة عميل", "Template — client visit", "ميداني", "Field"),
-                ("IMP-TPL-04", "قالب — ضيف", "Template — guest", "بدون حساب", "No account"),
-                ("IMP-TPL-05", "قالب — مبيعات", "Template — sales", "أهداف الربع", "Quarter goals"),
-                ("IMP-TPL-06", "قالب — خدمة عملاء", "Template — customer care", "مركز الاتصال", "Call center"),
-                ("IMP-TPL-07", "قالب — رضا موظف", "Template — employee CSAT", "سريع", "Quick"),
-                ("IMP-TPL-08", "قالب — رفاهية", "Template — wellbeing", "رفاهية عامة", "General wellbeing"),
-                ("IMP-TPL-09", "قالب — شركاء", "Template — partners", "تقييم خارجي", "External review"),
-                ("IMP-TPL-10", "قالب — عام", "Template — generic", "متعدد الاستخدام", "Multi-purpose"),
-            };
-
+            var rows = SampleSurveyTemplatesUae();
             for (var i = 0; i < rows.Length; i++)
             {
                 var r = rows[i];
@@ -150,26 +165,7 @@ internal static class ExcelBulkTemplateBuilder
         WriteHeader(ws, "TemplateKey", "DisplayOrder", "QuestionType", "TitleAr", "TitleEn", "IsRequired", "OptionsJson");
         if (includeSamples)
         {
-            var choiceOpts =
-                "[{\"value\":\"a\",\"labelAr\":\"موافق\",\"labelEn\":\"Agree\"},{\"value\":\"b\",\"labelAr\":\"غير موافق\",\"labelEn\":\"Disagree\"}]";
-            var multiOpts =
-                "[{\"value\":\"x\",\"labelAr\":\"X\",\"labelEn\":\"X\"},{\"value\":\"y\",\"labelAr\":\"Y\",\"labelEn\":\"Y\"}]";
-            var scaleOpts = "{\"min\":1,\"max\":5}";
-
-            var rows = new (string Tk, string Ord, string Qt, string Tar, string Ten, string Req, string Opt)[]
-            {
-                ("IMP-TPL-01", "1", "1", "ما أهم ما يجب متابعته؟", "What should we track?", "TRUE", ""),
-                ("IMP-TPL-02", "1", "7", "هل المحتوى مفيد؟", "Was the content useful?", "TRUE", ""),
-                ("IMP-TPL-03", "1", "3", "تقييم الزيارة", "Visit score", "TRUE", choiceOpts),
-                ("IMP-TPL-04", "1", "1", "ما سبب الزيارة؟", "Reason for visit?", "FALSE", ""),
-                ("IMP-TPL-05", "1", "5", "مدى الثقة بالهدف", "Confidence in target", "TRUE", ""),
-                ("IMP-TPL-06", "1", "2", "صف المشكلة باختصار", "Describe the issue briefly", "TRUE", ""),
-                ("IMP-TPL-07", "1", "9", "عدد النقاط (0–10)", "Points 0–10", "FALSE", ""),
-                ("IMP-TPL-08", "1", "8", "تاريخ آخر إجازة", "Last leave date", "FALSE", ""),
-                ("IMP-TPL-09", "1", "4", "وسائل التواصل المفضلة", "Preferred channels", "TRUE", multiOpts),
-                ("IMP-TPL-10", "1", "6", "جاهزية الفريق", "Team readiness", "TRUE", scaleOpts),
-            };
-
+            var rows = SampleSurveyTemplateQuestionsUae();
             for (var i = 0; i < rows.Length; i++)
             {
                 var r = rows[i];
@@ -184,20 +180,7 @@ internal static class ExcelBulkTemplateBuilder
         WriteHeader(ws, "Code", "NameAr", "NameEn", "ParentDepartmentCode");
         if (includeSamples)
         {
-            var rows = new (string Code, string Ar, string En, string Parent)[]
-            {
-                ("IMP-D01", "موارد بشرية", "Human Resources", ""),
-                ("IMP-D02", "مالية", "Finance", ""),
-                ("IMP-D03", "تقنية معلومات", "Information Technology", ""),
-                ("IMP-D04", "دعم فني", "Technical Support", "IMP-D03"),
-                ("IMP-D05", "مبيعات", "Sales", ""),
-                ("IMP-D06", "تجزئة", "Retail", "IMP-D05"),
-                ("IMP-D07", "شؤون قانونية", "Legal", ""),
-                ("IMP-D08", "عقود", "Contracts", "IMP-D07"),
-                ("IMP-D09", "بحث وتطوير", "Research & Development", ""),
-                ("IMP-D10", "جودة", "Quality Assurance", "IMP-D09"),
-            };
-
+            var rows = SampleDepartmentsUae();
             for (var i = 0; i < rows.Length; i++)
             {
                 var r = rows[i];
@@ -212,21 +195,7 @@ internal static class ExcelBulkTemplateBuilder
         WriteHeader(ws, "EmployeeNumber", "NameAr", "NameEn", "Email", "PhoneNumber", "JobTitleAr", "JobTitleEn", "DepartmentCode", "IsActive");
         if (includeSamples)
         {
-            var deps = new[] { "IMP-D01", "IMP-D02", "IMP-D03", "IMP-D04", "IMP-D05", "IMP-D06", "IMP-D07", "IMP-D08", "IMP-D09", "IMP-D10" };
-            var people = new (string Ar, string En, string Email, string Phone, string JobAr, string JobEn)[]
-            {
-                ("أحمد محمود", "Ahmed Mahmoud", "imp.e01@template.sample", "0501000001", "محلل أعمال", "Business Analyst"),
-                ("سارة علي", "Sara Ali", "imp.e02@template.sample", "0501000002", "مطوّر برمجيات", "Software Developer"),
-                ("خالد عمر", "Khaled Omar", "imp.e03@template.sample", "0501000003", "مدير مشروع", "Project Manager"),
-                ("ليلى حسن", "Layla Hassan", "imp.e04@template.sample", "0501000004", "مصممة واجهات", "UX Designer"),
-                ("يوسف ناصر", "Youssef Nasser", "imp.e05@template.sample", "0501000005", "مهندس نظم", "Systems Engineer"),
-                ("نورة إبراهيم", "Noura Ibrahim", "imp.e06@template.sample", "0501000006", "مسؤولة موارد بشرية", "HR Specialist"),
-                ("طارق منصور", "Tariq Mansour", "imp.e07@template.sample", "0501000007", "محاسب", "Accountant"),
-                ("هند عبدالله", "Hind Abdullah", "imp.e08@template.sample", "0501000008", "منسقة تسويق", "Marketing Coordinator"),
-                ("فيصل راشد", "Faisal Rashid", "imp.e09@template.sample", "0501000009", "فني دعم", "Support Technician"),
-                ("ريم سالم", "Reem Salem", "imp.e10@template.sample", "0501000010", "باحثة", "Researcher"),
-            };
-
+            var people = SampleEmployeesUae();
             for (var i = 0; i < people.Length; i++)
             {
                 var n = i + 1;
@@ -241,7 +210,7 @@ internal static class ExcelBulkTemplateBuilder
                     p.Phone,
                     p.JobAr,
                     p.JobEn,
-                    deps[i],
+                    p.Dep,
                     "TRUE");
             }
         }
@@ -253,22 +222,7 @@ internal static class ExcelBulkTemplateBuilder
         WriteHeader(ws, "Code", "NameAr", "NameEn", "Type", "Email", "PhoneNumber", "ContactPerson", "Address", "DepartmentCode", "IsActive");
         if (includeSamples)
         {
-            var types = new[] { "1", "2", "3", "4", "99", "1", "2", "3", "4", "99" };
-            var deps = new[] { "IMP-D01", "IMP-D02", "IMP-D03", "IMP-D04", "IMP-D05", "IMP-D01", "IMP-D02", "IMP-D03", "IMP-D04", "IMP-D05" };
-            var partners = new (string Ar, string En, string Email, string Phone, string Contact, string Addr)[]
-            {
-                ("وكيل شمال", "North Dealer Agent", "imp.p01@template.sample", "0510000001", "فهد", "الرياض — حي العليا"),
-                ("شريك استراتيجي", "Strategic Partner Co.", "imp.p02@template.sample", "0510000002", "نوف", "جدة — الكورنيش"),
-                ("مورّد معدات", "Equipment Vendor Ltd", "imp.p03@template.sample", "0510000003", "سامي", "الدمام — الصناعية"),
-                ("عميل مؤسسي", "Enterprise Customer", "imp.p04@template.sample", "0510000004", "لمى", "الخبر — النزهة"),
-                ("جهة أخرى", "Other Entity", "imp.p05@template.sample", "0510000005", "عادل", "مكة — العزيزية"),
-                ("موزع جنوب", "South Distributor", "imp.p06@template.sample", "0510000006", "هالة", "أبها — المفتاحة"),
-                ("شريك تقني", "Technology Partner", "imp.p07@template.sample", "0510000007", "رامي", "المدينة المنورة"),
-                ("بائع تجزئة", "Retail Vendor", "imp.p08@template.sample", "0510000008", "دانة", "تبوك — المروج"),
-                ("عميل قطاع حكومي", "Gov Sector Client", "imp.p09@template.sample", "0510000009", "بدر", "الأحساء — الهفوف"),
-                ("فرع إقليمي", "Regional Branch Partner", "imp.p10@template.sample", "0510000010", "منى", "نجران — الملك فهد"),
-            };
-
+            var partners = SamplePartnersUae();
             for (var i = 0; i < partners.Length; i++)
             {
                 var n = i + 1;
@@ -279,12 +233,12 @@ internal static class ExcelBulkTemplateBuilder
                     $"IMP-P{n:D3}",
                     x.Ar,
                     x.En,
-                    types[i],
+                    x.Type,
                     x.Email,
                     x.Phone,
                     x.Contact,
                     x.Addr,
-                    deps[i],
+                    x.Dep,
                     "TRUE");
             }
         }
@@ -296,21 +250,8 @@ internal static class ExcelBulkTemplateBuilder
         WriteHeader(ws, "UserName", "Email", "Password", "NameAr", "NameEn", "EmployeeNumber", "RoleNames", "IsActive");
         if (includeSamples)
         {
-            var roles = new[] { "Employee", "Employee", "Admin", "Employee", "Employee", "Employee", "Employee", "Employee", "Employee", "Admin,Employee" };
-            var display = new (string Ar, string En)[]
-            {
-                ("مستخدم قالب 1", "Template User 01"),
-                ("مستخدم قالب 2", "Template User 02"),
-                ("مستخدم قالب 3", "Template User 03"),
-                ("مستخدم قالب 4", "Template User 04"),
-                ("مستخدم قالب 5", "Template User 05"),
-                ("مستخدم قالب 6", "Template User 06"),
-                ("مستخدم قالب 7", "Template User 07"),
-                ("مستخدم قالب 8", "Template User 08"),
-                ("مستخدم قالب 9", "Template User 09"),
-                ("مستخدم قالب 10", "Template User 10"),
-            };
-
+            var roles = SampleUserRolesUae();
+            var display = SampleUserDisplayUae();
             for (var i = 0; i < display.Length; i++)
             {
                 var n = i + 1;
@@ -319,7 +260,7 @@ internal static class ExcelBulkTemplateBuilder
                     ws,
                     n + 1,
                     $"imp.usr.{n:D2}",
-                    $"imp.usr.{n:D2}@template.sample",
+                    $"imp.usr.{n:D2}@uaesample.gov.ae",
                     "ChangeMe123!",
                     d.Ar,
                     d.En,
@@ -336,27 +277,11 @@ internal static class ExcelBulkTemplateBuilder
         WriteHeader(ws, "SurveyKey", "TitleAr", "TitleEn", "DescriptionAr", "DescriptionEn", "AudienceScope", "PublicCode", "ShowOnPublicPortal");
         if (includeSamples)
         {
-            // لا نستخدم 3 (SpecificUsers) لأن القالب لا يضم AudienceMembers — يفشل التحقق عند الإنشاء.
-            var scopes = new[] { "4", "4", "1", "2", "4", "4", "4", "4", "1", "4" };
-            var surveys = new (string Key, string Ar, string En, string Da, string De)[]
-            {
-                ("IMP-SVY-01", "رضا الموظفين Q1", "Employee satisfaction — pulse", "استطلاع أسبوعي", "Weekly pulse check"),
-                ("IMP-SVY-02", "تدريب ما بعد العمل", "Post-workshop feedback", "بعد ورشة الأمن السيبراني", "After cybersecurity workshop"),
-                ("IMP-SVY-03", "زيارة العميل", "Customer visit form", "تقييم زيارة ميدانية", "Field visit evaluation"),
-                ("IMP-SVY-04", "ضيف — استبيان قصير", "Guest quick survey", "للزوار بدون حساب", "For guests without login"),
-                ("IMP-SVY-05", "مبيعات الربع", "Quarterly sales check", "أهداف الفريق", "Team targets"),
-                ("IMP-SVY-06", "متابعة داخلية", "Internal follow-up", "قائمة داخلية", "Internal follow-up round"),
-                ("IMP-SVY-07", "جودة الخدمة", "Service quality", "مركز الاتصال", "Call center"),
-                ("IMP-SVY-08", "التوازن والرفاهية", "Wellbeing snapshot", "بدون أسماء في التقرير", "Anonymous-style wording"),
-                ("IMP-SVY-09", "شركاء — تقييم أداء", "Partner performance", "للفريق الخارجي", "External partners"),
-                ("IMP-SVY-10", "استبيان عام تجريبي", "General template survey", "نسخة متعددة الاستخدام", "Reusable template"),
-            };
-
+            var surveys = SampleSurveysUae();
             for (var i = 0; i < surveys.Length; i++)
             {
                 var s = surveys[i];
-                var pub = string.Empty;
-                WriteRow(ws, i + 2, s.Key, s.Ar, s.En, s.Da, s.De, scopes[i], pub, "FALSE");
+                WriteRow(ws, i + 2, s.Key, s.Ar, s.En, s.Da, s.De, s.Scope, string.Empty, "FALSE");
             }
         }
     }
@@ -367,26 +292,7 @@ internal static class ExcelBulkTemplateBuilder
         WriteHeader(ws, "SurveyKey", "DisplayOrder", "QuestionType", "TitleAr", "TitleEn", "IsRequired", "OptionsJson");
         if (includeSamples)
         {
-            var choiceOpts =
-                "[{\"value\":\"a\",\"labelAr\":\"موافق\",\"labelEn\":\"Agree\"},{\"value\":\"b\",\"labelAr\":\"غير موافق\",\"labelEn\":\"Disagree\"}]";
-            var multiOpts =
-                "[{\"value\":\"x\",\"labelAr\":\"خيار X\",\"labelEn\":\"X\"},{\"value\":\"y\",\"labelAr\":\"خيار Y\",\"labelEn\":\"Y\"},{\"value\":\"z\",\"labelAr\":\"خيار Z\",\"labelEn\":\"Z\"}]";
-            var scaleOpts = "{\"min\":1,\"max\":5}";
-
-            var rows = new (string Sk, string Ord, string Qt, string Tar, string Ten, string Req, string Opt)[]
-            {
-                ("IMP-SVY-01", "1", "1", "ما أبرز ملاحظة هذا الأسبوع؟", "Top note this week?", "TRUE", ""),
-                ("IMP-SVY-02", "1", "7", "هل أنصح بالورشة للزملاء؟", "Would you recommend the workshop?", "TRUE", ""),
-                ("IMP-SVY-03", "1", "3", "تقييم الزيارة", "Visit rating", "TRUE", choiceOpts),
-                ("IMP-SVY-04", "1", "5", "مدى الرضا (1–5)", "Satisfaction (1–5)", "FALSE", ""),
-                ("IMP-SVY-05", "1", "2", "صف أكبر عائق للهدف", "Describe the main blocker", "TRUE", ""),
-                ("IMP-SVY-06", "1", "9", "عدد المهام المغلقة", "Closed tasks count", "FALSE", ""),
-                ("IMP-SVY-07", "1", "8", "تاريخ آخر تذكرة", "Last ticket date", "TRUE", ""),
-                ("IMP-SVY-08", "1", "4", "اختر كل ما ينطبق", "Select all that apply", "TRUE", multiOpts),
-                ("IMP-SVY-09", "1", "6", "درجة الجاهزية", "Readiness score", "TRUE", scaleOpts),
-                ("IMP-SVY-10", "1", "1", "تعليق عام", "General comment", "FALSE", ""),
-            };
-
+            var rows = SampleSurveyQuestionsUae();
             for (var i = 0; i < rows.Length; i++)
             {
                 var r = rows[i];
@@ -401,25 +307,83 @@ internal static class ExcelBulkTemplateBuilder
         WriteHeader(ws, "SurveyKey", "UserName", "QuestionDisplayOrder", "AnswerValue");
         if (includeSamples)
         {
-            // SurveyKey يطابق عمود Surveys (PublicCode فارغ ⇒ Code = SurveyKey). مستخدم واحد لكل استبيان لتجنب تعارض «رد مسجل».
-            var rows = new (string Sk, string User, string Ord, string Ans)[]
-            {
-                ("IMP-SVY-01", "imp.usr.01", "1", "تحسّن ملحوظ في التواصل الداخلي."),
-                ("IMP-SVY-02", "imp.usr.02", "1", "yes"),
-                ("IMP-SVY-03", "imp.usr.03", "1", "a"),
-                ("IMP-SVY-04", "imp.usr.04", "1", "4"),
-                ("IMP-SVY-05", "imp.usr.05", "1", "الهدف يحتاج موارد إضافية هذا الربع."),
-                ("IMP-SVY-06", "imp.usr.06", "1", "12"),
-                ("IMP-SVY-07", "imp.usr.07", "1", "2026-05-01"),
-                ("IMP-SVY-08", "imp.usr.08", "1", "x,y"),
-                ("IMP-SVY-09", "imp.usr.09", "1", "4"),
-                ("IMP-SVY-10", "imp.usr.10", "1", "شكراً، القالب يعمل كما يُفترض."),
-            };
-
+            var rows = SampleSurveyResponsesUae();
             for (var i = 0; i < rows.Length; i++)
             {
                 var r = rows[i];
                 WriteRow(ws, i + 2, r.Sk, r.User, r.Ord, r.Ans);
+            }
+        }
+    }
+
+    private static void AddRecommendationsSheet(XLWorkbook wb, bool includeSamples)
+    {
+        var ws = wb.Worksheets.Add(SheetRecommendations);
+        WriteHeader(
+            ws,
+            "TitleAr",
+            "TitleEn",
+            "DescriptionAr",
+            "DescriptionEn",
+            "Priority",
+            "SurveyKey",
+            "AssignedToUserName",
+            "DueDateUtc");
+        if (includeSamples)
+        {
+            var rows = SampleRecommendationsUae();
+            for (var i = 0; i < rows.Length; i++)
+            {
+                var r = rows[i];
+                WriteRow(ws, i + 2, r.Ar, r.En, r.DesAr, r.DesEn, r.Pri, r.Sk, r.Usr, r.Due);
+            }
+        }
+    }
+
+    private static void AddActionPlansSheet(XLWorkbook wb, bool includeSamples)
+    {
+        var ws = wb.Worksheets.Add(SheetActionPlans);
+        WriteHeader(
+            ws,
+            "ActionPlanKey",
+            "TitleAr",
+            "TitleEn",
+            "DescriptionAr",
+            "DescriptionEn",
+            "SurveyKey",
+            "OwnerUserName",
+            "StartDateUtc",
+            "EndDateUtc");
+        if (includeSamples)
+        {
+            var rows = SampleActionPlansUae();
+            for (var i = 0; i < rows.Length; i++)
+            {
+                var r = rows[i];
+                WriteRow(ws, i + 2, r.Key, r.Ar, r.En, r.DesAr, r.DesEn, r.Sk, r.Usr, r.Sd, r.Ed);
+            }
+        }
+    }
+
+    private static void AddInitiativesSheet(XLWorkbook wb, bool includeSamples)
+    {
+        var ws = wb.Worksheets.Add(SheetInitiatives);
+        WriteHeader(
+            ws,
+            "ActionPlanKey",
+            "TitleAr",
+            "TitleEn",
+            "DescriptionAr",
+            "DescriptionEn",
+            "OwnerUserName",
+            "TargetDateUtc");
+        if (includeSamples)
+        {
+            var rows = SampleInitiativesUae();
+            for (var i = 0; i < rows.Length; i++)
+            {
+                var r = rows[i];
+                WriteRow(ws, i + 2, r.Ap, r.Ar, r.En, r.DesAr, r.DesEn, r.Usr, r.Td);
             }
         }
     }

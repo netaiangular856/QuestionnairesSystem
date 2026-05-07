@@ -200,75 +200,6 @@
   margin-top: 1.5rem;
 }
 
-
-
-::ng-deep {
-  .dept-org-chart {
-    /* Forced Light Theme Reset */
-    color-scheme: light !important;
-    
-    /* PrimeNG v18+ Styled Mode Variables - Soft Gray Theme */
-    --p-organizationchart-node-background: #f1f5f9; /* Light Gray */
-    --p-organizationchart-node-hover-background: #e2e8f0;
-    --p-organizationchart-node-selected-background: #cbd5e1;
-    --p-organizationchart-node-border-color: transparent; /* No border */
-    --p-organizationchart-node-color: #000000; /* Black text */
-    --p-organizationchart-node-selected-color: #000000;
-    --p-organizationchart-node-hover-color: #000000;
-    --p-organizationchart-connector-color: #cbd5e1;
-    --p-content-background: #f1f5f9;
-    --p-content-hover-background: #e2e8f0;
-    --p-content-border-color: transparent;
-    --p-content-color: #000000;
-    --p-highlight-background: #cbd5e1;
-    --p-highlight-color: #000000;
-
-    .p-organizationchart-node-content {
-      background: var(--p-organizationchart-node-background);
-      border: none !important; /* Force remove border */
-      padding: 0 !important;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important; /* Enhanced shadow */
-      border-radius: 12px !important;
-      transition: all 0.3s ease !important;
-
-      &.p-organizationchart-node-selectable:hover {
-        background: var(--p-organizationchart-node-hover-background) !important;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important; /* Hover shadow */
-        transform: translateY(-2px);
-      }
-
-      &.p-organizationchart-node-selected {
-        background: var(--p-organizationchart-node-selected-background) !important;
-      }
-    }
-    
-    .p-organizationchart-table {
-      margin: 0 auto;
-      border-spacing: 0;
-      border-collapse: separate;
-    }
-
-    /* Connector Lines Style */
-    .p-organizationchart-connector-down {
-      background: var(--p-organizationchart-connector-color) !important;
-      width: 2px !important;
-    }
-
-    .p-organizationchart-connector-left,
-    .p-organizationchart-connector-right {
-      border-color: var(--p-organizationchart-connector-color) !important;
-      border-width: 2px !important;
-      border-top-style: solid !important;
-    }
-
-    .p-organizationchart-connector-top {
-      border-color: var(--p-organizationchart-connector-color) !important;
-      border-width: 2px !important;
-      border-top-style: solid !important;
-    }
-  }
-}
-
 /* Tree Wrapper & Toolbar */
 .tree-wrapper {
   position: relative;
@@ -290,29 +221,28 @@
     border-radius: 0;
   }
 
-  &--compact {
-    .org-node-card {
-      width: 160px; /* Reduced width */
-      min-height: 50px; /* Reduced height */
-      padding: 0.5rem 0.75rem;
-      border-radius: 8px;
-    }
-    .org-node-card__name {
-      font-size: 0.85rem;
-    }
-    .org-node-card__actions {
-      top: -8px;
-      right: -8px;
-    }
-    .org-node-btn {
-      width: 24px;
-      height: 24px;
-      font-size: 0.7rem;
-    }
-    .tree-viewport {
-      padding: 4rem 2rem 2rem;
-    }
+  &--compact .tree-viewport { padding: 5rem 1rem 1rem; }
+}
+
+// Compact-mode overrides for dynamically injected node cards
+:host ::ng-deep .tree-wrapper--compact .d3-org-chart-host {
+  .org-node-card {
+    padding: 0.55rem 0.7rem;
+    border-radius: 12px;
+    gap: 0.6rem;
   }
+  .org-node-card__avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    font-size: 0.85rem;
+  }
+  .org-node-card__name { font-size: 0.82rem; -webkit-line-clamp: 1; }
+  .org-node-card__meta { gap: 0.3rem; }
+  .org-node-card__code,
+  .org-node-card__badge { font-size: 0.65rem; padding: 0.05rem 0.45rem; }
+  .org-node-card__badge-label { display: none; }
+  .org-node-btn { width: 24px; height: 24px; }
 }
 
 .tree-controls {
@@ -370,112 +300,302 @@
 
 .tree-viewport {
   flex: 1;
-  overflow: hidden; /* Changed from auto to hidden for transform-based panning */
-  padding: 12rem 6rem 6rem;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  cursor: grab;
-  user-select: none;
+  overflow: hidden;
+  padding: 5rem 1.5rem 1.5rem;
   position: relative;
-  
-  &.is-grabbing {
-    cursor: grabbing;
-  }
 }
 
 .tree-canvas {
-  transition: transform 0.1s ease-out; /* Reduced duration for smoother drag */
-  transform-origin: top center;
-  will-change: transform;
+  width: 100%;
+  height: 100%;
+  min-height: 620px;
 }
 
-.org-node-card {
-  background: transparent; /* Parent container is transparent */
-  border-radius: 12px;
-  width: 260px;
-  min-height: 70px; 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem 1.5rem;
-  position: relative;
-  transition: all 0.3s ease;
-  border: none !important; /* No border as requested */
+// d3-org-chart injects DOM dynamically (no Angular ngcontent attributes),
+// so the dynamic node markup needs to live outside emulated view encapsulation.
+// We use :host ::ng-deep to leak these rules into the dynamic content.
+:host ::ng-deep .d3-org-chart-host {
+  svg {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
 
-  &--root {
-    background: transparent;
-    .org-node-card__name {
-      color: #000000;
-      font-weight: 800;
+  // Hide the default <rect> behind each node — our HTML card is the visible surface
+  .node-rect {
+    fill: transparent !important;
+    stroke: transparent !important;
+  }
+
+  // Connector links — softer, neutral
+  .link,
+  path.link {
+    stroke: #cbd5e1 !important;
+    stroke-width: 1.6px !important;
+    fill: none !important;
+  }
+
+  .org-node-card {
+    --node-accent: #2563eb;
+    --node-accent-strong: #1d4ed8;
+    --node-text: #0f172a;
+    --node-muted: #64748b;
+    --node-bg-soft: #f1f5f9;
+    --node-border: #e2e8f0;
+
+    width: 100%;
+    height: 100%;
+    background: #ffffff;
+    border: 1px solid var(--node-border);
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 16px -10px rgba(15, 23, 42, 0.12);
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.9rem 1rem;
+    position: relative;
+    box-sizing: border-box;
+    overflow: hidden;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    font-family: inherit;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset-inline-start: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--node-accent);
+      border-start-end-radius: 4px;
+      border-end-end-radius: 4px;
+    }
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 18px 40px -16px rgba(15, 23, 42, 0.25), 0 8px 18px -10px rgba(15, 23, 42, 0.12);
+      border-color: #c7d2fe;
+
+      .org-node-card__actions {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+    }
+
+    &--root {
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--node-accent), var(--node-accent-strong));
+      color: #ffffff;
+
+      &::before { display: none; }
+
+      .org-node-card__avatar {
+        background: rgba(255, 255, 255, 0.22);
+        color: #ffffff;
+      }
+
+      .org-node-card__name { color: #ffffff; font-weight: 800; }
+      .org-node-card__code,
+      .org-node-card__badge {
+        background: rgba(255, 255, 255, 0.18);
+        color: rgba(255, 255, 255, 0.95);
+        border-color: rgba(255, 255, 255, 0.18);
+      }
+
+      .org-node-btn {
+        background: rgba(255, 255, 255, 0.18);
+        color: #ffffff;
+        border-color: rgba(255, 255, 255, 0.35);
+
+        &:hover {
+          background: #ffffff;
+          color: var(--node-accent);
+          border-color: #ffffff;
+        }
+      }
+    }
+
+    &--synthetic {
+      background: var(--node-bg-soft) !important;
+      border: 1px dashed #cbd5e1 !important;
+      background-image: none !important;
+      color: var(--node-muted);
+
+      &::before { display: none; }
+
+      .org-node-card__avatar {
+        background: #ffffff;
+        color: var(--node-muted);
+        border: 1px dashed #cbd5e1;
+      }
+      .org-node-card__name {
+        color: var(--node-text) !important;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-size: 0.85rem;
+      }
+      .org-node-card__meta { display: none; }
+      .org-node-btn {
+        background: #ffffff;
+        color: var(--node-muted);
+        border-color: var(--node-border);
+
+        &:hover {
+          background: var(--node-accent);
+          color: #ffffff;
+          border-color: var(--node-accent);
+        }
+      }
     }
   }
 
-  &:hover {
-    transform: translateY(-3px);
-    .org-node-card__actions {
-      opacity: 1;
-      transform: translate(0, 0);
+  .org-node-card__avatar {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    color: #2563eb;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+  }
+
+  .org-node-card__initial {
+    line-height: 1;
+    display: inline-block;
+    transform: translateY(0.5px);
+  }
+
+  .org-node-card__content {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 0;
+    text-align: start;
+  }
+
+  .org-node-card__name {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 0.95rem;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+    margin: 0;
+  }
+
+  .org-node-card__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .org-node-card__code {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+
+  .org-node-card__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+
+    svg { opacity: 0.85; }
+  }
+
+  .org-node-card__badge-label {
+    display: inline;
+  }
+
+  .org-node-card__actions {
+    position: absolute;
+    top: 8px;
+    inset-inline-end: 8px;
+    display: flex;
+    gap: 0.3rem;
+    z-index: 5;
+    opacity: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+
+  .org-node-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #64748b;
+    padding: 0;
+    pointer-events: auto;
+    box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.1);
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+    font: inherit;
+
+    svg {
+      width: 14px;
+      height: 14px;
+      display: block;
+    }
+
+    &:hover {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+      transform: scale(1.06);
     }
   }
 }
 
-.org-node-card__name {
-  font-weight: 600;
-  color: #000000; /* Pure black text */
-  font-size: 1.1rem;
-  text-align: center;
-  line-height: 1.4;
+// Touch / non-hover devices: keep actions visible
+@media (hover: none) {
+  :host ::ng-deep .d3-org-chart-host .org-node-card .org-node-card__actions {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
 }
 
-.org-node-card__connector-badge {
-  position: absolute;
-  bottom: -45px; /* Position it on the downward line */
-  left: 50%;
-  transform: translateX(-50%);
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  color: #94a3b8;
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-weight: 700;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  z-index: 10;
-  pointer-events: none;
-}
-
-.org-node-card__actions {
-  position: absolute;
-  top: -12px;
-  right: -12px;
-  display: flex;
-  gap: 0.4rem;
-  opacity: 0;
-  transform: translate(-10px, 10px);
-  transition: all 0.3s ease;
-  z-index: 20;
-}
-
-.org-node-btn {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #64748b;
-  font-size: 0.8rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-
-  &:hover {
-    background: var(--color-accent);
-    color: #ffffff;
-    border-color: var(--color-accent);
-    transform: scale(1.1);
+@media (max-width: 768px) {
+  .tree-wrapper { height: 560px; }
+  .tree-controls {
+    flex-wrap: wrap;
+    width: calc(100% - 2rem);
+    justify-content: center;
   }
 }
 

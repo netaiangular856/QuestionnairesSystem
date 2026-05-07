@@ -2,13 +2,9 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
-import { ApiResponse } from '../../shared/models/api.types';
+import { readApiErrorsFromBody } from '../../shared/utils/api-helpers';
 import { AuthService } from '../auth/auth.service';
 import { ErrorDisplayService } from '../services/error-display.service';
-
-function isApiResponseBody(value: unknown): value is ApiResponse<unknown> {
-  return typeof value === 'object' && value !== null && 'succeeded' in value;
-}
 
 export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
@@ -26,16 +22,15 @@ export const httpErrorInterceptor: HttpInterceptorFn = (req, next) => {
       if (err.status === 401 && !loginCall && !publicApiCall) {
         auth.logout(false);
         void router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
-      } else if (
-        !loginCall &&
-        isApiResponseBody(err.error) &&
-        err.error.errors?.length
-      ) {
-        errors.show(err.error.errors.join(' · '));
-      } else if (typeof err.error === 'string' && err.error.length > 0) {
-        errors.show(err.error);
-      } else if (err.message) {
-        errors.show(err.message);
+      } else if (!loginCall) {
+        const apiErrors = readApiErrorsFromBody(err.error);
+        if (apiErrors?.length) {
+          errors.show(apiErrors.join(' · '));
+        } else if (typeof err.error === 'string' && err.error.length > 0) {
+          errors.show(err.error);
+        } else if (err.message) {
+          errors.show(err.message);
+        }
       }
 
       return throwError(() => err);

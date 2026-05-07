@@ -12,6 +12,12 @@ public enum ExcelTemplateScope
     Surveys = 5,
     /// <summary>قوالب الاستبيان: SurveyTemplates + SurveyTemplateQuestions.</summary>
     Templates = 6,
+    /// <summary>التوصيات (ورقة Recommendations فقط).</summary>
+    Recommendations = 7,
+    /// <summary>خطط العمل (ورقة ActionPlans فقط).</summary>
+    ActionPlans = 8,
+    /// <summary>المبادرات: ActionPlans + Initiatives في مصنف واحد (المبادرة تحتاج ActionPlanKey).</summary>
+    Initiatives = 9,
 }
 
 public sealed class ExcelImportResultDto
@@ -23,6 +29,9 @@ public sealed class ExcelImportResultDto
     public int SurveysImported { get; init; }
     public int TemplatesImported { get; init; }
     public int ResponsesImported { get; init; }
+    public int RecommendationsImported { get; init; }
+    public int ActionPlansImported { get; init; }
+    public int InitiativesImported { get; init; }
     public IReadOnlyList<ExcelImportRowErrorDto> Errors { get; init; } = Array.Empty<ExcelImportRowErrorDto>();
 }
 

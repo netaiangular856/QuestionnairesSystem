@@ -166,46 +166,78 @@
     @if (canReport() && !reportBusy() && report(); as d) {
       <div class="rp-main db-dashboard db-dashboard--tight" role="region" [attr.aria-label]="('nav.dashboard' | t)">
         <div class="db-kpi-grid">
-          <article class="rp-kpi db-kpi--cell">
+          <a
+            class="rp-kpi db-kpi--cell db-kpi--surveys"
+            [class.rp-kpi--link]="has('SURVEY_VIEW')"
+            [routerLink]="has('SURVEY_VIEW') ? '/surveys' : null"
+          >
             <i class="pi pi-folder rp-kpi__ico" aria-hidden="true"></i>
             <p class="rp-kpi__label">{{ 'q.reports.totalSurveys' | t }}</p>
             <p class="rp-kpi__value">{{ d.totalSurveys | number }}</p>
-          </article>
-          <article class="rp-kpi db-kpi--cell">
+          </a>
+          <a
+            class="rp-kpi db-kpi--cell db-kpi--published"
+            [class.rp-kpi--link]="has('SURVEY_VIEW')"
+            [routerLink]="has('SURVEY_VIEW') ? '/surveys' : null"
+          >
             <i class="pi pi-megaphone rp-kpi__ico" aria-hidden="true"></i>
             <p class="rp-kpi__label">{{ 'q.reports.published' | t }}</p>
             <p class="rp-kpi__value">{{ d.publishedSurveys | number }}</p>
-          </article>
-          <article class="rp-kpi rp-kpi--accent db-kpi--cell">
+          </a>
+          <a
+            class="rp-kpi rp-kpi--accent db-kpi--cell db-kpi--responses"
+            [class.rp-kpi--link]="canReport()"
+            [routerLink]="canReport() ? '/survey-analysis' : null"
+          >
             <i class="pi pi-send rp-kpi__ico" aria-hidden="true"></i>
             <p class="rp-kpi__label">{{ 'q.reports.responses' | t }}</p>
             <p class="rp-kpi__value">{{ d.totalResponses | number }}</p>
-          </article>
-          <article class="rp-kpi db-kpi--cell">
+          </a>
+          <a
+            class="rp-kpi db-kpi--cell db-kpi--invited"
+            [class.rp-kpi--link]="has('EMPLOYEE_VIEW') || has('USER_MANAGE')"
+            [routerLink]="has('EMPLOYEE_VIEW') ? '/employees' : (has('USER_MANAGE') ? '/users' : null)"
+          >
             <i class="pi pi-users rp-kpi__ico" aria-hidden="true"></i>
             <p class="rp-kpi__label">{{ 'q.analysis.kpi.invited' | t }}</p>
             <p class="rp-kpi__value">{{ d.totalSurveyParticipants | number }}</p>
-          </article>
-          <article class="rp-kpi db-kpi--cell">
+          </a>
+          <a
+            class="rp-kpi db-kpi--cell db-kpi--users"
+            [class.rp-kpi--link]="has('USER_MANAGE')"
+            [routerLink]="has('USER_MANAGE') ? '/users' : null"
+          >
             <i class="pi pi-user-plus rp-kpi__ico" aria-hidden="true"></i>
             <p class="rp-kpi__label">{{ 'dashboard.kpi.users' | t }}</p>
             <p class="rp-kpi__value">{{ d.totalUsers | number }}</p>
-          </article>
-          <article class="rp-kpi db-kpi--cell">
+          </a>
+          <a
+            class="rp-kpi db-kpi--cell db-kpi--departments"
+            [class.rp-kpi--link]="has('DEPARTMENT_VIEW')"
+            [routerLink]="has('DEPARTMENT_VIEW') ? '/departments' : null"
+          >
             <i class="pi pi-building rp-kpi__ico" aria-hidden="true"></i>
             <p class="rp-kpi__label">{{ 'dashboard.kpi.departments' | t }}</p>
             <p class="rp-kpi__value">{{ d.totalDepartments | number }}</p>
-          </article>
-          <article class="rp-kpi db-kpi--cell">
+          </a>
+          <a
+            class="rp-kpi db-kpi--cell db-kpi--plans"
+            [class.rp-kpi--link]="has('ACTION_PLAN_VIEW')"
+            [routerLink]="has('ACTION_PLAN_VIEW') ? '/action-plans' : null"
+          >
             <i class="pi pi-briefcase rp-kpi__ico" aria-hidden="true"></i>
             <p class="rp-kpi__label">{{ 'q.reports.openPlans' | t }}</p>
             <p class="rp-kpi__value">{{ d.openActionPlans | number }}</p>
-          </article>
-          <article class="rp-kpi db-kpi--cell">
+          </a>
+          <a
+            class="rp-kpi db-kpi--cell db-kpi--initiatives"
+            [class.rp-kpi--link]="has('ACTION_PLAN_VIEW')"
+            [routerLink]="has('ACTION_PLAN_VIEW') ? '/initiatives' : null"
+          >
             <i class="pi pi-flag rp-kpi__ico" aria-hidden="true"></i>
             <p class="rp-kpi__label">{{ 'dashboard.kpi.initiatives' | t }}</p>
             <p class="rp-kpi__value">{{ d.totalInitiatives | number }}</p>
-          </article>
+          </a>
         </div>
 
         <div class="rp-chart-grid-triple db-triple-tight db-chart-gap">

@@ -26,7 +26,8 @@ public static class ResultHttpExtensions
     {
         IdentityErrors.DuplicateUserName,
         IdentityErrors.DuplicateEmail,
-        IdentityErrors.DuplicateRoleName
+        IdentityErrors.DuplicateRoleName,
+        QuestionnaireErrors.SurveyCodeAlreadyExists
     };
 
     private static readonly HashSet<string?> UnauthorizedCodes = new(StringComparer.Ordinal)

@@ -7,6 +7,7 @@ import { AuditLogDto } from '../../shared/models/audit.models';
 import { PagedResult } from '../../shared/models/api.types';
 import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 import { I18nService } from '../../shared/services/i18n.service';
+import { openDatetimeLocalPicker } from '../../shared/utils/open-datetime-local-picker';
 
 @Component({
   selector: 'app-audit-logs-page',
@@ -27,6 +28,35 @@ export class AuditLogsPageComponent implements OnInit {
   entityFilter = '';
   fromUtc: string | null = null;
   toUtc: string | null = null;
+
+  /** HTTP methods stored by the API (see AuditTrailMiddleware). */
+  readonly actionOptions = ['POST', 'PUT', 'PATCH', 'DELETE'] as const;
+
+  /** Path prefixes used in EntityType filters (Contains match on full path). */
+  readonly entityPathOptions: readonly string[] = [
+    '/api/public/surveys',
+    '/api/surveys',
+    '/api/responses',
+    '/api/recommendations',
+    '/api/action-plans',
+    '/api/initiatives',
+    '/api/questions',
+    '/api/templates',
+    '/api/reports',
+    '/api/notifications',
+    '/api/lookups',
+    '/api/excel-bulk',
+    '/api/ai',
+    '/api/departments',
+    '/api/employees',
+    '/api/partners',
+    '/api/users',
+    '/api/roles',
+    '/api/permissions',
+    '/api/identity-lookups',
+    '/api/account',
+    '/api/audit-logs',
+  ];
 
   readonly result = signal<PagedResult<AuditLogDto> | null>(null);
   readonly failed = signal(false);
@@ -66,10 +96,14 @@ export class AuditLogsPageComponent implements OnInit {
   }
 
   applySearch(): void {
-    const term = this.search.trim().toLowerCase();
+    const term = this.search.trim();
     this.entityFilter = term;
     this.page = 1;
     this.load();
+  }
+
+  openPicker(input: HTMLInputElement): void {
+    openDatetimeLocalPicker(input);
   }
 
   nextPage(): void {
@@ -123,15 +157,33 @@ export class AuditLogsPageComponent implements OnInit {
   displayEntity(entityType: string): string {
     const path = entityType.toLowerCase();
     const labels: Array<[string, string, string]> = [
+      ['/api/public/surveys', 'استبيانات عامة', 'Public surveys'],
+      ['/api/audit-logs', 'سجل التدقيق', 'Audit logs'],
+      ['/api/identity-lookups', 'قوائم الهوية', 'Identity lookups'],
+      ['/api/recommendations', 'التوصيات', 'Recommendations'],
+      ['/api/action-plans', 'خطط العمل', 'Action plans'],
+      ['/api/notifications', 'الإشعارات', 'Notifications'],
+      ['/api/permissions', 'الصلاحيات', 'Permissions'],
+      ['/api/departments', 'الإدارات', 'Departments'],
+      ['/api/initiatives', 'المبادرات', 'Initiatives'],
+      ['/api/excel-bulk', 'استيراد Excel', 'Excel bulk'],
+      ['/api/responses', 'الإجابات', 'Responses'],
+      ['/api/templates', 'القوالب', 'Templates'],
+      ['/api/questions', 'الأسئلة', 'Questions'],
+      ['/api/employees', 'الموظفون', 'Employees'],
+      ['/api/partners', 'الشركاء', 'Partners'],
+      ['/api/surveys', 'الاستبيانات', 'Surveys'],
+      ['/api/reports', 'التقارير', 'Reports'],
+      ['/api/lookups', 'قوائم الاستبيان', 'Questionnaire lookups'],
+      ['/api/account', 'الحساب', 'Account'],
       ['/api/users', 'المستخدمون', 'Users'],
       ['/api/roles', 'الأدوار', 'Roles'],
-      ['/api/permissions', 'الصلاحيات', 'Permissions'],
-      ['/api/notifications', 'الإشعارات', 'Notifications'],
-      ['/api/audit-logs', 'سجل التدقيق', 'Audit logs'],
       ['/api/auth', 'الهوية وتسجيل الدخول', 'Authentication'],
+      ['/api/ai', 'الذكاء الاصطناعي', 'AI'],
     ];
 
-    for (const [key, ar, en] of labels) {
+    const sorted = [...labels].sort((a, b) => b[0].length - a[0].length);
+    for (const [key, ar, en] of sorted) {
       if (path.includes(key)) {
         return this.i18n.lang() === 'ar' ? ar : en;
       }

@@ -3,6 +3,7 @@ namespace QuestionnairesSystem.Application.Common;
 public static class QuestionnaireErrors
 {
     public const string SurveyNotFound = "QUESTIONNAIRE_SURVEY_NOT_FOUND";
+    public const string SurveyCodeAlreadyExists = "QUESTIONNAIRE_SURVEY_CODE_DUPLICATE";
     public const string QuestionNotFound = "QUESTIONNAIRE_QUESTION_NOT_FOUND";
     public const string TemplateNotFound = "QUESTIONNAIRE_TEMPLATE_NOT_FOUND";
     public const string ParticipantNotFound = "QUESTIONNAIRE_PARTICIPANT_NOT_FOUND";

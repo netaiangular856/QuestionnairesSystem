@@ -165,41 +165,9 @@
           </button>
         </div>
 
-        <!-- Scrollable Container -->
-        <div class="tree-viewport" 
-             [class.tree-viewport--horizontal]="orientation() === 'horizontal'"
-             (wheel)="onWheel($event)"
-             (mousedown)="startDragging($event)"
-             (mousemove)="onDrag($event)"
-             (mouseup)="stopDragging($event)"
-             (mouseleave)="stopDragging($event)">
-          <div class="tree-canvas" [style.transform]="'translate(' + translateX() + 'px, ' + translateY() + 'px) scale(' + zoom() + ')'">
-            <p-organization-chart 
-              [value]="orgChartData()" 
-              selectionMode="single" 
-              styleClass="dept-org-chart"
-              [class.dept-org-chart--horizontal]="orientation() === 'horizontal'"
-            >
-              <ng-template pTemplate="person" let-node>
-                <div class="org-node-card" [class.org-node-card--root]="node.data.parentDepartmentId === null">
-                  <div class="org-node-card__content">
-                    <div class="org-node-card__name">{{ i18n.lang() === 'ar' ? node.data.nameAr : node.data.nameEn }}</div>
-                  </div>
-                  
-                  <div class="org-node-card__actions">
-                    <button type="button" class="org-node-btn" (click)="openCreate(node.data.id)" [title]="'departments.create' | t">＋</button>
-                    <button type="button" class="org-node-btn" (click)="openEdit(node.data.id)" [title]="'common.edit' | t">✎</button>
-                  </div>
-
-                  @if (node.children?.length) {
-                    <div class="org-node-card__connector-badge">
-                      {{ node.children.length }} ⌵
-                    </div>
-                  }
-                </div>
-              </ng-template>
-            </p-organization-chart>
-          </div>
+        <!-- d3-org-chart Container -->
+        <div class="tree-viewport">
+          <div #orgChartContainer class="tree-canvas d3-org-chart-host"></div>
         </div>
       </div>
     }
@@ -213,38 +181,6 @@
     }
   }
 </div>
-
-<ng-template #treeNodeTmpl let-node let-depth="depth">
-  <div class="tree-node" [style.padding-inline-start.px]="depth * 24">
-    <div class="tree-node__content card">
-      <div class="tree-node__main">
-        <button
-          type="button"
-          class="tree-toggle"
-          [class.tree-toggle--empty]="!node.children?.length"
-          (click)="toggleNode(node.id)"
-        >
-          @if (node.children?.length) {
-            {{ isExpanded(node.id) ? '▾' : '▸' }}
-          }
-        </button>
-        <span class="tree-node__title">{{ i18n.lang() === 'ar' ? node.nameAr : node.nameEn }}</span>
-        <span class="tree-node__badge">{{ node.employeeCount }} {{ 'employees.title' | t }}</span>
-      </div>
-      <div class="tree-node__actions">
-        <button type="button" class="btn-mini" (click)="openCreate(node.id)" [title]="'departments.create' | t">＋</button>
-        <button type="button" class="btn-mini" (click)="openEdit(node.id)" [title]="'common.edit' | t">✎</button>
-      </div>
-    </div>
-    @if (node.children?.length && isExpanded(node.id)) {
-      <div class="tree-node__children">
-        @for (child of node.children; track child.id) {
-          <ng-container *ngTemplateOutlet="treeNodeTmpl; context: { $implicit: child, depth: depth + 1 }"></ng-container>
-        }
-      </div>
-    }
-  </div>
-</ng-template>
 
 @if (createOpen() || editOpen()) {
   <div class="modal-backdrop" (click)="createOpen.set(false); editOpen.set(false)"></div>

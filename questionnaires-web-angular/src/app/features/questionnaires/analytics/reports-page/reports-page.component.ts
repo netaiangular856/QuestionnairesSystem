@@ -1,4 +1,4 @@
-﻿import { DatePipe, DecimalPipe } from '@angular/common';
+﻿import { DecimalPipe } from '@angular/common';
 import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { Component, OnInit, effect, ElementRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -34,7 +34,7 @@ interface RpChartPalette {
 @Component({
   selector: 'app-reports-page',
   standalone: true,
-  imports: [RouterLink, TranslatePipe, DecimalPipe, DatePipe, FormsModule, BaseChartDirective],
+  imports: [RouterLink, TranslatePipe, DecimalPipe, FormsModule, BaseChartDirective],
   templateUrl: './reports-page.component.html',
   styleUrl: './reports-page.component.scss',
 })
@@ -46,6 +46,11 @@ export class ReportsPageComponent implements OnInit {
   readonly auth = inject(AuthService);
 
   readonly canExport = this.auth.hasPermission(PermissionCodes.ReportExport);
+  readonly canSurveyView = this.auth.hasPermission(PermissionCodes.SurveyView);
+  readonly canReportView = this.auth.hasPermission(PermissionCodes.ReportView);
+  readonly canActionPlanView = this.auth.hasPermission(PermissionCodes.ActionPlanView);
+  readonly canEmployeeView = this.auth.hasPermission(PermissionCodes.EmployeeView);
+  readonly canUserManage = this.auth.hasPermission(PermissionCodes.UserManage);
 
   readonly data = signal<CrossSurveyAnalyticsDto | null>(null);
   readonly busy = signal(true);

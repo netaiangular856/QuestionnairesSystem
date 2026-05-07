@@ -14,10 +14,62 @@
     (keyup.enter)="applySearch()"
     [placeholder]="'audit.search' | t"
   />
-  <input class="filter-input" type="text" [(ngModel)]="actionFilter" [placeholder]="'audit.filter.action' | t" />
-  <input class="filter-input" type="text" [(ngModel)]="entityFilter" [placeholder]="'audit.filter.entity' | t" />
-  <input class="filter-input" type="datetime-local" [(ngModel)]="fromUtc" [placeholder]="'audit.filter.from' | t" />
-  <input class="filter-input" type="datetime-local" [(ngModel)]="toUtc" [placeholder]="'audit.filter.to' | t" />
+  <select
+    class="filter-select"
+    [(ngModel)]="actionFilter"
+    [attr.aria-label]="'audit.filter.action' | t"
+    [title]="'audit.filter.action' | t"
+  >
+    <option value="">{{ 'audit.filter.all' | t }}</option>
+    @for (a of actionOptions; track a) {
+      <option [value]="a">{{ displayAction(a) }}</option>
+    }
+  </select>
+  <select
+    class="filter-select filter-select--wide"
+    [(ngModel)]="entityFilter"
+    [attr.aria-label]="'audit.filter.entity' | t"
+    [title]="'audit.filter.entity' | t"
+  >
+    <option value="">{{ 'audit.filter.all' | t }}</option>
+    @for (p of entityPathOptions; track p) {
+      <option [value]="p">{{ displayEntity(p) }}</option>
+    }
+  </select>
+  <div class="audit-datetime-wrap">
+    <input
+      #fromInput
+      class="filter-input filter-input--datetime"
+      type="datetime-local"
+      [(ngModel)]="fromUtc"
+      [attr.aria-label]="'audit.filter.from' | t"
+    />
+    <button
+      type="button"
+      class="audit-datetime-wrap__btn"
+      (click)="openPicker(fromInput)"
+      [attr.aria-label]="'audit.openDatePickerFrom' | t"
+    >
+      <i class="pi pi-calendar" aria-hidden="true"></i>
+    </button>
+  </div>
+  <div class="audit-datetime-wrap">
+    <input
+      #toInput
+      class="filter-input filter-input--datetime"
+      type="datetime-local"
+      [(ngModel)]="toUtc"
+      [attr.aria-label]="'audit.filter.to' | t"
+    />
+    <button
+      type="button"
+      class="audit-datetime-wrap__btn"
+      (click)="openPicker(toInput)"
+      [attr.aria-label]="'audit.openDatePickerTo' | t"
+    >
+      <i class="pi pi-calendar" aria-hidden="true"></i>
+    </button>
+  </div>
   <button type="button" class="btn-primary" (click)="page = 1; load()">{{ 'common.search' | t }}</button>
 </div>
 
@@ -32,7 +84,6 @@
           <th>{{ 'audit.table.action' | t }}</th>
           <th>{{ 'audit.table.path' | t }}</th>
           <th>{{ 'audit.table.user' | t }}</th>
-          <th>{{ 'audit.table.ip' | t }}</th>
           <th>{{ 'common.actions' | t }}</th>
         </tr>
       </thead>
@@ -43,7 +94,6 @@
             <td>{{ displayAction(row.action) }}</td>
             <td class="path-cell">{{ displayEntity(row.entityType) }}</td>
             <td>{{ displayUser(row) }}</td>
-            <td>{{ row.ipAddress || '—' }}</td>
             <td>
               <button type="button" class="linkish" (click)="openDetail(row.id)">{{ 'common.view' | t }}</button>
             </td>

@@ -16,7 +16,7 @@
     </button>
   </div>
 
-  <nav class="sidebar__nav">
+  <nav class="sidebar__nav" (scroll)="hideTooltip()">
     @for (group of visibleGroups(); track group.id) {
       <section class="nav-group">
         <button type="button" class="nav-group__toggle" [class.hide-when-collapsed]="sidebarCollapsed()" (click)="toggleGroup(group.id)">
@@ -28,12 +28,17 @@
           @for (item of group.items; track item.path) {
             <li>
               <a
+                #linkEl
                 [routerLink]="item.path"
                 routerLinkActive="is-active"
+                #rla="routerLinkActive"
                 [routerLinkActiveOptions]="{ exact: item.path === '/dashboard' }"
                 [attr.aria-label]="item.labelKey | t"
-                [attr.data-tooltip]="item.labelKey | t"
-                (click)="layout.closeMobileSidebar()"
+                (click)="layout.closeMobileSidebar(); hideTooltip()"
+                (mouseenter)="showTooltip($event, item.labelKey, rla.isActive)"
+                (mouseleave)="hideTooltip()"
+                (focus)="showTooltip($event, item.labelKey, rla.isActive)"
+                (blur)="hideTooltip()"
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path [attr.d]="iconPath(item.icon)"></path>
@@ -47,3 +52,15 @@
     }
   </nav>
 </aside>
+
+@if (sidebarCollapsed() && tooltipActive()) {
+  <div
+    class="sidebar-tooltip"
+    [class.sidebar-tooltip--active]="tooltipIsActiveLink()"
+    [style.top.px]="tooltipTop()"
+    role="tooltip"
+    aria-hidden="true"
+  >
+    {{ tooltipText() }}
+  </div>
+}

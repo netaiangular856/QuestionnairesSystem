@@ -9,6 +9,10 @@ using QuestionnairesSystem.Application.Features.Organizations.Employees.DTOs;
 using QuestionnairesSystem.Application.Features.Organizations.Employees.Interfaces;
 using QuestionnairesSystem.Application.Features.Partners.DTOs;
 using QuestionnairesSystem.Application.Features.Partners.Interfaces;
+using QuestionnairesSystem.Application.Features.Questionnaires.ActionPlans.DTOs;
+using QuestionnairesSystem.Application.Features.Questionnaires.ActionPlans.Interfaces;
+using QuestionnairesSystem.Application.Features.Questionnaires.Recommendations.DTOs;
+using QuestionnairesSystem.Application.Features.Questionnaires.Recommendations.Interfaces;
 using QuestionnairesSystem.Application.Features.Questionnaires.Surveys.DTOs;
 using QuestionnairesSystem.Application.Features.Questionnaires.Surveys.Interfaces;
 using QuestionnairesSystem.Application.Features.Questionnaires.Templates.DTOs;
@@ -29,6 +33,8 @@ public sealed class ExcelBulkDataService : IExcelBulkDataService
     private readonly IUserService _userService;
     private readonly ISurveyTemplateService _surveyTemplateService;
     private readonly ISurveyService _surveyService;
+    private readonly IRecommendationCrudService _recommendationService;
+    private readonly IActionPlanCrudService _actionPlanService;
 
     public ExcelBulkDataService(
         QuestionnairesDbContext db,
@@ -37,7 +43,9 @@ public sealed class ExcelBulkDataService : IExcelBulkDataService
         IPartnerService partnerService,
         IUserService userService,
         ISurveyTemplateService surveyTemplateService,
-        ISurveyService surveyService)
+        ISurveyService surveyService,
+        IRecommendationCrudService recommendationService,
+        IActionPlanCrudService actionPlanService)
     {
         _db = db;
         _departmentService = departmentService;
@@ -46,6 +54,8 @@ public sealed class ExcelBulkDataService : IExcelBulkDataService
         _userService = userService;
         _surveyTemplateService = surveyTemplateService;
         _surveyService = surveyService;
+        _recommendationService = recommendationService;
+        _actionPlanService = actionPlanService;
     }
 
     public Task<byte[]> GetTemplateAsync(ExcelTemplateScope scope, bool includeSamples, CancellationToken cancellationToken = default)
@@ -66,6 +76,7 @@ public sealed class ExcelBulkDataService : IExcelBulkDataService
 
         var errors = new List<ExcelImportRowErrorDto>();
         int dCount = 0, eCount = 0, pCount = 0, uCount = 0, tCount = 0, sCount = 0, rCount = 0;
+        int recCount = 0, apCount = 0, initCount = 0;
 
         using var wb = new XLWorkbook(stream);
 
@@ -78,6 +89,10 @@ public sealed class ExcelBulkDataService : IExcelBulkDataService
         tCount += await ImportSurveyTemplatesAsync(wb, errors, cancellationToken).ConfigureAwait(false);
         sCount += await ImportSurveysAsync(wb, errors, cancellationToken).ConfigureAwait(false);
         rCount += await ImportSurveyResponsesAsync(wb, errors, cancellationToken).ConfigureAwait(false);
+        recCount += await ImportRecommendationsAsync(wb, errors, cancellationToken).ConfigureAwait(false);
+        var actionPlanIdByKey = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+        apCount += await ImportActionPlansAsync(wb, actionPlanIdByKey, errors, cancellationToken).ConfigureAwait(false);
+        initCount += await ImportInitiativesAsync(wb, actionPlanIdByKey, errors, cancellationToken).ConfigureAwait(false);
 
         return Result<ExcelImportResultDto>.Ok(new ExcelImportResultDto
         {
@@ -88,6 +103,9 @@ public sealed class ExcelBulkDataService : IExcelBulkDataService
             TemplatesImported = tCount,
             SurveysImported = sCount,
             ResponsesImported = rCount,
+            RecommendationsImported = recCount,
+            ActionPlansImported = apCount,
+            InitiativesImported = initCount,
             Errors = errors,
         });
     }
@@ -848,6 +866,377 @@ public sealed class ExcelBulkDataService : IExcelBulkDataService
         }
 
         return imported;
+    }
+
+    private async Task<int> ImportRecommendationsAsync(
+        XLWorkbook wb,
+        List<ExcelImportRowErrorDto> errors,
+        CancellationToken ct)
+    {
+        var ws = FindSheet(wb, ExcelBulkTemplateBuilder.SheetRecommendations);
+        if (ws is null)
+        {
+            return 0;
+        }
+
+        var header = ReadHeader(ws);
+        if (header.Count == 0)
+        {
+            return 0;
+        }
+
+        var rows = ReadDataRows(ws, header);
+        var imported = 0;
+
+        foreach (var (rowNum, cells) in rows)
+        {
+            var titleAr = GetCell(cells, "TitleAr");
+            var titleEn = GetCell(cells, "TitleEn");
+            if (string.IsNullOrWhiteSpace(titleAr) || string.IsNullOrWhiteSpace(titleEn))
+            {
+                errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = "TitleAr / TitleEn مطلوبان." });
+                continue;
+            }
+
+            Guid? surveyId = null;
+            var surveyKey = NullIfEmpty(GetCell(cells, "SurveyKey"));
+            if (surveyKey is not null)
+            {
+                var sid = await TryFindSurveyIdByCodeAsync(surveyKey, ct).ConfigureAwait(false);
+                if (sid is null)
+                {
+                    errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = $"SurveyKey غير موجود: {surveyKey}" });
+                    continue;
+                }
+
+                surveyId = sid;
+            }
+
+            Guid? assignedToUserId = null;
+            var userName = NullIfEmpty(GetCell(cells, "AssignedToUserName"));
+            if (userName is not null)
+            {
+                var uid = await TryFindUserIdByNameAsync(userName, ct).ConfigureAwait(false);
+                if (uid is null)
+                {
+                    errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = $"AssignedToUserName غير موجود: {userName}" });
+                    continue;
+                }
+
+                assignedToUserId = uid;
+            }
+
+            var priority = 0;
+            var priRaw = GetCell(cells, "Priority");
+            if (!string.IsNullOrWhiteSpace(priRaw) &&
+                !int.TryParse(priRaw.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out priority))
+            {
+                errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = "Priority رقم صحيح." });
+                continue;
+            }
+
+            DateTime? dueDate = null;
+            var dueRaw = GetCell(cells, "DueDateUtc");
+            if (!string.IsNullOrWhiteSpace(dueRaw))
+            {
+                if (!TryParseDate(dueRaw, out var parsedDue))
+                {
+                    errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = "DueDateUtc تاريخ غير صالح." });
+                    continue;
+                }
+
+                dueDate = parsedDue;
+            }
+
+            var req = new CreateRecommendationRequest
+            {
+                SurveyId = surveyId,
+                TitleAr = titleAr.Trim(),
+                TitleEn = titleEn.Trim(),
+                DescriptionAr = NullIfEmpty(GetCell(cells, "DescriptionAr")),
+                DescriptionEn = NullIfEmpty(GetCell(cells, "DescriptionEn")),
+                Priority = priority,
+                AssignedToUserId = assignedToUserId,
+                DueDateUtc = dueDate,
+            };
+
+            var result = await _recommendationService.CreateAsync(req, ct).ConfigureAwait(false);
+            if (!result.IsSuccess)
+            {
+                errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = string.Join("; ", result.Errors) });
+                continue;
+            }
+
+            imported++;
+        }
+
+        return imported;
+    }
+
+    private async Task<int> ImportActionPlansAsync(
+        XLWorkbook wb,
+        Dictionary<string, Guid> actionPlanIdByKey,
+        List<ExcelImportRowErrorDto> errors,
+        CancellationToken ct)
+    {
+        var ws = FindSheet(wb, ExcelBulkTemplateBuilder.SheetActionPlans);
+        if (ws is null)
+        {
+            return 0;
+        }
+
+        var header = ReadHeader(ws);
+        if (header.Count == 0)
+        {
+            return 0;
+        }
+
+        var rows = ReadDataRows(ws, header);
+        var imported = 0;
+        var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var (rowNum, cells) in rows)
+        {
+            var key = GetCell(cells, "ActionPlanKey");
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = "ActionPlanKey مطلوب." });
+                continue;
+            }
+
+            key = key.Trim();
+            if (!seenKeys.Add(key))
+            {
+                errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = "ActionPlanKey مكرر داخل الملف." });
+                continue;
+            }
+
+            var titleAr = GetCell(cells, "TitleAr");
+            var titleEn = GetCell(cells, "TitleEn");
+            if (string.IsNullOrWhiteSpace(titleAr) || string.IsNullOrWhiteSpace(titleEn))
+            {
+                errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = "TitleAr / TitleEn مطلوبان." });
+                continue;
+            }
+
+            Guid? surveyId = null;
+            var surveyKey = NullIfEmpty(GetCell(cells, "SurveyKey"));
+            if (surveyKey is not null)
+            {
+                var sid = await TryFindSurveyIdByCodeAsync(surveyKey, ct).ConfigureAwait(false);
+                if (sid is null)
+                {
+                    errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = $"SurveyKey غير موجود: {surveyKey}" });
+                    continue;
+                }
+
+                surveyId = sid;
+            }
+
+            Guid? ownerUserId = null;
+            var userName = NullIfEmpty(GetCell(cells, "OwnerUserName"));
+            if (userName is not null)
+            {
+                var uid = await TryFindUserIdByNameAsync(userName, ct).ConfigureAwait(false);
+                if (uid is null)
+                {
+                    errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = $"OwnerUserName غير موجود: {userName}" });
+                    continue;
+                }
+
+                ownerUserId = uid;
+            }
+
+            DateTime? startDate = null;
+            var startRaw = GetCell(cells, "StartDateUtc");
+            if (!string.IsNullOrWhiteSpace(startRaw))
+            {
+                if (!TryParseDate(startRaw, out var parsedStart))
+                {
+                    errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = "StartDateUtc تاريخ غير صالح." });
+                    continue;
+                }
+
+                startDate = parsedStart;
+            }
+
+            DateTime? endDate = null;
+            var endRaw = GetCell(cells, "EndDateUtc");
+            if (!string.IsNullOrWhiteSpace(endRaw))
+            {
+                if (!TryParseDate(endRaw, out var parsedEnd))
+                {
+                    errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = "EndDateUtc تاريخ غير صالح." });
+                    continue;
+                }
+
+                endDate = parsedEnd;
+            }
+
+            var req = new CreateActionPlanRequest
+            {
+                TitleAr = titleAr.Trim(),
+                TitleEn = titleEn.Trim(),
+                DescriptionAr = NullIfEmpty(GetCell(cells, "DescriptionAr")),
+                DescriptionEn = NullIfEmpty(GetCell(cells, "DescriptionEn")),
+                SurveyId = surveyId,
+                OwnerUserId = ownerUserId,
+                StartDateUtc = startDate,
+                EndDateUtc = endDate,
+            };
+
+            var result = await _actionPlanService.CreateAsync(req, ct).ConfigureAwait(false);
+            if (!result.IsSuccess || result.Value is null)
+            {
+                errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = string.Join("; ", result.Errors) });
+                continue;
+            }
+
+            actionPlanIdByKey[key] = result.Value.Id;
+            imported++;
+        }
+
+        return imported;
+    }
+
+    private async Task<int> ImportInitiativesAsync(
+        XLWorkbook wb,
+        IReadOnlyDictionary<string, Guid> actionPlanIdByKey,
+        List<ExcelImportRowErrorDto> errors,
+        CancellationToken ct)
+    {
+        var ws = FindSheet(wb, ExcelBulkTemplateBuilder.SheetInitiatives);
+        if (ws is null)
+        {
+            return 0;
+        }
+
+        var header = ReadHeader(ws);
+        if (header.Count == 0)
+        {
+            return 0;
+        }
+
+        var rows = ReadDataRows(ws, header);
+        var imported = 0;
+
+        foreach (var (rowNum, cells) in rows)
+        {
+            var apKey = GetCell(cells, "ActionPlanKey");
+            if (string.IsNullOrWhiteSpace(apKey))
+            {
+                errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = "ActionPlanKey مطلوب." });
+                continue;
+            }
+
+            apKey = apKey.Trim();
+            if (!actionPlanIdByKey.TryGetValue(apKey, out var actionPlanId))
+            {
+                errors.Add(new ExcelImportRowErrorDto
+                {
+                    Sheet = ws.Name,
+                    RowNumber = rowNum,
+                    Message = $"ActionPlanKey غير موجود في ورقة ActionPlans: {apKey}",
+                });
+                continue;
+            }
+
+            var titleAr = GetCell(cells, "TitleAr");
+            var titleEn = GetCell(cells, "TitleEn");
+            if (string.IsNullOrWhiteSpace(titleAr) || string.IsNullOrWhiteSpace(titleEn))
+            {
+                errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = "TitleAr / TitleEn مطلوبان." });
+                continue;
+            }
+
+            Guid? ownerUserId = null;
+            var userName = NullIfEmpty(GetCell(cells, "OwnerUserName"));
+            if (userName is not null)
+            {
+                var uid = await TryFindUserIdByNameAsync(userName, ct).ConfigureAwait(false);
+                if (uid is null)
+                {
+                    errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = $"OwnerUserName غير موجود: {userName}" });
+                    continue;
+                }
+
+                ownerUserId = uid;
+            }
+
+            DateTime? targetDate = null;
+            var tdRaw = GetCell(cells, "TargetDateUtc");
+            if (!string.IsNullOrWhiteSpace(tdRaw))
+            {
+                if (!TryParseDate(tdRaw, out var parsedTd))
+                {
+                    errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = "TargetDateUtc تاريخ غير صالح." });
+                    continue;
+                }
+
+                targetDate = parsedTd;
+            }
+
+            var req = new CreateInitiativeRequest
+            {
+                TitleAr = titleAr.Trim(),
+                TitleEn = titleEn.Trim(),
+                DescriptionAr = NullIfEmpty(GetCell(cells, "DescriptionAr")),
+                DescriptionEn = NullIfEmpty(GetCell(cells, "DescriptionEn")),
+                OwnerUserId = ownerUserId,
+                TargetDateUtc = targetDate,
+            };
+
+            var result = await _actionPlanService.AddInitiativeAsync(actionPlanId, req, ct).ConfigureAwait(false);
+            if (!result.IsSuccess)
+            {
+                errors.Add(new ExcelImportRowErrorDto { Sheet = ws.Name, RowNumber = rowNum, Message = string.Join("; ", result.Errors) });
+                continue;
+            }
+
+            imported++;
+        }
+
+        return imported;
+    }
+
+    private async Task<Guid?> TryFindSurveyIdByCodeAsync(string code, CancellationToken ct)
+    {
+        var trimmed = code.Trim();
+        var s = await _db.Surveys.AsNoTracking()
+            .Where(x => x.Code == trimmed && x.RecordStatus == RecordStatus.Active)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(ct)
+            .ConfigureAwait(false);
+        return s;
+    }
+
+    private async Task<Guid?> TryFindUserIdByNameAsync(string userName, CancellationToken ct)
+    {
+        var n = userName.Trim().ToLowerInvariant();
+        var u = await _db.Users.AsNoTracking()
+            .Where(x => x.UserName == n)
+            .Select(x => (Guid?)x.Id)
+            .FirstOrDefaultAsync(ct)
+            .ConfigureAwait(false);
+        return u;
+    }
+
+    private static bool TryParseDate(string raw, out DateTime value)
+    {
+        value = default;
+        var t = raw?.Trim();
+        if (string.IsNullOrEmpty(t))
+        {
+            return false;
+        }
+
+        if (DateTime.TryParse(t, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed))
+        {
+            value = parsed;
+            return true;
+        }
+
+        return false;
     }
 
     private sealed class TupleComparer : IEqualityComparer<(string Sk, string Un)>

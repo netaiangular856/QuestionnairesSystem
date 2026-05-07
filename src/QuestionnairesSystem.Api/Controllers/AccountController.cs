@@ -43,7 +43,8 @@ public sealed class AccountController : ControllerBase
 
     [HttpPost("profile/avatar")]
     [Consumes("multipart/form-data")]
-    [RequestFormLimits(MultipartBodyLengthLimit = 3 * 1024 * 1024)]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 10 * 1024 * 1024)]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> UploadAvatar(IFormFile? file, CancellationToken cancellationToken)
     {
