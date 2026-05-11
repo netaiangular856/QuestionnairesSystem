@@ -1,0 +1,249 @@
+<div
+  class="page-workspace reports-dashboard ai-scope ai-scope--future"
+  [attr.dir]="i18n.lang() === 'ar' ? 'rtl' : 'ltr'"
+  [class.ai-scope--rtl]="i18n.lang() === 'ar'"
+>
+  @if (!canUseAi) {
+    <div class="card rp-panel rp-state rp-state--err" role="alert">
+      <span class="rp-state__text">{{ 'forbidden.lead' | t }}</span>
+    </div>
+  } @else {
+    <div class="ai-scope__ambient" aria-hidden="true">
+      <div class="ai-scope__blob ai-scope__blob--a"></div>
+      <div class="ai-scope__blob ai-scope__blob--b"></div>
+      <div class="ai-scope__grid-faint"></div>
+    </div>
+
+    <div class="rp-page ai-scope__inner">
+      <header class="rp-hero ai-scope__hero" role="banner">
+        <div class="ai-scope__hero-bar">
+          <span class="ai-scope__pill">{{ 'q.aiScope.badge' | t }}</span>
+          <a routerLink="/ai-analysis" class="rp-btn rp-btn--ghost ai-scope__ghost">
+            <span class="ai-scope__ghost-icon" aria-hidden="true"><i class="pi pi-chart-bar"></i></span>
+            <span>{{ 'q.aiScope.openAnalysis' | t }}</span>
+            <i class="pi pi-angle-right ai-scope__ghost-chevron" aria-hidden="true"></i>
+          </a>
+        </div>
+
+        <div class="ai-scope__hero-body">
+          <div class="rp-hero__icon ai-scope__hero-icon" aria-hidden="true"><i class="pi pi-sparkles"></i></div>
+          <div class="rp-hero__text">
+            <p class="rp-hero__kicker">{{ 'q.aiScope.kicker' | t }}</p>
+            <h1 class="rp-hero__title ai-scope__title-gradient">{{ 'q.aiScope.title' | t }}</h1>
+            <p class="rp-hero__lead">{{ 'q.aiScope.lead' | t }}</p>
+          </div>
+        </div>
+      </header>
+
+      <section class="rp-panel rp-filters ai-scope__filters" aria-labelledby="ai-scope-filters-h">
+        <div class="rp-panel__head rp-filters__intro">
+          <span class="rp-panel__icon ai-scope__filters-icon" aria-hidden="true"><i class="pi pi-filter"></i></span>
+          <div>
+            <h2 id="ai-scope-filters-h" class="rp-panel__title">{{ 'q.aiScope.scopeSection' | t }}</h2>
+            <p class="rp-panel__hint muted">{{ 'q.aiScope.scopeHint' | t }}</p>
+          </div>
+        </div>
+        <div class="rp-filters__grid">
+          <label class="rp-field">
+            <span class="rp-field__label">{{ 'q.analysis.filterSurvey' | t }}</span>
+            <span class="rp-field__control">
+              <i class="pi pi-list rp-field__glyph" aria-hidden="true"></i>
+              <select class="rp-input rp-input--select ai-scope__field ai-scope__select" [(ngModel)]="selectedSurveyId">
+                <option value="">{{ 'q.analysis.filterSurveyAll' | t }}</option>
+                @for (s of surveyList(); track s.id) {
+                  <option [value]="s.id">{{ s.name }}</option>
+                }
+              </select>
+            </span>
+          </label>
+          <label class="rp-field">
+            <span class="rp-field__label">{{ 'q.analysis.filterFrom' | t }}</span>
+            <span class="rp-field__control">
+              <i class="pi pi-calendar rp-field__glyph" aria-hidden="true"></i>
+              <input class="rp-input ai-scope__field ai-scope__field--date-solo" type="date" [(ngModel)]="fromDate" />
+            </span>
+          </label>
+          <label class="rp-field">
+            <span class="rp-field__label">{{ 'q.analysis.filterTo' | t }}</span>
+            <span class="rp-field__control">
+              <i class="pi pi-calendar rp-field__glyph" aria-hidden="true"></i>
+              <input class="rp-input ai-scope__field ai-scope__field--date-solo" type="date" [(ngModel)]="toDate" />
+            </span>
+          </label>
+          <div class="rp-filters__actions">
+            <button type="button" class="rp-btn rp-btn--ghost ai-scope__clear" (click)="clearResults()" [disabled]="busy()">
+              <i class="pi pi-trash" aria-hidden="true"></i>
+              {{ 'q.aiScope.clear' | t }}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      @if (errorText()) {
+        <div class="rp-state rp-state--err rp-panel" role="alert">
+          <i class="pi pi-times-circle rp-state__icon" aria-hidden="true"></i>
+          <span class="rp-state__text">{{ errorText() }}</span>
+        </div>
+      }
+
+      <section class="rp-panel ai-scope__actions" aria-labelledby="ai-scope-actions-h">
+        <div class="ai-scope__actions-head">
+          <h2 id="ai-scope-actions-h" class="ai-scope__section-title">{{ 'q.aiScope.actionsSection' | t }}</h2>
+          <p class="muted ai-scope__section-hint">{{ 'q.aiScope.actionsHint' | t }}</p>
+        </div>
+
+        <div class="ai-scope__cards">
+          <article class="ai-scope__card">
+            <div class="ai-scope__card-icon" aria-hidden="true"><i class="pi pi-bolt"></i></div>
+            <div class="ai-scope__card-body">
+              <h3 class="ai-scope__card-title">{{ 'q.aiScope.action.analyze' | t }}</h3>
+              <p class="ai-scope__card-text muted">{{ 'q.aiScope.action.analyzeHint' | t }}</p>
+              <button type="button" class="rp-btn rp-btn--primary ai-scope__cta" (click)="runAnalyze()" [disabled]="busy()">
+                @if (scopeRun() === 'analyze') { <span class="rp-spinner" aria-hidden="true"></span> } @else { <i class="pi pi-sparkles" aria-hidden="true"></i> }
+                {{ 'q.aiScope.action.run' | t }}
+              </button>
+            </div>
+          </article>
+
+          <article class="ai-scope__card">
+            <div class="ai-scope__card-icon" aria-hidden="true"><i class="pi pi-comments"></i></div>
+            <div class="ai-scope__card-body">
+              <h3 class="ai-scope__card-title">{{ 'q.aiScope.action.sentiment' | t }}</h3>
+              <p class="ai-scope__card-text muted">{{ 'q.aiScope.action.sentimentHint' | t }}</p>
+              <button type="button" class="rp-btn rp-btn--primary ai-scope__cta" (click)="runSentiment()" [disabled]="busy()">
+                @if (scopeRun() === 'sentiment') { <span class="rp-spinner" aria-hidden="true"></span> } @else { <i class="pi pi-heart" aria-hidden="true"></i> }
+                {{ 'q.aiScope.action.run' | t }}
+              </button>
+            </div>
+          </article>
+
+          <article class="ai-scope__card">
+            <div class="ai-scope__card-icon" aria-hidden="true"><i class="pi pi-lightbulb"></i></div>
+            <div class="ai-scope__card-body">
+              <h3 class="ai-scope__card-title">{{ 'q.aiScope.action.recommendation' | t }}</h3>
+              <p class="ai-scope__card-text muted">{{ 'q.aiScope.action.recommendationHint' | t }}</p>
+              <button type="button" class="rp-btn rp-btn--primary ai-scope__cta" (click)="runSuggestRecommendation()" [disabled]="busy()">
+                @if (scopeRun() === 'recommendation') { <span class="rp-spinner" aria-hidden="true"></span> } @else { <i class="pi pi-send" aria-hidden="true"></i> }
+                {{ 'q.aiScope.action.run' | t }}
+              </button>
+            </div>
+          </article>
+
+          <article class="ai-scope__card">
+            <div class="ai-scope__card-icon" aria-hidden="true"><i class="pi pi-list-check"></i></div>
+            <div class="ai-scope__card-body">
+              <h3 class="ai-scope__card-title">{{ 'q.aiScope.action.actionPlan' | t }}</h3>
+              <p class="ai-scope__card-text muted">{{ 'q.aiScope.action.actionPlanHint' | t }}</p>
+              <button type="button" class="rp-btn rp-btn--primary ai-scope__cta" (click)="runSuggestActionPlan()" [disabled]="busy()">
+                @if (scopeRun() === 'actionPlan') { <span class="rp-spinner" aria-hidden="true"></span> } @else { <i class="pi pi-sitemap" aria-hidden="true"></i> }
+                {{ 'q.aiScope.action.run' | t }}
+              </button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      @if (lastAnalyze(); as a) {
+        <section class="rp-panel ai-scope__result" aria-label="AI result">
+          <div class="ai-scope__result-head">
+            <span class="ai-scope__accent" aria-hidden="true"></span>
+            <h2 class="ai-scope__result-title">{{ 'q.aiScope.result.analyzeTitle' | t }}</h2>
+          </div>
+          <div class="rp-rich ai-scope__result-body" [innerHTML]="analyzeSummarySafe()"></div>
+
+          @if (a.charts.length) {
+            <div class="ai-scope__charts">
+              @for (c of a.charts; track $index) {
+                <article class="rp-chart-card ai-scope__chart">
+                  <h3 class="rp-chart-card__title">{{ chartHeading(c) }}</h3>
+                  <div class="rp-chart-card__canvas ai-scope__chart-canvas">
+                    @switch (chartKind(c)) {
+                      @case ('line') {
+                        <canvas baseChart type="line" [data]="$any(chartData(c))" [options]="chartOptions()"></canvas>
+                      }
+                      @case ('doughnut') {
+                        <canvas baseChart type="doughnut" [data]="$any(chartData(c))" [options]="chartOptions()"></canvas>
+                      }
+                      @default {
+                        <canvas baseChart type="bar" [data]="$any(chartData(c))" [options]="chartOptions()"></canvas>
+                      }
+                    }
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </section>
+      }
+
+      @if (lastSentiment(); as s) {
+        <section class="rp-panel ai-scope__result" aria-label="AI sentiment">
+          <div class="ai-scope__result-head">
+            <span class="ai-scope__accent" aria-hidden="true"></span>
+            <h2 class="ai-scope__result-title">{{ 'q.aiScope.result.sentimentTitle' | t }}</h2>
+          </div>
+          @if ((i18n.lang() === 'ar' ? (s.overallToneAr || s.overallToneEn) : (s.overallToneEn || s.overallToneAr))?.trim()) {
+            <p class="ai-scope__result-tone muted">
+              {{ i18n.lang() === 'ar' ? (s.overallToneAr || s.overallToneEn) : (s.overallToneEn || s.overallToneAr) }}
+            </p>
+          }
+          <div class="rp-rich ai-scope__result-body" [innerHTML]="sentimentSummarySafe()"></div>
+          @if (sentimentDoughnutData() || s.insightChart) {
+            <div class="ai-scope__charts ai-scope__charts--sentiment-pair">
+              @if (sentimentDoughnutData(); as d) {
+                <article class="rp-chart-card ai-scope__chart">
+                  <h3 class="rp-chart-card__title">{{ 'q.aiScope.sentiment.chartTitle' | t }}</h3>
+                  <div class="rp-chart-card__canvas ai-scope__chart-canvas">
+                    <canvas baseChart type="doughnut" [data]="$any(d)" [options]="chartOptions()"></canvas>
+                  </div>
+                </article>
+              }
+              @if (s.insightChart; as ic) {
+                <article class="rp-chart-card ai-scope__chart">
+                  <h3 class="rp-chart-card__title">{{ chartHeading(ic) }}</h3>
+                  <div class="rp-chart-card__canvas ai-scope__chart-canvas">
+                    @switch (chartKind(ic)) {
+                      @case ('line') {
+                        <canvas baseChart type="line" [data]="$any(sentimentInsightChartData(ic))" [options]="chartOptions()"></canvas>
+                      }
+                      @default {
+                        <canvas baseChart type="bar" [data]="$any(sentimentInsightChartData(ic))" [options]="chartOptions()"></canvas>
+                      }
+                    }
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        </section>
+      }
+
+      @if (lastRecommendation(); as r) {
+        <section class="rp-panel ai-scope__result" aria-label="AI recommendation">
+          <div class="ai-scope__result-head">
+            <span class="ai-scope__accent" aria-hidden="true"></span>
+            <h2 class="ai-scope__result-title">{{ 'q.aiScope.result.recoTitle' | t }}</h2>
+          </div>
+          <div class="ai-scope__mini">
+            <h3 class="ai-scope__mini-title">{{ i18n.lang() === 'ar' ? r.titleAr : r.titleEn }}</h3>
+            <p class="ai-scope__result-plain">{{ i18n.lang() === 'ar' ? (r.descriptionAr || '') : (r.descriptionEn || '') }}</p>
+          </div>
+        </section>
+      }
+
+      @if (lastActionPlan(); as ap) {
+        <section class="rp-panel ai-scope__result" aria-label="AI action plan">
+          <div class="ai-scope__result-head">
+            <span class="ai-scope__accent" aria-hidden="true"></span>
+            <h2 class="ai-scope__result-title">{{ 'q.aiScope.result.apTitle' | t }}</h2>
+          </div>
+          <div class="ai-scope__mini">
+            <h3 class="ai-scope__mini-title">{{ i18n.lang() === 'ar' ? ap.titleAr : ap.titleEn }}</h3>
+            <p class="ai-scope__result-plain">{{ i18n.lang() === 'ar' ? (ap.descriptionAr || '') : (ap.descriptionEn || '') }}</p>
+          </div>
+        </section>
+      }
+    </div>
+  }
+</div>
+

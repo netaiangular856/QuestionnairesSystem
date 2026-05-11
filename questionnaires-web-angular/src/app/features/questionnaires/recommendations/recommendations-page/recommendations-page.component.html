@@ -9,17 +9,35 @@
           <p class="rec-hero__lead">{{ 'q.rec.subtitle' | t }}</p>
         </div>
       </div>
-      @if (!busy() && !failed() && canRecommendManage) {
+      @if (!busy() && !failed() && (canRecommendManage || canSurveyManage)) {
         <div class="rec-hero__cta">
-          <button
-            type="button"
-            class="btn-primary rec-hero__add rec-hero__add--compact"
-            (click)="openCreateModal()"
-            [attr.aria-label]="'q.rec.create.openModal' | t"
-          >
-            <i class="pi pi-plus" aria-hidden="true"></i>
-            {{ 'q.rec.create.openModal' | t }}
-          </button>
+          @if (canRecommendManage) {
+            <button
+              type="button"
+              class="btn-primary rec-hero__add rec-hero__add--compact"
+              (click)="openCreateModal()"
+              [attr.aria-label]="'q.rec.create.openModal' | t"
+            >
+              <i class="pi pi-plus" aria-hidden="true"></i>
+              {{ 'q.rec.create.openModal' | t }}
+            </button>
+          }
+          @if (canSurveyManage) {
+            <button
+              type="button"
+              class="btn-ai-suggest"
+              [disabled]="aiAutoSurveyBusy()"
+              [attr.title]="'q.rec.aiAutoSurveyHint' | t"
+              (click)="runAiAutoSurveyFromRecommendations()"
+            >
+              @if (aiAutoSurveyBusy()) {
+                <span class="btn-ai-suggest__label">{{ 'q.ai.suggestBusy' | t }}</span>
+              } @else {
+                <i class="pi pi-sparkles btn-ai-suggest__icon" aria-hidden="true"></i>
+                <span class="btn-ai-suggest__label">{{ 'q.rec.aiAutoSurvey' | t }}</span>
+              }
+            </button>
+          }
         </div>
       }
     </section>

@@ -18,4 +18,7 @@ public static class QuestionnaireErrors
     public const string AiNotConfigured = "QUESTIONNAIRE_AI_NOT_CONFIGURED";
 
     public const string AiProviderError = "QUESTIONNAIRE_AI_PROVIDER_ERROR";
+
+    /// <summary>Missing survey, empty user prompt, or analytics scope too thin for the requested AI operation.</summary>
+    public const string AiInsufficientData = "QUESTIONNAIRE_AI_INSUFFICIENT_DATA";
 }

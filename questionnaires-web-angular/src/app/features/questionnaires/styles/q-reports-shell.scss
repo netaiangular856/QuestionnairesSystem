@@ -295,25 +295,23 @@
     box-shadow 0.15s ease;
 }
 
+/* Chevron: single SVG (down) — avoids fragile dual-triangle linear-gradients in RTL/LTR. */
+$rp-select-chevron-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1.75%202.625L7%207.875L12.25%202.625' stroke='%2364748b' stroke-width='1.75' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+
 .rp-input--select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
   appearance: none;
   cursor: pointer;
-  padding-inline-end: 2rem;
-  background-image: linear-gradient(45deg, transparent 50%, #64748b 50%),
-    linear-gradient(135deg, #64748b 50%, transparent 50%);
-  background-position:
-    calc(100% - 1rem) calc(50% - 3px),
-    calc(100% - 0.65rem) calc(50% - 3px);
-  background-size: 5px 5px;
+  padding-inline-end: 2.35rem;
+  background-image: $rp-select-chevron-svg;
   background-repeat: no-repeat;
+  background-size: 14px 9px;
+  background-position: right 0.7rem center;
 }
 
-/* RTL: native dropdown arrow is drawn via background — flip to the inline-end (visual left)
- * so it doesn't collide with our custom `.rp-field__glyph` which sits at inset-inline-start. */
 [dir='rtl'] .rp-input--select {
-  background-position:
-    1rem calc(50% - 3px),
-    0.65rem calc(50% - 3px);
+  background-position: left 0.7rem center;
 }
 
 .rp-input:hover {
@@ -339,6 +337,11 @@
 }
 
 .rp-input[type='date']::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+/* Firefox: hide native calendar glyph so it doesn't stack with `.rp-field__glyph`. */
+.rp-input[type='date']::-moz-calendar-picker-indicator {
   display: none;
 }
 

@@ -17,6 +17,8 @@ type IconName =
   | 'pie-chart'
   | 'target'
   | 'spark'
+  | 'sliders'
+  | 'robot'
   | 'lightbulb'
   | 'kanban'
   | 'flag'
@@ -111,6 +113,12 @@ export class SidebarComponent {
           labelKey: 'nav.aiAnalysis',
           permissions: [PermissionCodes.ReportView],
           icon: 'spark',
+        },
+        {
+          path: '/ai-scope',
+          labelKey: 'nav.aiScope',
+          permissions: [PermissionCodes.ReportView],
+          icon: 'robot',
         },
       ],
     },
@@ -232,6 +240,12 @@ export class SidebarComponent {
       // Sparkle / AI shimmer
       spark:
         'M19 1l-1.26 2.74L15 5l2.74 1.26L19 9l1.26-2.74L23 5l-2.74-1.26L19 1Zm-9 4L8.32 8.7 5 10l3.32 1.3L10 15l1.68-3.7L15 10l-3.32-1.3L10 5Zm9 9l-1.26 2.74L15 18l2.74 1.26L19 22l1.26-2.74L23 18l-2.74-1.26L19 14Z',
+      // Sliders / controls (scope & actions)
+      sliders:
+        'M4 7h8v2H4V7Zm0 8h12v2H4v-2Zm12-4h4v2h-4v-2ZM14 11h2v2h-2v-2Zm2-4h4v2h-4V7Zm-4 0h2v2h-2V7Z',
+      // Robot (AI assistant)
+      robot:
+        'M10 2h4v2h2v2h2.25A2.75 2.75 0 0 1 21 8.75v8.5A2.75 2.75 0 0 1 18.25 20H5.75A2.75 2.75 0 0 1 3 17.25v-8.5A2.75 2.75 0 0 1 5.75 6H8V4h2V2Zm8.25 6H5.75c-.41 0-.75.34-.75.75v8.5c0 .41.34.75.75.75h12.5c.41 0 .75-.34.75-.75v-8.5c0-.41-.34-.75-.75-.75ZM8.5 11.25a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Zm7 0a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM8 15.75h8v1.5H8v-1.5Z',
       // Lightbulb (recommendations)
       lightbulb:
         'M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1Zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7Z',

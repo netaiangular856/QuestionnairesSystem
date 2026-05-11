@@ -1,0 +1,26 @@
+@if (canAi) {
+  <div class="ai-fab-wrap">
+    <div class="ai-fab-tip" role="tooltip">
+      {{ 'atharAi.fabHint' | t }}
+    </div>
+
+    <button
+      type="button"
+      class="ai-fab"
+      [class.ai-fab--open]="drawer.open()"
+      (click)="toggle($event)"
+      [attr.aria-expanded]="drawer.open()"
+      [attr.aria-label]="fabToggleLabel()"
+    >
+      <span class="ai-fab__ring" aria-hidden="true">
+        <span class="ai-fab__spark ai-fab__spark--1"></span>
+        <span class="ai-fab__spark ai-fab__spark--2"></span>
+        <span class="ai-fab__spark ai-fab__spark--3"></span>
+        <span class="ai-fab__spark ai-fab__spark--4"></span>
+        <span class="ai-fab__spark ai-fab__spark--5"></span>
+        <span class="ai-fab__spark ai-fab__spark--6"></span>
+        <img class="ai-fab__img" src="assets/Ai/chatbot.png" alt="" aria-hidden="true" />
+      </span>
+    </button>
+  </div>
+}

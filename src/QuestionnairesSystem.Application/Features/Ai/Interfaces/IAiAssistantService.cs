@@ -20,4 +20,20 @@ public interface IAiAssistantService
     Task<Result<AiAnalyzeReportsResponseDto>> AnalyzeReportsAsync(
         AiAnalyzeReportsRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<Result<AiGeneratedSurveyDraftDto>> GenerateSurveyDraftAsync(
+        AiGenerateSurveyRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<AiAutoCreateSurveyResponseDto>> GenerateAndCreateSurveyFromRecommendationsAsync(
+        AiAutoSurveyFromRecommendationsRequest? request,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<AiSentimentAnalysisResponseDto>> AnalyzeSentimentAsync(
+        AiSentimentAnalysisRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<AiCopilotChatResponseDto>> CopilotChatAsync(
+        AiCopilotChatRequest request,
+        CancellationToken cancellationToken = default);
 }

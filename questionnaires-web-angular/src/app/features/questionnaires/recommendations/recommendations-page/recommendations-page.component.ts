@@ -1,11 +1,12 @@
 ﻿import { DatePipe } from '@angular/common';
 import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { AiApiService } from '../../../../services/ai-api.service';
 import { QuestionnaireLookupsApiService } from '../../../../services/questionnaire-lookups-api.service';
 import { RecommendationsApiService } from '../../../../services/recommendations-api.service';
 import { LookupItemDto, RecommendationDto, RecommendationStatus } from '../../../../shared/models/questionnaire.models';
@@ -13,6 +14,7 @@ import { PermissionCodes } from '../../../../shared/models/permission-codes';
 import { qLocalizedTitle, qRecStatusKey } from '../../../../shared/questionnaires/q-display';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { I18nService } from '../../../../shared/services/i18n.service';
+import { extractApiErrorMessage } from '../../../../shared/utils/api-helpers';
 import { RecommendationCreatePanelComponent } from '../recommendation-create-panel/recommendation-create-panel.component';
 import { RecommendationEditPanelComponent } from '../recommendation-edit-panel/recommendation-edit-panel.component';
 
@@ -27,13 +29,16 @@ const VIEW_MODE_KEY = 'qrec.viewMode';
 })
 export class RecommendationsPageComponent implements OnInit, OnDestroy {
   private readonly api = inject(RecommendationsApiService);
+  private readonly aiApi = inject(AiApiService);
   private readonly lookupsApi = inject(QuestionnaireLookupsApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
   readonly auth = inject(AuthService);
   readonly i18n = inject(I18nService);
 
   readonly canRecommendManage = this.auth.hasPermission(PermissionCodes.RecommendationManage);
+  readonly canSurveyManage = this.auth.hasPermission(PermissionCodes.SurveyManage);
 
   readonly items = signal<RecommendationDto[]>([]);
   readonly surveyLookup = signal<LookupItemDto[]>([]);
@@ -60,6 +65,7 @@ export class RecommendationsPageComponent implements OnInit, OnDestroy {
   readonly deleteModalOpen = signal(false);
   readonly deletingId = signal<string | null>(null);
   readonly deleteBusy = signal(false);
+  readonly aiAutoSurveyBusy = signal(false);
 
   readonly detailModalOpen = signal(false);
   readonly detailLoading = signal(false);
@@ -154,6 +160,23 @@ export class RecommendationsPageComponent implements OnInit, OnDestroy {
 
   openCreateModal(): void {
     this.createModalOpen.set(true);
+  }
+
+  runAiAutoSurveyFromRecommendations(): void {
+    if (!this.canSurveyManage) return;
+    if (this.aiAutoSurveyBusy()) return;
+    this.aiAutoSurveyBusy.set(true);
+    this.aiApi.generateSurveyFromRecommendations({}).subscribe({
+      next: (r) => {
+        this.aiAutoSurveyBusy.set(false);
+        this.toast.show(this.i18n.t('q.surveys.aiAutoFromRecsOk'), 'success');
+        void this.router.navigate(['/surveys', r.surveyId]);
+      },
+      error: (err: unknown) => {
+        this.aiAutoSurveyBusy.set(false);
+        this.toast.show(extractApiErrorMessage(err, this.i18n.t('q.surveys.aiAutoFromRecsErr')), 'error');
+      },
+    });
   }
 
   closeCreateModal(): void {

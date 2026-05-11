@@ -20,6 +20,15 @@
       <router-outlet />
     </main>
   </div>
+
+  @if (aiDrawer.open()) {
+    <div class="ai-fab__backdrop" role="presentation" (click)="closeAi()" aria-hidden="true"></div>
+    <div class="ai-fab__panel" role="dialog" aria-modal="true">
+      <app-athar-ai-copilot-panel (closed)="closeAi()" />
+    </div>
+  }
+
+  <app-athar-ai-floating-launcher />
 </div>
 @if (loading.isLoading()) {
   <div class="shell__overlay" aria-busy="true" aria-live="polite">

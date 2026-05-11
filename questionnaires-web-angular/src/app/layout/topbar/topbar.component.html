@@ -30,8 +30,8 @@
           d="M12 3a6 6 0 0 0-6 6v3.3l-1.6 2.8a1 1 0 0 0 .87 1.5h13.46a1 1 0 0 0 .87-1.5L18 12.3V9a6 6 0 0 0-6-6Zm0 18a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 21Z"
         />
       </svg>
-      @if (notifications.length) {
-        <span class="icon-btn__badge">{{ notifications.length }}</span>
+      @if (unreadCount > 0) {
+        <span class="icon-btn__badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
       }
     </button>
 

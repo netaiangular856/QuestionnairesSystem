@@ -73,7 +73,10 @@
 .rec-hero__cta {
   flex-shrink: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .rec-hero__add {
@@ -97,9 +100,17 @@
 @media (max-width: 560px) {
   .rec-hero__cta {
     width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
   }
 
   .rec-hero__add {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .rec-hero__cta .btn-ai-suggest {
     width: 100%;
     justify-content: center;
   }

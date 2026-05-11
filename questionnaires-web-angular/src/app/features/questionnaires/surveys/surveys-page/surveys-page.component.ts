@@ -5,6 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { AuthService } from '../../../../core/auth/auth.service';
 import { ToastService } from '../../../../core/services/toast.service';
+import { AiApiService } from '../../../../services/ai-api.service';
 import { SurveysApiService } from '../../../../services/surveys-api.service';
 import { PagedResult } from '../../../../shared/models/api.types';
 import { PermissionCodes } from '../../../../shared/models/permission-codes';
@@ -17,6 +18,7 @@ import {
 import { qLocalizedTitle, qSurveyStatusKey } from '../../../../shared/questionnaires/q-display';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 import { I18nService } from '../../../../shared/services/i18n.service';
+import { extractApiErrorMessage } from '../../../../shared/utils/api-helpers';
 
 type SurveyViewMode = 'table' | 'cards';
 
@@ -29,6 +31,7 @@ type SurveyViewMode = 'table' | 'cards';
 })
 export class SurveysPageComponent implements OnInit {
   private readonly api = inject(SurveysApiService);
+  private readonly aiApi = inject(AiApiService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   readonly i18n = inject(I18nService);
@@ -60,6 +63,7 @@ export class SurveysPageComponent implements OnInit {
   readonly contextId = signal<string | null>(null);
 
   readonly mutationBusy = signal(false);
+  readonly aiAutoSurveyBusy = signal(false);
 
   readonly SurveyAudienceScope = SurveyAudienceScope;
   readonly SurveyStatus = SurveyStatus;
@@ -99,6 +103,23 @@ export class SurveysPageComponent implements OnInit {
           this.busy.set(false);
         },
       });
+  }
+
+  runAiAutoSurveyFromRecommendations(): void {
+    if (!this.canManage) return;
+    if (this.aiAutoSurveyBusy()) return;
+    this.aiAutoSurveyBusy.set(true);
+    this.aiApi.generateSurveyFromRecommendations({}).subscribe({
+      next: (r) => {
+        this.aiAutoSurveyBusy.set(false);
+        this.toast.show(this.i18n.t('q.surveys.aiAutoFromRecsOk'), 'success');
+        void this.router.navigate(['/surveys', r.surveyId]);
+      },
+      error: (err: unknown) => {
+        this.aiAutoSurveyBusy.set(false);
+        this.toast.show(extractApiErrorMessage(err, this.i18n.t('q.surveys.aiAutoFromRecsErr')), 'error');
+      },
+    });
   }
 
   titleOf(row: SurveyListItemDto): string {

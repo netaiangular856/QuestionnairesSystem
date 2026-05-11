@@ -298,6 +298,20 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/questionnaires/analytics/ai-analysis-page/ai-analysis-page.component').then((m) => m.AiAnalysisPageComponent),
       },
+      {
+        path: 'ai-scope',
+        canActivate: [permissionGuard],
+        data: { permissions: [PermissionCodes.ReportView] },
+        loadComponent: () =>
+          import('./features/questionnaires/analytics/ai-scope-actions-page/ai-scope-actions-page.component').then(
+            (m) => m.AiScopeActionsPageComponent
+          ),
+      },
+      {
+        path: 'athar-ai',
+        redirectTo: 'dashboard',
+        pathMatch: 'full',
+      },
       { path: 'survey-analytics-export', redirectTo: 'reports', pathMatch: 'full' },
     ],
   },

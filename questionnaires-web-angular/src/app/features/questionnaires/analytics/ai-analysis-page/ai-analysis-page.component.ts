@@ -154,6 +154,7 @@ export class AiAnalysisPageComponent implements OnInit {
     return {
       responsive: true,
       maintainAspectRatio: false,
+      animation: false,
       layout: { padding: { top: 12, right: 8, bottom: 10, left: 8 } },
       interaction: { mode: 'index', intersect: false },
       plugins: {
@@ -168,6 +169,7 @@ export class AiAnalysisPageComponent implements OnInit {
     return {
       responsive: true,
       maintainAspectRatio: false,
+      animation: false,
       layout: { padding: { top: 12, right: 8, bottom: 10, left: 8 } },
       interaction: { mode: 'index', intersect: false },
       plugins: {
@@ -182,6 +184,7 @@ export class AiAnalysisPageComponent implements OnInit {
     return {
       responsive: true,
       maintainAspectRatio: false,
+      animation: false,
       layout: { padding: { top: 12, right: 8, bottom: 10, left: 8 } },
       plugins: {
         legend: { display: false },

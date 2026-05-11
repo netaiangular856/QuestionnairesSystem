@@ -860,8 +860,124 @@ export interface AiChartSuggestionDto {
   values: number[];
 }
 
+export interface AiKpiChipDto {
+  labelAr: string;
+  labelEn: string;
+  valueText: string;
+  hintAr?: string | null;
+  hintEn?: string | null;
+}
+
+export type AiInsightCardKind =
+  | 'risk_detected'
+  | 'low_satisfaction'
+  | 'improvement_opportunity'
+  | 'executive_insight'
+  | 'recommended_action'
+  | 'sentiment_summary';
+
+export interface AiInsightCardDto {
+  kind: string;
+  titleAr: string;
+  titleEn: string;
+  bodyAr: string;
+  bodyEn: string;
+  severity?: string | null;
+}
+
 export interface AiAnalyzeReportsResponseDto {
   summaryAr: string;
   summaryEn: string;
   charts: AiChartSuggestionDto[];
+  kpis?: AiKpiChipDto[] | null;
+  insightCards?: AiInsightCardDto[] | null;
+  recommendationsAr?: string[] | null;
+  recommendationsEn?: string[] | null;
+  executiveBoxAr?: string | null;
+  executiveBoxEn?: string | null;
+  actionPlanStepsAr?: string[] | null;
+  actionPlanStepsEn?: string[] | null;
+}
+
+export interface AiGenerateSurveyRequest {
+  briefAr?: string | null;
+  briefEn?: string | null;
+  maxQuestions?: number | null;
+}
+
+/** Server: AI reads recommendations + recent survey titles, then persists a new draft survey. */
+export interface AiAutoSurveyFromRecommendationsRequest {
+  maxQuestions?: number | null;
+  maxRecommendations?: number | null;
+  recentSurveyCount?: number | null;
+}
+
+export interface AiAutoCreateSurveyResponseDto {
+  surveyId: string;
+  titleAr: string;
+  titleEn: string;
+}
+
+export interface AiGeneratedOptionDraftDto {
+  textAr: string;
+  textEn: string;
+}
+
+export interface AiGeneratedQuestionDraftDto {
+  type: string;
+  titleAr: string;
+  titleEn: string;
+  required: boolean;
+  options?: AiGeneratedOptionDraftDto[] | null;
+}
+
+export interface AiGeneratedSurveyDraftDto {
+  titleAr: string;
+  titleEn: string;
+  descriptionAr?: string | null;
+  descriptionEn?: string | null;
+  questions: AiGeneratedQuestionDraftDto[];
+}
+
+export interface AiSentimentAnalysisRequest {
+  surveyId?: string | null;
+  analyticsFilter?: CrossSurveyAnalyticsFilterRequest | null;
+  defaultWindowDays?: number | null;
+}
+
+export interface AiSentimentMixDto {
+  positive: number;
+  negative: number;
+  neutral: number;
+}
+
+export interface AiSentimentAnalysisResponseDto {
+  summaryAr: string;
+  summaryEn: string;
+  overallToneAr?: string | null;
+  overallToneEn?: string | null;
+  sentimentMix?: AiSentimentMixDto | null;
+  /** Optional bar/line chart from the same excerpt analysis (e.g. by question). */
+  insightChart?: AiChartSuggestionDto | null;
+  cards: AiInsightCardDto[];
+}
+
+export interface AiCopilotMessageDto {
+  role: string;
+  content: string;
+}
+
+export interface AiCopilotChatRequest {
+  surveyId?: string | null;
+  analyticsFilter?: CrossSurveyAnalyticsFilterRequest | null;
+  history?: AiCopilotMessageDto[] | null;
+  userMessage: string;
+}
+
+export interface AiCopilotChatResponseDto {
+  replyAr: string;
+  replyEn: string;
+  insightCards: AiInsightCardDto[];
+  suggestedPromptsAr: string[];
+  suggestedPromptsEn: string[];
 }

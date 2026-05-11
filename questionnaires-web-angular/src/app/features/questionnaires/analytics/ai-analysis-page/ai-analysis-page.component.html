@@ -34,13 +34,6 @@
         </div>
       </header>
 
-      @if (analyzeBusy()) {
-        <div class="rp-state rp-state--loading rp-panel ai-page__busy" role="status" aria-live="polite">
-          <span class="rp-spinner" aria-hidden="true"></span>
-          <span class="rp-state__text">{{ 'q.ai.analyzing' | t }}</span>
-        </div>
-      }
-
       <section class="rp-panel rp-filters ai-page__filters" aria-labelledby="ai-filters-heading">
         <div class="rp-panel__head rp-filters__intro">
           <span class="rp-panel__icon ai-page__filters-icon" aria-hidden="true"><i class="pi pi-filter"></i></span>
@@ -53,7 +46,8 @@
           <label class="rp-field">
             <span class="rp-field__label">{{ 'q.analysis.filterSurvey' | t }}</span>
             <span class="rp-field__control">
-              <select class="rp-input rp-input--select ai-page__field ai-page__field--select-solo" [(ngModel)]="selectedSurveyId">
+              <i class="pi pi-list rp-field__glyph" aria-hidden="true"></i>
+              <select class="rp-input rp-input--select ai-page__field ai-page__select" [(ngModel)]="selectedSurveyId">
                 <option value="">{{ 'q.analysis.filterSurveyAll' | t }}</option>
                 @for (s of surveyList(); track s.id) {
                   <option [value]="s.id">{{ s.name }}</option>
@@ -64,12 +58,14 @@
           <label class="rp-field">
             <span class="rp-field__label">{{ 'q.analysis.filterFrom' | t }}</span>
             <span class="rp-field__control">
+              <i class="pi pi-calendar rp-field__glyph" aria-hidden="true"></i>
               <input class="rp-input ai-page__field ai-page__field--date-solo" type="date" [(ngModel)]="fromDate" />
             </span>
           </label>
           <label class="rp-field">
             <span class="rp-field__label">{{ 'q.analysis.filterTo' | t }}</span>
             <span class="rp-field__control">
+              <i class="pi pi-calendar rp-field__glyph" aria-hidden="true"></i>
               <input class="rp-input ai-page__field ai-page__field--date-solo" type="date" [(ngModel)]="toDate" />
             </span>
           </label>

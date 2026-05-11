@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs/operators';
 import { apiUrl } from '../core/config/api-url';
+import { skipGlobalLoadingHttpOptions } from '../core/http/skip-global-loading';
 import { ApiResponse } from '../shared/models/api.types';
 import {
   LookupItemDto,
@@ -22,7 +23,7 @@ export class QuestionnaireLookupsApiService {
       take: Math.min(500, Math.max(1, take)),
     });
     return this.http
-      .get<ApiResponse<LookupItemDto[]>>(`${this.base}/surveys`, { params })
+      .get<ApiResponse<LookupItemDto[]>>(`${this.base}/surveys`, { params, ...skipGlobalLoadingHttpOptions })
       .pipe(map((r) => unwrapApiResponse(r)));
   }
 

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -5,16 +6,18 @@ using Microsoft.EntityFrameworkCore;
 using QuestionnairesSystem.Application.Common;
 using QuestionnairesSystem.Application.Features.Ai.DTOs;
 using QuestionnairesSystem.Application.Features.Ai.Interfaces;
+using QuestionnairesSystem.Application.Features.Questionnaires.Reports.Export;
 using QuestionnairesSystem.Application.Features.Questionnaires.Reports.DTOs;
 using QuestionnairesSystem.Application.Features.Questionnaires.Reports.Interfaces;
 using QuestionnairesSystem.Application.Features.Questionnaires.Surveys.DTOs;
+using QuestionnairesSystem.Application.Features.Questionnaires.Surveys.Interfaces;
 using QuestionnairesSystem.Domain.Enums;
 using QuestionnairesSystem.Persistence;
 using QuestionnairesSystem.Shared.Results;
 
 namespace QuestionnairesSystem.Application.Features.Ai.Services;
 
-public sealed class AiAssistantService : IAiAssistantService
+public sealed partial class AiAssistantService : IAiAssistantService
 {
     private const int MaxTranslateChars = 120_000;
     private const int MaxSuggestAnswerSampleRows = 120;
@@ -30,15 +33,18 @@ public sealed class AiAssistantService : IAiAssistantService
     private readonly OpenAiChatClient _openAi;
     private readonly IQuestionnaireReportService _reports;
     private readonly QuestionnairesDbContext _db;
+    private readonly ISurveyService _surveys;
 
     public AiAssistantService(
         OpenAiChatClient openAi,
         IQuestionnaireReportService reports,
-        QuestionnairesDbContext db)
+        QuestionnairesDbContext db,
+        ISurveyService surveys)
     {
         _openAi = openAi;
         _reports = reports;
         _db = db;
+        _surveys = surveys;
     }
 
     public async Task<Result<TranslateRichTextResponse>> TranslateRichTextAsync(
@@ -108,23 +114,33 @@ public sealed class AiAssistantService : IAiAssistantService
         AiSuggestFromSurveyRequest request,
         CancellationToken cancellationToken = default)
     {
-        var contextResult = await BuildSuggestContextForAiAsync(request.SurveyId, cancellationToken).ConfigureAwait(false);
+        var filter = new CrossSurveyAnalyticsFilterRequest
+        {
+            SurveyId = request.SurveyId,
+            IncludeAnswerDetails = false,
+        };
+
+        // Cross-survey: default last 30 days so excerpts are bounded (same idea as sentiment).
+        if (!filter.SurveyId.HasValue && !filter.FromUtc.HasValue && !filter.ToUtc.HasValue)
+        {
+            var now = DateTime.UtcNow;
+            filter.ToUtc = now;
+            filter.FromUtc = now.AddDays(-30);
+        }
+
+        var contextResult = await BuildAnswerExcerptEvidenceForAiAsync(
+                filter,
+                "recommendation_from_answer_excerpts",
+                cancellationToken)
+            .ConfigureAwait(false);
         if (!contextResult.IsSuccess)
             return Result<AiSuggestRecommendationDraftDto>.Fail(contextResult.Errors, contextResult.FailureCode);
 
-        var context = contextResult.Value!;
-
-        var system =
-            "You are an enterprise improvement advisor. You MUST ground the recommendation ONLY in the evidence JSON blocks below " +
-            "(submitted-response analytics: overview counts, distributions, rating buckets, text keywords, question types, and answer excerpts). " +
-            "Reference concrete patterns visible in the data (e.g. dominant ratings, recurring short-text themes, low submission volume). " +
-            "Do not invent submission counts or metrics not present. If the evidence is thin, say so and recommend measurement or follow-up instead of fabricating facts. " +
-            "Respond with JSON only: {\"titleAr\",\"titleEn\",\"descriptionAr\",\"descriptionEn\",\"priority\"}. " +
-            "priority must be 3 (low), 5 (medium), or 8 (high). Titles max 500 chars; descriptions max 4000 chars.";
-        var user = "Evidence for recommendation:\n" + context;
+        var context = contextResult.Value!.Json;
+        var user = AiPromptEngine.BuildRecommendationDraftUserPrompt(context);
 
         var completion = await _openAi.CompleteAsync(
-            new List<(string, string)> { ("system", system), ("user", user) },
+            new List<(string, string)> { ("system", AiPromptEngine.RecommendationDraftFromAnswersSystem), ("user", user) },
             jsonObjectFormat: true,
             cancellationToken).ConfigureAwait(false);
 
@@ -161,22 +177,32 @@ public sealed class AiAssistantService : IAiAssistantService
         AiSuggestFromSurveyRequest request,
         CancellationToken cancellationToken = default)
     {
-        var contextResult = await BuildSuggestContextForAiAsync(request.SurveyId, cancellationToken).ConfigureAwait(false);
+        var filter = new CrossSurveyAnalyticsFilterRequest
+        {
+            SurveyId = request.SurveyId,
+            IncludeAnswerDetails = false,
+        };
+
+        if (!filter.SurveyId.HasValue && !filter.FromUtc.HasValue && !filter.ToUtc.HasValue)
+        {
+            var now = DateTime.UtcNow;
+            filter.ToUtc = now;
+            filter.FromUtc = now.AddDays(-30);
+        }
+
+        var contextResult = await BuildAnswerExcerptEvidenceForAiAsync(
+                filter,
+                "action_plan_from_answer_excerpts",
+                cancellationToken)
+            .ConfigureAwait(false);
         if (!contextResult.IsSuccess)
             return Result<AiSuggestActionPlanDraftDto>.Fail(contextResult.Errors, contextResult.FailureCode);
 
-        var context = contextResult.Value!;
-
-        var system =
-            "You are a strategic planning assistant. You MUST base the plan ONLY on the evidence JSON below " +
-            "(same analytics as the reports dashboard for the chosen scope: overview, distributions, keywords, ratings, answer excerpts). " +
-            "Tie initiatives to observable gaps or strengths in the data. Do not invent KPIs. If data is insufficient, state what to measure next. " +
-            "Respond with JSON only: {\"titleAr\",\"titleEn\",\"descriptionAr\",\"descriptionEn\"}. " +
-            "Titles max 500 chars; descriptions max 4000 chars.";
-        var user = "Evidence for action plan:\n" + context;
+        var context = contextResult.Value!.Json;
+        var user = AiPromptEngine.BuildActionPlanDraftUserPrompt(context);
 
         var completion = await _openAi.CompleteAsync(
-            new List<(string, string)> { ("system", system), ("user", user) },
+            new List<(string, string)> { ("system", AiPromptEngine.ActionPlanDraftFromAnswersSystem), ("user", user) },
             jsonObjectFormat: true,
             cancellationToken).ConfigureAwait(false);
 
@@ -212,15 +238,14 @@ public sealed class AiAssistantService : IAiAssistantService
         if (!analyticsResult.IsSuccess)
             return Result<AiAnalyzeReportsResponseDto>.Fail(analyticsResult.Errors, analyticsResult.FailureCode);
 
-        var snapshot = BuildAnalyticsSnapshotJson(analyticsResult.Value!);
+        var analytics = analyticsResult.Value!;
+        var coreCharts = BuildCoreCharts(analytics);
+        var coreKpis = BuildCoreKpis(analytics);
 
-        var system =
-            "You are a data analyst for survey and execution KPIs. Given ONLY the JSON snapshot, write bilingual summaries " +
-            "and suggest up to 4 charts that reflect REAL numbers from the snapshot (do not invent metrics). " +
-            "Respond with JSON only: {\"summaryAr\",\"summaryEn\",\"charts\":[{\"titleAr\",\"titleEn\",\"kind\",\"labels\",\"values\"}]} " +
-            "where each chart MUST include both titleAr (Arabic) and titleEn (English) short titles, kind is bar, line, or doughnut; " +
-            "labels and values same length; values numeric.";
-        var user = "Analytics snapshot:\n" + snapshot;
+        var snapshot = BuildAnalyticsSnapshotJson(analytics);
+
+        var system = AiPromptEngine.AnalyticsSystem + " " + AiPromptEngine.ExecutiveSummarySystem;
+        var user = AiPromptEngine.BuildAnalyticsUserPrompt(snapshot);
 
         var completion = await _openAi.CompleteAsync(
             new List<(string, string)> { ("system", system), ("user", user) },
@@ -232,7 +257,7 @@ public sealed class AiAssistantService : IAiAssistantService
 
         try
         {
-            var parsed = JsonSerializer.Deserialize<AiAnalyzeRawDto>(completion.Value!, AiDeserialize);
+            var parsed = JsonSerializer.Deserialize<AiAnalyzeEnhancedRawDto>(completion.Value!, AiDeserialize);
             if (parsed == null || string.IsNullOrWhiteSpace(parsed.SummaryAr) || string.IsNullOrWhiteSpace(parsed.SummaryEn))
             {
                 return Result<AiAnalyzeReportsResponseDto>.Fail(
@@ -270,11 +295,40 @@ public sealed class AiAssistantService : IAiAssistantService
                     break;
             }
 
+            var kpis = NormalizeKpis(parsed.Kpis);
+            var insightCards = NormalizeInsightCards(parsed.InsightCards);
+            var recAr = NormalizeStringList(parsed.RecommendationsAr, 8);
+            var recEn = NormalizeStringList(parsed.RecommendationsEn, 8);
+            var stepsAr = NormalizeStringList(parsed.ActionPlanStepsAr, 7);
+            var stepsEn = NormalizeStringList(parsed.ActionPlanStepsEn, 7);
+
+            // Prefer deterministic charts (always available) then append AI charts (if any).
+            var mergedCharts = new List<AiChartSuggestionDto>();
+            mergedCharts.AddRange(coreCharts);
+            foreach (var c in charts)
+            {
+                if (mergedCharts.Count >= 6) break;
+                mergedCharts.Add(c);
+            }
+
+            // Deterministic KPIs first, then AI KPIs.
+            var mergedKpis = new List<AiKpiChipDto>();
+            mergedKpis.AddRange(coreKpis);
+            mergedKpis.AddRange(kpis);
+
             return Result<AiAnalyzeReportsResponseDto>.Ok(new AiAnalyzeReportsResponseDto
             {
                 SummaryAr = parsed.SummaryAr,
                 SummaryEn = parsed.SummaryEn,
-                Charts = charts,
+                Charts = mergedCharts,
+                Kpis = mergedKpis,
+                InsightCards = insightCards,
+                RecommendationsAr = recAr,
+                RecommendationsEn = recEn,
+                ExecutiveBoxAr = parsed.ExecutiveBoxAr?.Trim() ?? string.Empty,
+                ExecutiveBoxEn = parsed.ExecutiveBoxEn?.Trim() ?? string.Empty,
+                ActionPlanStepsAr = stepsAr,
+                ActionPlanStepsEn = stepsEn,
             });
         }
         catch (Exception ex)
@@ -285,29 +339,140 @@ public sealed class AiAssistantService : IAiAssistantService
         }
     }
 
-    private async Task<Result<string>> BuildSuggestContextForAiAsync(Guid? surveyId, CancellationToken cancellationToken)
+    private static List<AiChartSuggestionDto> BuildCoreCharts(CrossSurveyAnalyticsDto a)
     {
-        var filter = new CrossSurveyAnalyticsFilterRequest
+        var charts = new List<AiChartSuggestionDto>();
+
+        // 1) Responses over time (line)
+        if (a.SubmissionsByDay.Count > 0)
         {
-            SurveyId = surveyId,
-            IncludeAnswerDetails = surveyId.HasValue,
-        };
+            charts.Add(new AiChartSuggestionDto
+            {
+                TitleAr = "الردود عبر الوقت",
+                TitleEn = "Submissions over time",
+                Title = "Submissions over time",
+                Kind = "line",
+                Labels = a.SubmissionsByDay.Select(p => p.Date).ToList(),
+                Values = a.SubmissionsByDay.Select(p => (double)p.Count).ToList(),
+            });
+        }
+
+        // 2) Response status (doughnut)
+        if (a.ResponseStatusDistribution.Count > 0)
+        {
+            charts.Add(new AiChartSuggestionDto
+            {
+                TitleAr = "توزيع حالة الردود",
+                TitleEn = "Response status distribution",
+                Title = "Response status distribution",
+                Kind = "doughnut",
+                Labels = a.ResponseStatusDistribution.Select(x => x.Key).ToList(),
+                Values = a.ResponseStatusDistribution.Select(x => (double)x.Count).ToList(),
+            });
+        }
+
+        // 3) Ratings distribution (bar)
+        if (a.RatingsDistribution.Count > 0)
+        {
+            charts.Add(new AiChartSuggestionDto
+            {
+                TitleAr = "توزيع التقييمات",
+                TitleEn = "Ratings distribution",
+                Title = "Ratings distribution",
+                Kind = "bar",
+                Labels = a.RatingsDistribution.Select(x => x.Rating.ToString()).ToList(),
+                Values = a.RatingsDistribution.Select(x => (double)x.Count).ToList(),
+            });
+
+            // 4) Positive vs negative (derived)
+            var pos = a.RatingsDistribution.Where(x => x.Rating >= 4).Sum(x => x.Count);
+            var neu = a.RatingsDistribution.Where(x => x.Rating == 3).Sum(x => x.Count);
+            var neg = a.RatingsDistribution.Where(x => x.Rating <= 2).Sum(x => x.Count);
+            var total = pos + neu + neg;
+            if (total > 0)
+            {
+                charts.Add(new AiChartSuggestionDto
+                {
+                    TitleAr = "إيجابي / محايد / سلبي",
+                    TitleEn = "Positive / Neutral / Negative",
+                    Title = "Positive / Neutral / Negative",
+                    Kind = "doughnut",
+                    Labels = new List<string> { "Positive", "Neutral", "Negative" },
+                    Values = new List<double> { pos, neu, neg },
+                });
+            }
+        }
+
+        return charts;
+    }
+
+    private static List<AiKpiChipDto> BuildCoreKpis(CrossSurveyAnalyticsDto a)
+    {
+        var kpis = new List<AiKpiChipDto>();
+
+        if (a.RatingsDistribution.Count == 0)
+            return kpis;
+
+        var pos = a.RatingsDistribution.Where(x => x.Rating >= 4).Sum(x => x.Count);
+        var neu = a.RatingsDistribution.Where(x => x.Rating == 3).Sum(x => x.Count);
+        var neg = a.RatingsDistribution.Where(x => x.Rating <= 2).Sum(x => x.Count);
+        var total = pos + neu + neg;
+        if (total <= 0) return kpis;
+
+        string Pct(int part) => $"{Math.Round(part * 100.0 / total, 1):0.#}%";
+
+        kpis.Add(new AiKpiChipDto
+        {
+            LabelAr = "إيجابي",
+            LabelEn = "Positive",
+            ValueText = Pct(pos),
+            HintAr = "نسبة التقييمات 4–5",
+            HintEn = "Share of ratings 4–5",
+        });
+        kpis.Add(new AiKpiChipDto
+        {
+            LabelAr = "سلبي",
+            LabelEn = "Negative",
+            ValueText = Pct(neg),
+            HintAr = "نسبة التقييمات 1–2",
+            HintEn = "Share of ratings 1–2",
+        });
+        kpis.Add(new AiKpiChipDto
+        {
+            LabelAr = "محايد",
+            LabelEn = "Neutral",
+            ValueText = Pct(neu),
+            HintAr = "نسبة التقييم 3",
+            HintEn = "Share of rating 3",
+        });
+
+        return kpis;
+    }
+
+    private async Task<Result<string>> BuildSuggestContextForAiAsync(
+        CrossSurveyAnalyticsFilterRequest filter,
+        CancellationToken cancellationToken)
+    {
+        // AI only needs a small evidence sample (loading full AnswerDetails can be huge/slow).
+        filter.IncludeAnswerDetails = false;
 
         var analyticsResult = await _reports.GetCrossSurveyAnalyticsAsync(filter, cancellationToken).ConfigureAwait(false);
         if (!analyticsResult.IsSuccess)
             return Result<string>.Fail(analyticsResult.Errors, analyticsResult.FailureCode);
 
         var analytics = analyticsResult.Value!;
+        var answerSamples = await LoadAnswerEvidenceSamplesAsync(filter, cancellationToken).ConfigureAwait(false);
+        var focusSurveyId = filter.SurveyId;
         var sb = new StringBuilder();
         sb.Append("{\"intent\":\"ai_suggestion\",\"focusSurveyId\":");
-        sb.Append(surveyId.HasValue ? $"\"{surveyId}\"" : "null");
+        sb.Append(focusSurveyId.HasValue ? $"\"{focusSurveyId}\"" : "null");
         sb.Append(",\"evidence\":\"cross_survey_analytics\"}\n");
-        sb.Append(BuildSuggestSnapshotJson(analytics));
+        sb.Append(BuildSuggestSnapshotJson(analytics, answerSamples));
 
-        if (surveyId.HasValue)
+        if (focusSurveyId.HasValue)
         {
             sb.Append('\n');
-            sb.Append(await BuildFocusedSurveyQuestionsJsonAsync(surveyId.Value, cancellationToken).ConfigureAwait(false));
+            sb.Append(await BuildFocusedSurveyQuestionsJsonAsync(focusSurveyId.Value, cancellationToken).ConfigureAwait(false));
         }
         else
         {
@@ -318,23 +483,82 @@ public sealed class AiAssistantService : IAiAssistantService
         return Result<string>.Ok(sb.ToString());
     }
 
-    private static string BuildSuggestSnapshotJson(CrossSurveyAnalyticsDto d)
+    /// <summary>
+    /// Minimal evidence: applied filter + text answer excerpts only (no dashboard KPIs). Used for sentiment, recommendation, and action-plan drafts.
+    /// </summary>
+    private async Task<Result<(string Json, int SampleCount)>> BuildAnswerExcerptEvidenceForAiAsync(
+        CrossSurveyAnalyticsFilterRequest filter,
+        string evidenceIntent,
+        CancellationToken cancellationToken)
     {
-        var answerSamples = d.AnswerDetails
-            .Take(MaxSuggestAnswerSampleRows)
-            .Select(row =>
-            {
-                var qTitle = FirstNonEmpty(row.QuestionTitleEn, row.QuestionTitleAr) ?? string.Empty;
-                var excerpt = FirstNonEmpty(row.AnswerTextEn, row.AnswerTextAr) ?? string.Empty;
-                excerpt = TruncateForAiSuggest(excerpt, MaxSuggestAnswerExcerptChars);
-                return new AnswerEvidenceRowDto
-                {
-                    QuestionTitle = qTitle,
-                    QuestionType = row.QuestionTypeKey,
-                    AnswerExcerpt = excerpt,
-                };
-            })
-            .ToList();
+        filter.IncludeAnswerDetails = false;
+
+        var analyticsResult = await _reports.GetCrossSurveyAnalyticsAsync(filter, cancellationToken).ConfigureAwait(false);
+        if (!analyticsResult.IsSuccess)
+            return Result<(string Json, int SampleCount)>.Fail(analyticsResult.Errors, analyticsResult.FailureCode);
+
+        var answerSamples = await LoadAnswerEvidenceSamplesAsync(filter, cancellationToken).ConfigureAwait(false);
+        var payload = new AnswerExcerptEvidenceDto
+        {
+            Intent = string.IsNullOrWhiteSpace(evidenceIntent) ? "answer_excerpts_only" : evidenceIntent.Trim(),
+            AppliedFilter = analyticsResult.Value!.AppliedFilter,
+            AnswerSamples = answerSamples,
+        };
+
+        var json = JsonSerializer.Serialize(payload, new JsonSerializerOptions
+        {
+            WriteIndented = false,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        });
+
+        return Result<(string Json, int SampleCount)>.Ok((json, answerSamples.Count));
+    }
+
+    private static string NormalizeSentimentSummaryForDisplay(string? s)
+    {
+        var t = (s ?? string.Empty).Trim();
+        if (t.Length == 0)
+            return t;
+        if (t.Contains('<', StringComparison.Ordinal))
+            return t;
+        return "<p>" + WebUtility.HtmlEncode(t).Replace("\n", "<br/>", StringComparison.Ordinal) + "</p>";
+    }
+
+    private static (int Positive, int Negative, int Neutral) CoerceSentimentCountsToSampleSize(
+        int positive,
+        int negative,
+        int neutral,
+        int sampleSize)
+    {
+        var p = Math.Max(0, positive);
+        var n = Math.Max(0, negative);
+        var z = Math.Max(0, neutral);
+        var sum = p + n + z;
+        if (sampleSize <= 0 || sum <= 0)
+            return (0, 0, 0);
+        if (sum == sampleSize)
+            return (p, n, z);
+
+        // Largest remainder method so small buckets keep at least one slot when proportions warrant it.
+        var exact = new[]
+        {
+            (double)p / sum * sampleSize,
+            (double)n / sum * sampleSize,
+            (double)z / sum * sampleSize,
+        };
+        var floors = new[] { (int)Math.Floor(exact[0]), (int)Math.Floor(exact[1]), (int)Math.Floor(exact[2]) };
+        var rem = sampleSize - floors[0] - floors[1] - floors[2];
+        var order = new[] { 0, 1, 2 }.OrderByDescending(i => exact[i] - floors[i]).ToArray();
+        for (var i = 0; i < rem; i++)
+            floors[order[i]]++;
+
+        return (floors[0], floors[1], floors[2]);
+    }
+
+    private static string BuildSuggestSnapshotJson(CrossSurveyAnalyticsDto d, List<AnswerEvidenceRowDto> answerSamples)
+    {
+        if (answerSamples.Count > MaxSuggestAnswerSampleRows)
+            answerSamples = answerSamples.Take(MaxSuggestAnswerSampleRows).ToList();
 
         var slim = new SuggestAnalyticsSlimDto
         {
@@ -360,6 +584,64 @@ public sealed class AiAssistantService : IAiAssistantService
             WriteIndented = false,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         });
+    }
+
+    private async Task<List<AnswerEvidenceRowDto>> LoadAnswerEvidenceSamplesAsync(
+        CrossSurveyAnalyticsFilterRequest filter,
+        CancellationToken cancellationToken)
+    {
+        const int maxRawRows = 750; // keep fast, enough diversity
+
+        var q = from a in _db.QuestionAnswers.AsNoTracking()
+                join r in _db.SurveyResponses.AsNoTracking() on a.ResponseId equals r.Id
+                join s in _db.Surveys.AsNoTracking() on r.SurveyId equals s.Id
+                join qu in _db.Questions.AsNoTracking() on a.QuestionId equals qu.Id
+                where r.Status == ResponseStatus.Submitted
+                select new
+                {
+                    r.SurveyId,
+                    r.SubmittedAtUtc,
+                    SurveyTitleAr = s.TitleAr,
+                    SurveyTitleEn = s.TitleEn,
+                    QuestionTitleAr = qu.TitleAr,
+                    QuestionTitleEn = qu.TitleEn,
+                    QuestionType = qu.Type,
+                    qu.OptionsJson,
+                    a.ValueJson,
+                };
+
+        if (filter.SurveyId.HasValue)
+            q = q.Where(x => x.SurveyId == filter.SurveyId.Value);
+
+        if (filter.FromUtc.HasValue)
+            q = q.Where(x => x.SubmittedAtUtc >= filter.FromUtc.Value);
+        if (filter.ToUtc.HasValue)
+            q = q.Where(x => x.SubmittedAtUtc <= filter.ToUtc.Value);
+
+        var raw = await q
+            .OrderByDescending(x => x.SubmittedAtUtc)
+            .Take(maxRawRows)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var rows = raw.Select(x =>
+            {
+                var (ar, en) = CrossSurveyAnswerDetailFormatter.FormatAnswer(x.QuestionType, x.OptionsJson, x.ValueJson);
+                var qTitle = FirstNonEmpty(x.QuestionTitleEn, x.QuestionTitleAr) ?? string.Empty;
+                var excerpt = FirstNonEmpty(en, ar) ?? string.Empty;
+                excerpt = TruncateForAiSuggest(excerpt, MaxSuggestAnswerExcerptChars);
+                return new AnswerEvidenceRowDto
+                {
+                    QuestionTitle = qTitle,
+                    QuestionType = x.QuestionType.ToString(),
+                    AnswerExcerpt = excerpt,
+                };
+            })
+            .Where(x => !string.IsNullOrWhiteSpace(x.AnswerExcerpt))
+            .Take(MaxSuggestAnswerSampleRows)
+            .ToList();
+
+        return rows;
     }
 
     private static string TruncateForAiSuggest(string s, int maxChars)
@@ -507,6 +789,15 @@ public sealed class AiAssistantService : IAiAssistantService
         public List<AnswerEvidenceRowDto> AnswerSamples { get; set; } = new();
     }
 
+    private sealed class AnswerExcerptEvidenceDto
+    {
+        public string Intent { get; init; } = "answer_excerpts_only";
+
+        public CrossSurveyAnalyticsFilterSnapshotDto AppliedFilter { get; init; } = new();
+
+        public List<AnswerEvidenceRowDto> AnswerSamples { get; init; } = new();
+    }
+
     private sealed class AnswerEvidenceRowDto
     {
         public string QuestionTitle { get; set; } = "";
@@ -514,11 +805,38 @@ public sealed class AiAssistantService : IAiAssistantService
         public string AnswerExcerpt { get; set; } = "";
     }
 
-    private sealed class AiAnalyzeRawDto
+    private sealed class AiAnalyzeEnhancedRawDto
     {
         public string SummaryAr { get; set; } = "";
         public string SummaryEn { get; set; } = "";
         public List<AiChartRawDto>? Charts { get; set; } = new();
+        public List<AiKpiRawDto>? Kpis { get; set; }
+        public List<AiInsightCardRawDto>? InsightCards { get; set; }
+        public List<string>? RecommendationsAr { get; set; }
+        public List<string>? RecommendationsEn { get; set; }
+        public string? ExecutiveBoxAr { get; set; }
+        public string? ExecutiveBoxEn { get; set; }
+        public List<string>? ActionPlanStepsAr { get; set; }
+        public List<string>? ActionPlanStepsEn { get; set; }
+    }
+
+    private sealed class AiKpiRawDto
+    {
+        public string? LabelAr { get; set; }
+        public string? LabelEn { get; set; }
+        public string? ValueText { get; set; }
+        public string? HintAr { get; set; }
+        public string? HintEn { get; set; }
+    }
+
+    private sealed class AiInsightCardRawDto
+    {
+        public string? Kind { get; set; }
+        public string? TitleAr { get; set; }
+        public string? TitleEn { get; set; }
+        public string? BodyAr { get; set; }
+        public string? BodyEn { get; set; }
+        public string? Severity { get; set; }
     }
 
     private sealed class AiChartRawDto
@@ -531,6 +849,51 @@ public sealed class AiAssistantService : IAiAssistantService
         public List<double>? Values { get; set; }
     }
 
+    /// <summary>Validates AI secondary sentiment chart (bar/line only).</summary>
+    private static AiChartSuggestionDto? NormalizeSentimentInsightChart(AiChartRawDto? c)
+    {
+        if (c?.Labels == null || c.Values == null || c.Labels.Count == 0 || c.Labels.Count != c.Values.Count)
+            return null;
+
+        const int maxPoints = 12;
+        var pairs = new List<(string Label, double Value)>();
+        for (var i = 0; i < Math.Min(c.Labels.Count, c.Values.Count) && pairs.Count < maxPoints; i++)
+        {
+            var label = (c.Labels[i] ?? string.Empty).Trim();
+            if (label.Length == 0)
+                continue;
+            pairs.Add((label, c.Values[i]));
+        }
+
+        if (pairs.Count == 0)
+            return null;
+
+        var kindNorm = (c.Kind ?? "bar").Trim().ToLowerInvariant();
+        if (kindNorm == "doughnut")
+            kindNorm = "bar";
+        if (kindNorm != "bar" && kindNorm != "line")
+            kindNorm = "bar";
+
+        var titleAr = FirstNonEmpty(c.TitleAr, c.Title);
+        var titleEn = FirstNonEmpty(c.TitleEn, c.Title);
+        if (string.IsNullOrWhiteSpace(titleAr))
+            titleAr = titleEn;
+        if (string.IsNullOrWhiteSpace(titleEn))
+            titleEn = titleAr;
+        if (string.IsNullOrWhiteSpace(titleAr))
+            return null;
+
+        return new AiChartSuggestionDto
+        {
+            TitleAr = titleAr!,
+            TitleEn = titleEn!,
+            Title = titleEn ?? titleAr ?? string.Empty,
+            Kind = kindNorm,
+            Labels = pairs.Select(p => p.Label).ToList(),
+            Values = pairs.Select(p => p.Value).ToList(),
+        };
+    }
+
     private static string? FirstNonEmpty(params string?[] values)
     {
         foreach (var v in values)
@@ -540,6 +903,117 @@ public sealed class AiAssistantService : IAiAssistantService
         }
 
         return null;
+    }
+
+    private static IReadOnlyList<string> NormalizeStringList(IReadOnlyList<string>? src, int max)
+    {
+        if (src == null || src.Count == 0)
+            return Array.Empty<string>();
+        var list = new List<string>();
+        foreach (var s in src)
+        {
+            var t = (s ?? string.Empty).Trim();
+            if (t.Length == 0)
+                continue;
+            list.Add(t);
+            if (list.Count >= max)
+                break;
+        }
+
+        return list;
+    }
+
+    private static IReadOnlyList<AiKpiChipDto> NormalizeKpis(IReadOnlyList<AiKpiRawDto>? src)
+    {
+        if (src == null || src.Count == 0)
+            return Array.Empty<AiKpiChipDto>();
+        var list = new List<AiKpiChipDto>();
+        foreach (var k in src)
+        {
+            var la = (k.LabelAr ?? string.Empty).Trim();
+            var le = (k.LabelEn ?? string.Empty).Trim();
+            var vt = (k.ValueText ?? string.Empty).Trim();
+            if (la.Length == 0 && le.Length == 0)
+                continue;
+            if (string.IsNullOrEmpty(la))
+                la = le;
+            if (string.IsNullOrEmpty(le))
+                le = la;
+            list.Add(new AiKpiChipDto
+            {
+                LabelAr = la,
+                LabelEn = le,
+                ValueText = vt.Length > 0 ? vt : "—",
+                HintAr = string.IsNullOrWhiteSpace(k.HintAr) ? null : k.HintAr.Trim(),
+                HintEn = string.IsNullOrWhiteSpace(k.HintEn) ? null : k.HintEn.Trim(),
+            });
+            if (list.Count >= 6)
+                break;
+        }
+
+        return list;
+    }
+
+    private static IReadOnlyList<AiInsightCardDto> NormalizeInsightCards(IReadOnlyList<AiInsightCardRawDto>? src)
+    {
+        if (src == null || src.Count == 0)
+            return Array.Empty<AiInsightCardDto>();
+        var list = new List<AiInsightCardDto>();
+        foreach (var c in src)
+        {
+            var titleAr = (c.TitleAr ?? string.Empty).Trim();
+            var titleEn = (c.TitleEn ?? string.Empty).Trim();
+            var bodyAr = (c.BodyAr ?? string.Empty).Trim();
+            var bodyEn = (c.BodyEn ?? string.Empty).Trim();
+            if (titleAr.Length == 0 && titleEn.Length == 0 && bodyAr.Length == 0 && bodyEn.Length == 0)
+                continue;
+            if (string.IsNullOrEmpty(titleAr))
+                titleAr = titleEn;
+            if (string.IsNullOrEmpty(titleEn))
+                titleEn = titleAr;
+            if (string.IsNullOrEmpty(bodyAr))
+                bodyAr = bodyEn;
+            if (string.IsNullOrEmpty(bodyEn))
+                bodyEn = bodyAr;
+            list.Add(new AiInsightCardDto
+            {
+                Kind = NormalizeInsightKind(c.Kind),
+                TitleAr = titleAr,
+                TitleEn = titleEn,
+                BodyAr = bodyAr,
+                BodyEn = bodyEn,
+                Severity = NormalizeSeverity(c.Severity),
+            });
+            if (list.Count >= 8)
+                break;
+        }
+
+        return list;
+    }
+
+    private static string NormalizeInsightKind(string? raw)
+    {
+        var k = (raw ?? string.Empty).Trim().ToLowerInvariant().Replace(' ', '_');
+        return k switch
+        {
+            "risk_detected" or "risk" => "risk_detected",
+            "low_satisfaction" => "low_satisfaction",
+            "improvement_opportunity" or "opportunity" => "improvement_opportunity",
+            "executive_insight" or "insight" => "executive_insight",
+            "recommended_action" or "action" => "recommended_action",
+            "sentiment_summary" or "sentiment" => "sentiment_summary",
+            _ => "executive_insight",
+        };
+    }
+
+    private static string? NormalizeSeverity(string? raw)
+    {
+        var s = (raw ?? string.Empty).Trim().ToLowerInvariant();
+        return s switch
+        {
+            "low" or "medium" or "high" => s,
+            _ => null,
+        };
     }
 
     /// <summary>

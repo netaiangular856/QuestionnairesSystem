@@ -92,6 +92,53 @@
   margin-inline: auto;
 }
 
+/* ATHAR AI drawer host (global overlay) */
+.ai-fab__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  /* Skip backdrop blur: it repaints the whole page behind the drawer on every scroll frame. */
+  background: rgba(2, 6, 23, 0.52);
+  animation: ai-backdrop-in 0.2s ease-out;
+}
+
+@keyframes ai-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ai-fab__panel {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  inset-inline-end: 0;
+  z-index: 125;
+  width: min(440px, 100vw - 0.5rem);
+  max-width: 100vw;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  pointer-events: auto;
+  animation: ai-panel-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  box-shadow: -12px 0 48px rgba(15, 23, 42, 0.35);
+  border-inline-start: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+@keyframes ai-panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .shell__overlay {
   position: fixed;
   inset: 0;

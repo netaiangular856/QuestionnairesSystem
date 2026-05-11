@@ -339,30 +339,30 @@
 }
 
 /* Inputs: logical padding so glyphs + RTL stay aligned (reports defaults use physical padding). */
-.ai-page .rp-field__control .rp-input:not(.ai-page__field--select-solo):not(.ai-page__field--date-solo) {
+.ai-page .rp-field__control .rp-input:not(.ai-page__field--date-solo) {
   padding-inline-start: 2.35rem;
   padding-inline-end: 0.75rem;
 }
 
 .ai-page .rp-field__control .rp-input--select {
-  padding-inline-end: 2rem;
+  padding-inline-end: 2.35rem;
 }
 
-/* Survey select: only chevron (no left glyph) — free the start padding */
-.ai-page__field--select-solo {
-  padding-inline-start: 0.75rem !important;
-}
-
-/* Date: browser supplies calendar control — no Prime icon (avoids double icons) */
+/* One calendar affordance: Prime glyph + hidden native indicator (reports shell). */
 .ai-page__field--date-solo {
   padding-inline: 0.75rem !important;
+  padding-inline-start: 2.35rem !important;
   min-height: var(--btn-height, 2.375rem);
+  padding-inline-end: 0.75rem !important;
+  color-scheme: light;
 }
 
-.ai-page .rp-field__control .rp-input[type='date'].ai-page__field--date-solo::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.85;
-  padding-inline-start: 0.25rem;
+.ai-page .rp-field__control select.ai-page__select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: var(--rp-input-bg) !important;
+  padding-inline-end: 2.35rem !important;
 }
 
 /* CTA */

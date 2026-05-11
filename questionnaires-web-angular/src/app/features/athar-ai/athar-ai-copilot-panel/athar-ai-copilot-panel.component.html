@@ -1,0 +1,307 @@
+@if (!canReports) {
+  <div class="ai-panel ai-panel--denied">
+    <p>{{ 'atharAi.denied' | t }}</p>
+    <button type="button" class="ai-panel__btn-ghost" (click)="requestClose()">{{ 'atharAi.close' | t }}</button>
+  </div>
+} @else {
+  <div class="ai-panel ai-drawer--dark" dir="auto">
+    <header class="ai-panel__head">
+      <div class="ai-panel__head-text">
+        <span class="ai-panel__badge" aria-hidden="true">
+          <img src="assets/Ai/ai-technology.png" class="ai-panel__badge-img" alt="" aria-hidden="true" />
+        </span>
+        <div>
+          <div class="ai-panel__title">{{ 'atharAi.product' | t }}</div>
+          <div class="ai-panel__subtitle">{{ 'atharAi.drawerSubtitle' | t }}</div>
+        </div>
+      </div>
+      <button type="button" class="ai-panel__close" (click)="requestClose()" [attr.aria-label]="'atharAi.close' | t">×</button>
+    </header>
+
+    <nav class="ai-panel__tabs" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        class="ai-panel__tab"
+        [class.ai-panel__tab--active]="activeTab() === 'chat'"
+        (click)="setTab('chat')"
+      >
+        {{ 'atharAi.tab.chat' | t }}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="ai-panel__tab"
+        [class.ai-panel__tab--active]="activeTab() === 'scope'"
+        (click)="setTab('scope')"
+      >
+        {{ 'atharAi.tab.scope' | t }}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="ai-panel__tab"
+        [class.ai-panel__tab--active]="activeTab() === 'insights'"
+        (click)="setTab('insights')"
+      >
+        {{ 'atharAi.tab.insights' | t }}
+      </button>
+    </nav>
+
+    <div class="ai-panel__body">
+      @if (activeTab() === 'chat') {
+        <div class="ai-panel__scroll">
+          @if (errorText()) {
+            <div class="ai-panel__alert" role="alert">{{ errorText() }}</div>
+          }
+          <div class="ai-panel__chips">
+            @for (p of suggestedPrompts(); track p) {
+              <button type="button" class="ai-panel__chip" (click)="sendPrompt(p)" [disabled]="busy() !== 'idle'">{{ p }}</button>
+            }
+          </div>
+          <section class="ai-panel__chat" aria-label="Chat">
+            @if (chat().length === 0) {
+              <div class="ai-panel__empty">
+                <div class="ai-panel__empty-orbit" aria-hidden="true">
+                  <img src="assets/Ai/ai-technology.png" class="ai-panel__empty-img" alt="" aria-hidden="true" />
+                </div>
+                <h2 class="ai-panel__empty-title">{{ 'atharAi.empty.title' | t }}</h2>
+                <p class="ai-panel__empty-text">{{ 'atharAi.empty.body' | t }}</p>
+              </div>
+            }
+            @for (m of chat(); track $index) {
+              <div class="ai-panel__msg" [class.ai-panel__msg--user]="m.role === 'user'" [class.ai-panel__msg--ai]="m.role === 'assistant'">
+                @if (m.role === 'user') {
+                  <div class="ai-panel__bubble ai-panel__bubble--user">{{ m.text }}</div>
+                } @else {
+                  <div class="ai-panel__bubble ai-panel__bubble--ai">
+                    @if (m.typing) {
+                      <div class="ai-panel__typing" aria-label="Typing">
+                        <span></span><span></span><span></span>
+                      </div>
+                    } @else if (m.html) {
+                      <div class="ai-panel__rich rp-rich" [innerHTML]="m.html"></div>
+                    } @else {
+                      <div class="ai-panel__plain">{{ m.text }}</div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </section>
+        </div>
+        <footer class="ai-panel__composer">
+          <textarea
+            class="ai-panel__textarea"
+            rows="2"
+            [placeholder]="'atharAi.placeholder' | t"
+            [ngModel]="draftInput()"
+            (ngModelChange)="draftInput.set($event)"
+            (keydown.control.enter)="sendChat()"
+            (keydown.meta.enter)="sendChat()"
+          ></textarea>
+          <button type="button" class="ai-panel__send" [disabled]="busy() !== 'idle'" (click)="sendChat()">{{ 'atharAi.send' | t }}</button>
+        </footer>
+      }
+
+      @if (activeTab() === 'scope') {
+        <div class="ai-panel__scroll ai-panel__scope">
+          <div class="ai-panel__scope-hero">
+            <div class="ai-panel__scope-hero-icon" aria-hidden="true">
+              <img src="assets/Ai/ai-technology.png" class="ai-panel__scope-hero-img" alt="" aria-hidden="true" />
+            </div>
+            <div>
+              <div class="ai-panel__scope-hero-title">{{ 'atharAi.action.analyze' | t }}</div>
+              <div class="ai-panel__scope-hero-sub">{{ 'atharAi.scopeHero' | t }}</div>
+            </div>
+          </div>
+          <label class="ai-panel__lbl" for="athar-survey-d">{{ 'atharAi.survey' | t }}</label>
+          <select id="athar-survey-d" class="ai-panel__select" [(ngModel)]="selectedSurveyId">
+            <option value="">{{ 'atharAi.allSurveys' | t }}</option>
+            @for (s of surveyList(); track s.id) {
+              <option [value]="s.id">{{ s.name }}</option>
+            }
+          </select>
+          <div class="ai-panel__dates">
+            <div>
+              <label class="ai-panel__lbl" for="athar-from-d">{{ 'atharAi.from' | t }}</label>
+              <input id="athar-from-d" type="date" class="ai-panel__input" [(ngModel)]="fromDate" />
+            </div>
+            <div>
+              <label class="ai-panel__lbl" for="athar-to-d">{{ 'atharAi.to' | t }}</label>
+              <input id="athar-to-d" type="date" class="ai-panel__input" [(ngModel)]="toDate" />
+            </div>
+          </div>
+          <div class="ai-panel__actions">
+            <button type="button" class="ai-panel__btn ai-panel__btn--primary" [disabled]="busy() !== 'idle'" (click)="runAnalyze()">
+              {{ 'atharAi.action.analyze' | t }}
+            </button>
+            <button type="button" class="ai-panel__btn" [disabled]="busy() !== 'idle'" (click)="runSentiment()">{{ 'atharAi.action.sentiment' | t }}</button>
+            @if (canRecommendManage) {
+              <button type="button" class="ai-panel__btn" [disabled]="busy() !== 'idle'" (click)="runRecommendation()">
+                {{ 'atharAi.action.recommend' | t }}
+              </button>
+            }
+            @if (canSurveyManage) {
+              <button type="button" class="ai-panel__btn" [disabled]="busy() !== 'idle'" (click)="openSurveyModal()">
+                {{ 'atharAi.action.genSurvey' | t }}
+              </button>
+              <button
+                type="button"
+                class="btn-ai-suggest"
+                [disabled]="busy() !== 'idle'"
+                [attr.title]="'q.surveys.aiAutoFromRecsHint' | t"
+                (click)="runAutoSurveyFromRecommendations()"
+              >
+                @if (busy() === 'autoSurvey') {
+                  <span class="btn-ai-suggest__label">{{ 'atharAi.thinking.autoSurvey' | t }}</span>
+                } @else {
+                  <i class="pi pi-sparkles btn-ai-suggest__icon" aria-hidden="true"></i>
+                  <span class="btn-ai-suggest__label">{{ 'atharAi.action.autoSurvey' | t }}</span>
+                }
+              </button>
+            }
+          </div>
+          <a routerLink="/reports" class="ai-panel__link" (click)="requestClose()">{{ 'q.ai.openReports' | t }}</a>
+        </div>
+      }
+
+      @if (activeTab() === 'insights') {
+        <div class="ai-panel__scroll ai-panel__insights">
+          <div class="ai-panel__insights-hero">
+            <div class="ai-panel__insights-hero-title">{{ 'atharAi.panel.title' | t }}</div>
+            <div class="ai-panel__insights-hero-sub">{{ 'atharAi.insightsHero' | t }}</div>
+          </div>
+          @if (insightCards().length) {
+            <h3 class="ai-panel__h">{{ 'atharAi.panel.cards' | t }}</h3>
+            <div class="ai-panel__cards">
+              @for (c of insightCards(); track $index) {
+                <app-athar-ai-insight-card [card]="c" />
+              }
+            </div>
+          }
+
+          @if (analyzeResult()) {
+            @if (pickBilingual(analyzeResult()!.executiveBoxAr, analyzeResult()!.executiveBoxEn)) {
+              <h3 class="ai-panel__h">{{ 'atharAi.panel.exec' | t }}</h3>
+              <div class="ai-panel__exec rp-rich" [innerHTML]="execSafe()"></div>
+            }
+            @if (kpis().length) {
+              <app-athar-ai-kpi-row [kpis]="kpis()" />
+            }
+            @if (recommendationsList().length) {
+              <h3 class="ai-panel__h">{{ 'atharAi.panel.recs' | t }}</h3>
+              <ul class="ai-panel__list">
+                @for (r of recommendationsList(); track r) {
+                  <li>{{ r }}</li>
+                }
+              </ul>
+            }
+            @if (actionPlanSteps().length) {
+              <h3 class="ai-panel__h">{{ 'atharAi.panel.actions' | t }}</h3>
+              <ol class="ai-panel__ol">
+                @for (s of actionPlanSteps(); track s) {
+                  <li>{{ s }}</li>
+                }
+              </ol>
+            }
+            <h3 class="ai-panel__h">{{ 'atharAi.panel.narrative' | t }}</h3>
+            <div class="ai-panel__narr rp-rich" [innerHTML]="summarySafe()"></div>
+            @if ((analyzeResult()?.charts?.length ?? 0) > 0) {
+              <h3 class="ai-panel__h">{{ 'q.ai.chartsHeading' | t }}</h3>
+              <div class="ai-panel__charts">
+                @for (ch of analyzeResult()!.charts; track $index) {
+                  <article class="ai-panel__chart">
+                    <h4 class="ai-panel__chart-title">{{ chartHeading(ch) }}</h4>
+                    <div class="ai-panel__chart-canvas">
+                      @if (chartKind(ch) === 'bar') {
+                        <canvas baseChart [data]="$any(chartData(ch))" [options]="barChartOptions()" type="bar"></canvas>
+                      }
+                      @if (chartKind(ch) === 'line') {
+                        <canvas baseChart [data]="$any(chartData(ch))" [options]="lineChartOptions()" type="line"></canvas>
+                      }
+                      @if (chartKind(ch) === 'doughnut') {
+                        <canvas baseChart [data]="$any(chartData(ch))" [options]="doughnutChartOptions()" type="doughnut"></canvas>
+                      }
+                    </div>
+                  </article>
+                }
+              </div>
+            }
+          } @else if (sentimentResult()) {
+            <h3 class="ai-panel__h">{{ 'atharAi.panel.sentiment' | t }}</h3>
+            @if (pickBilingual(sentimentResult()!.overallToneAr, sentimentResult()!.overallToneEn).trim()) {
+              <p class="ai-panel__tone">{{ pickBilingual(sentimentResult()!.overallToneAr, sentimentResult()!.overallToneEn) }}</p>
+            }
+            <div class="ai-panel__narr rp-rich" [innerHTML]="sentimentSummarySafe()"></div>
+            @if (sentimentDoughnutData() || sentimentResult()!.insightChart) {
+              <div class="ai-panel__sentiment-charts">
+                @if (sentimentDoughnutData(); as sd) {
+                  <article class="ai-panel__chart">
+                    <h4 class="ai-panel__chart-title">{{ 'q.aiScope.sentiment.chartTitle' | t }}</h4>
+                    <div class="ai-panel__chart-canvas">
+                      <canvas baseChart [data]="$any(sd)" [options]="doughnutChartOptions()" type="doughnut"></canvas>
+                    </div>
+                  </article>
+                }
+                @if (sentimentResult()!.insightChart; as ic) {
+                  <article class="ai-panel__chart">
+                    <h4 class="ai-panel__chart-title">{{ chartHeading(ic) }}</h4>
+                    <div class="ai-panel__chart-canvas">
+                      @if (chartKind(ic) === 'line') {
+                        <canvas baseChart [data]="$any(sentimentInsightChartData(ic))" [options]="lineChartOptions()" type="line"></canvas>
+                      } @else {
+                        <canvas baseChart [data]="$any(sentimentInsightChartData(ic))" [options]="barChartOptions()" type="bar"></canvas>
+                      }
+                    </div>
+                  </article>
+                }
+              </div>
+            }
+          } @else if (recommendationDraft()) {
+            <h3 class="ai-panel__h">{{ 'atharAi.panel.recDraft' | t }}</h3>
+            <p class="ai-panel__p"><strong>{{ pickBilingual(recommendationDraft()!.titleAr, recommendationDraft()!.titleEn) }}</strong></p>
+            <p class="ai-panel__muted">{{ pickBilingual(recommendationDraft()!.descriptionAr, recommendationDraft()!.descriptionEn) }}</p>
+          } @else {
+            <p class="ai-panel__muted">{{ 'atharAi.panel.hint' | t }}</p>
+          }
+
+          @if (recommendationDraft() && analyzeResult()) {
+            <h3 class="ai-panel__h">{{ 'atharAi.panel.recDraft' | t }}</h3>
+            <p class="ai-panel__p"><strong>{{ pickBilingual(recommendationDraft()!.titleAr, recommendationDraft()!.titleEn) }}</strong></p>
+            <p class="ai-panel__muted">{{ pickBilingual(recommendationDraft()!.descriptionAr, recommendationDraft()!.descriptionEn) }}</p>
+          }
+
+          @if (surveyDraft()) {
+            <h3 class="ai-panel__h">{{ 'atharAi.panel.surveyDraft' | t }}</h3>
+            <pre class="ai-panel__json">{{ surveyDraft() | json }}</pre>
+          }
+        </div>
+      }
+    </div>
+  </div>
+}
+
+@if (showSurveyModal()) {
+  <div class="ai-panel__modal-root">
+    <div class="ai-panel__modal-backdrop" (click)="closeSurveyModal()"></div>
+    <div class="ai-panel__modal" role="dialog" aria-modal="true">
+      <h2 class="ai-panel__h">{{ 'atharAi.survey.modalTitle' | t }}</h2>
+      <label class="ai-panel__lbl">{{ 'atharAi.survey.briefAr' | t }}</label>
+      <textarea class="ai-panel__textarea" rows="3" [ngModel]="surveyBriefAr()" (ngModelChange)="surveyBriefAr.set($event)"></textarea>
+      <label class="ai-panel__lbl">{{ 'atharAi.survey.briefEn' | t }}</label>
+      <textarea class="ai-panel__textarea" rows="3" [ngModel]="surveyBriefEn()" (ngModelChange)="surveyBriefEn.set($event)"></textarea>
+      <div class="ai-panel__modal-actions">
+        <button type="button" class="ai-panel__btn" (click)="closeSurveyModal()">{{ 'common.cancel' | t }}</button>
+        <button
+          type="button"
+          class="ai-panel__btn ai-panel__btn--primary"
+          [disabled]="busy() === 'survey' || busy() === 'autoSurvey'"
+          (click)="runGenerateSurvey()"
+        >
+          {{ 'atharAi.survey.generate' | t }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
